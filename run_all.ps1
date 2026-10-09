@@ -14,7 +14,7 @@ foreach ($s in $stages) {
   for ($try = 1; $try -le 10; $try++) {
     if (Test-Path "logs\$s.done") { break }
     Add-Content $log "$(Get-Date -Format 'dd.MM HH:mm') START $s try $try"
-    if ($try -eq 1) {
+    if ($try -eq 1 -and -not (Test-Path "logs\$s.log")) {
       $p = "Read CLAUDE.md, docs/GDD.md, docs/RESEARCH.md, docs/PROGRESS.md and docs/prompts/$s.md. Execute stage $s fully and autonomously; never ask questions; commit and push often; append progress to docs/PROGRESS.md. When the done-criteria are met, create logs/$s.done with a one-paragraph summary."
     } else {
       $p = "Stage $s was interrupted before completion (usage limit or crash). Read CLAUDE.md, docs/prompts/$s.md, docs/PROGRESS.md, git log -15 and git status; check what is already done (also make sure no stale Unity process holds the project); finish stage $s fully and autonomously. When the done-criteria are met, create logs/$s.done with a one-paragraph summary."

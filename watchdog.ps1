@@ -8,7 +8,7 @@ New-Item -ItemType Directory -Force "$root\logs" | Out-Null
 Add-Content $log "$(Get-Date -Format 'dd.MM HH:mm') WATCHDOG started"
 while ($true) {
   if ((Test-Path $log) -and (Select-String -Path $log -Pattern 'ALL DONE' -Quiet)) { break }
-  $running = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'run_all\.ps1' }
+  $running = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match '-File\s+\S*run_all\.ps1' }
   if (-not $running) {
     Add-Content $log "$(Get-Date -Format 'dd.MM HH:mm') WATCHDOG: run_all not running -> (re)start"
     Start-Process powershell -WindowStyle Minimized -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',"$root\run_all.ps1"

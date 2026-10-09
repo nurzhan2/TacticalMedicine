@@ -1,0 +1,19 @@
+{
+    "name": "FieldMedic.Runtime",
+    "rootNamespace": "FieldMedic",
+    "references": [
+        "FieldMedic.Medical",
+        "Oculus.VR",
+        "Unity.InputSystem",
+        "Unity.XR.Management"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
