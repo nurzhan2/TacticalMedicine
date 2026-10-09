@@ -31,7 +31,7 @@ namespace FieldMedic.EditorTools
             {
                 int n = CaptureScene(scenePath, shots?.Split(','), w, h);
                 Debug.Log($"[FMVR] ScreenshotTool: {n} screenshot(s) from {scenePath}");
-                if (n == 0 && Application.isBatchMode) EditorApplication.Exit(2);
+                if (Application.isBatchMode) EditorApplication.Exit(n == 0 ? 2 : 0);
             }
             catch (Exception e)
             {

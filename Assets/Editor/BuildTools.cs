@@ -53,6 +53,7 @@ namespace FieldMedic.EditorTools
                         Debug.Log("[FMVR] build error: " + m.content);
                 if (Application.isBatchMode) EditorApplication.Exit(1);
             }
+            if (Application.isBatchMode) EditorApplication.Exit(0);
         }
     }
 }

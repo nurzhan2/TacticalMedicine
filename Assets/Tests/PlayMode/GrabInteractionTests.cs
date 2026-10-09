@@ -72,6 +72,13 @@ namespace FieldMedic.Tests
             }
         }
 
+        [Test]
+        public void Default_Layer_Collides_With_Itself()
+        {
+            // regression: an unreadable collision matrix made everything fall through the floor
+            Assert.IsFalse(Physics.GetIgnoreLayerCollision(0, 0));
+        }
+
         [UnityTest]
         public IEnumerator Grab_Move_Release_MovesCube()
         {
@@ -82,7 +89,7 @@ namespace FieldMedic.Tests
 
             Vector3 start = cube.transform.position;
             yield return MoveGradually(hand, input, new Vector3(0f, 0.4f, 0.5f), start, 10);
-            Assert.AreEqual(cube, hand.Hovered, "cube should be the hover candidate");
+            Assert.AreEqual(cube, hand.Hovered, $"cube should be the hover candidate (cube {cube.transform.position}, palm {hand.PalmPosition})");
             Assert.Greater(input.HapticCount, 0, "hover should tick a haptic");
 
             input.Grip = 1f;

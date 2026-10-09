@@ -37,6 +37,7 @@ namespace FieldMedic.EditorTools
                 ApplyRendering();
                 ApplyOvrConfig();
                 ApplyOpenXR();
+                ApplyPhysics();
                 RunMetaProjectSetupFixAll();
                 // re-assert our choices in case a recommended fix touched them
                 ApplyPlayerSettings();
@@ -53,6 +54,8 @@ namespace FieldMedic.EditorTools
             }
             System.IO.Directory.CreateDirectory("Logs");
             System.IO.File.WriteAllText("Logs/project_setup_report.txt", Report.ToString());
+            // Meta's setup processors keep editor-update hooks alive and -quit then never fires
+            if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
         static void SwitchToAndroid()
@@ -169,9 +172,12 @@ namespace FieldMedic.EditorTools
 
         static void ApplyOpenXR()
         {
+            var standalone = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Standalone);
+            if (standalone != null) RemoveMissingFeatures(standalone);
             var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
             if (settings == null) { Debug.LogWarning("[FMVR] No OpenXR settings for Android"); return; }
             settings.renderMode = OpenXRSettings.RenderMode.SinglePassInstanced;
+            RemoveMissingFeatures(settings);
             string[] want =
             {
                 "MetaQuestFeature",                    // Meta Quest support (feature group)
@@ -192,6 +198,45 @@ namespace FieldMedic.EditorTools
             }
             EditorUtility.SetDirty(settings);
             Log("OpenXR Android enabled: " + string.Join(", ", settings.GetFeatures().Where(f => f != null && f.enabled).Select(f => f.GetType().Name)));
+        }
+
+        /// <summary>
+        /// The collision matrix inherited from the template is in a format 6.3 does not read back, which
+        /// leaves every layer pair ignored (objects fall through the floor). Re-assert "everything collides".
+        /// </summary>
+        static void ApplyPhysics()
+        {
+            int fixedPairs = 0;
+            for (int a = 0; a < 32; a++)
+            for (int b = a; b < 32; b++)
+            {
+                if (!Physics.GetIgnoreLayerCollision(a, b)) continue;
+                Physics.IgnoreLayerCollision(a, b, false);
+                fixedPairs++;
+            }
+            var dm = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/DynamicsManager.asset").FirstOrDefault();
+            if (dm != null) EditorUtility.SetDirty(dm);
+            Log($"Physics: layer collision matrix reset to all-collide ({fixedPairs} pairs re-enabled)");
+        }
+
+        /// <summary>Drops feature entries whose script no longer exists (they NRE the OpenXR validator on every load).</summary>
+        static void RemoveMissingFeatures(OpenXRSettings settings)
+        {
+            var so = new SerializedObject(settings);
+            var arr = so.FindProperty("features");
+            if (arr == null || !arr.isArray) return;
+            int removed = 0;
+            for (int i = arr.arraySize - 1; i >= 0; i--)
+            {
+                if (arr.GetArrayElementAtIndex(i).objectReferenceValue is UnityEngine.XR.OpenXR.Features.OpenXRFeature f && f != null) continue;
+                arr.DeleteArrayElementAtIndex(i);
+                removed++;
+            }
+            if (removed > 0)
+            {
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Log($"OpenXR {settings.name}: removed {removed} missing feature entr{(removed == 1 ? "y" : "ies")}");
+            }
         }
 
         /// <summary>Meta Project Setup Tool: fix every auto-fixable task for Android, blocking.</summary>

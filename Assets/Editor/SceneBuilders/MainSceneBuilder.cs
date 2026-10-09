@@ -51,6 +51,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             SetBuildScenes();
             AssetDatabase.SaveAssets();
             Debug.Log("[FMVR] Main scene built: " + ScenePath);
+            if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
         // ---------------------------------------------------------------- environment
@@ -59,7 +60,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = new Color(0.16f, 0.20f, 0.30f);
-            RenderSettings.ambientEquatorColor = new Color(0.10f, 0.11f, 0.14f);
+            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.12f, 0.13f);
             RenderSettings.ambientGroundColor = new Color(0.04f, 0.035f, 0.03f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
@@ -84,9 +85,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
         static void BuildTrench()
         {
             var root = new GameObject("Trench").transform;
-            var dirt = Mat("Dirt", new Color(0.23f, 0.18f, 0.13f), 0.08f);
-            var dirtDark = Mat("DirtDark", new Color(0.15f, 0.12f, 0.09f), 0.15f);
-            var mud = Mat("Mud", new Color(0.11f, 0.09f, 0.07f), 0.45f);
+            var dirt = Mat("Dirt", new Color(0.30f, 0.22f, 0.14f), 0.08f);
+            var dirtDark = Mat("DirtDark", new Color(0.22f, 0.16f, 0.11f), 0.15f);
+            var mud = Mat("Mud", new Color(0.16f, 0.12f, 0.08f), 0.5f);
             var wood = Mat("Wood", new Color(0.33f, 0.24f, 0.15f), 0.12f);
             var bag = Mat("Sandbag", new Color(0.42f, 0.38f, 0.27f), 0.05f);
 
@@ -290,7 +291,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
             // chemlight: grabbable + the scene's small warm-ish fill light
             var chem = Prim(PrimitiveType.Cylinder, "Chemlight", root, new Vector3(0.55f, top + 0.012f, 0.55f),
-                new Vector3(0.022f, 0.075f, 0.022f), Emissive("Chemlight", new Color(0.35f, 1f, 0.35f), 2.2f));
+                new Vector3(0.022f, 0.075f, 0.022f), Emissive("Chemlight", new Color(0.35f, 1f, 0.35f), 1.6f));
             chem.transform.localRotation = Quaternion.Euler(0f, 30f, 90f);
             MakeGrabbable(chem, 0.05f);
             var lgo = new GameObject("ChemlightGlow");
@@ -298,8 +299,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var pl = lgo.AddComponent<Light>();
             pl.type = LightType.Point;
             pl.color = new Color(0.45f, 1f, 0.45f);
-            pl.intensity = 1.2f;
-            pl.range = 2.5f;
+            pl.intensity = 0.35f;
+            pl.range = 1.6f;
             pl.shadows = LightShadows.None;
 
             // heavy ammo box on the floor: two handles, lags behind the hand (mass feel)

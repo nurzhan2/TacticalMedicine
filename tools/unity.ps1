@@ -32,11 +32,13 @@ function Show-UnityLogProblems([string]$LogFile) {
 function Start-UnityProcess([string[]]$UnityArgs, [int]$TimeoutMin) {
     $quoted = $UnityArgs | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }
     $p = Start-Process -FilePath $Global:UnityExe -ArgumentList $quoted -PassThru -NoNewWindow
+    $null = $p.Handle  # cache the handle, otherwise ExitCode is empty after WaitForExit(timeout)
     if (-not $p.WaitForExit($TimeoutMin * 60 * 1000)) {
         Write-Host "[unity.ps1] timeout after $TimeoutMin min, killing Unity" -ForegroundColor Red
         try { $p.Kill() } catch {}
         return 999
     }
+    $p.WaitForExit()
     return $p.ExitCode
 }
 
