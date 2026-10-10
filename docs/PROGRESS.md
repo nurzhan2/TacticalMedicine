@@ -115,3 +115,4 @@
 - Tests: EditMode 63/63 (new `FieldMedic.Editor.Tests`: manifest cleanup ×2, perf profile); PlayMode 52/52 (16 min, `!Screenshots`). One protocol fallback logged (S5 buttock packing: bot could not grab the hemostatic gauze).
 - Docs: README.md rewritten in Russian; MORNING_REPORT.md updated; ATTRIBUTION.md + radio TTS, Meta hand assets, font, policy note (Mixamo/Meta SDK are the non-CC exceptions). Final shots `docs/screens/final_1..8_*.jpg` (JPG per supervisor note; picked from the s4/s5/s3 sets, not re-rendered).
 - Next (S7): device test, blood streak particles, hands, real voices, S5 bot gauze grab.
+- Push tip: plain `git push` failed with HTTP 408 on the big S5 pack; `git -c http.postBuffer=524288000 push origin main` worked (everything up to 0aed13a is on GitHub).
