@@ -117,3 +117,6 @@ InitTestScene*.unity*
 /logs/*.log
 
 
+
+# raw Poly Haven downloads (prepared copies live in Assets/Art/Environment/Textures)
+/SourceAssets/PolyHaven/

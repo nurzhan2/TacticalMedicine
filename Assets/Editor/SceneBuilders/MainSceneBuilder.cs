@@ -1,7 +1,10 @@
 using System.Collections.Generic;
 using System.IO;
+using FieldMedic.Audio;
 using FieldMedic.Casualty;
 using FieldMedic.Casualty.Blood;
+using FieldMedic.Comfort;
+using FieldMedic.Environment;
 using FieldMedic.Input;
 using FieldMedic.Interaction;
 using FieldMedic.Scenarios;
@@ -29,10 +32,6 @@ namespace FieldMedic.EditorTools.SceneBuilders
         const string RigPrefab = "Packages/com.meta.xr.sdk.core/Prefabs/OVRCameraRig.prefab";
         const string HandPrefab = "Packages/com.meta.xr.sdk.core/Prefabs/OVRHandPrefab.prefab";
 
-        // trench geometry (metres): floor at y=0, runs along X, player stands at the origin facing +Z
-        const float TrenchHalfWidth = 1.1f;
-        const float TrenchDepth = 1.45f;
-        const float TrenchHalfLength = 9f;
 
         static readonly Dictionary<string, Material> Mats = new Dictionary<string, Material>();
 
@@ -45,12 +44,13 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
             SetupEnvironment();
             var moon = BuildMoon();
-            BuildTrench();
+            TrenchBuilder.Build();
             var rig = BuildRig(out var sim);
             BuildHands(rig, sim);
             BuildProps();
             BuildCasualty();
             BuildTreatment(rig);
+            AtmosphereBuilder.Build(rig, moon);
             BuildBookmarks();
 
             RenderSettings.sun = moon;
@@ -64,105 +64,32 @@ namespace FieldMedic.EditorTools.SceneBuilders
         // ---------------------------------------------------------------- environment
         static void SetupEnvironment()
         {
-            RenderSettings.skybox = null;
+            RenderSettings.skybox = AtmosphereBuilder.SkyMaterial();
             RenderSettings.ambientMode = AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.16f, 0.20f, 0.30f);
-            RenderSettings.ambientEquatorColor = new Color(0.13f, 0.12f, 0.13f);
-            RenderSettings.ambientGroundColor = new Color(0.04f, 0.035f, 0.03f);
+            RenderSettings.ambientSkyColor = new Color(0.035f, 0.045f, 0.075f);
+            RenderSettings.ambientEquatorColor = new Color(0.025f, 0.025f, 0.03f);
+            RenderSettings.ambientGroundColor = new Color(0.01f, 0.009f, 0.008f);
+            RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
+            RenderSettings.reflectionIntensity = 0.8f;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.045f;
-            RenderSettings.fogColor = new Color(0.05f, 0.065f, 0.10f);
+            RenderSettings.fogDensity = 0.032f;
+            RenderSettings.fogColor = new Color(0.028f, 0.034f, 0.055f);
         }
 
         static Light BuildMoon()
         {
             var go = new GameObject("Moon");
-            go.transform.rotation = Quaternion.Euler(38f, -35f, 0f);
+            go.transform.rotation = Quaternion.Euler(22f, -35f, 0f);
             var l = go.AddComponent<Light>();
             l.type = LightType.Directional;
-            l.color = new Color(0.66f, 0.74f, 0.95f);
-            l.intensity = 0.75f;
-            l.shadows = LightShadows.Hard;
-            l.shadowStrength = 0.85f;
+            l.color = new Color(0.55f, 0.65f, 0.95f);
+            l.intensity = 0.22f;
+            l.shadows = LightShadows.Hard; // the only shadow caster (steered to flares by NightLightingDirector)
+            l.shadowStrength = 0.9f;
+            l.shadowBias = 0.06f;
+            l.shadowNormalBias = 0.5f;
             return l;
-        }
-
-        // ---------------------------------------------------------------- trench
-        static void BuildTrench()
-        {
-            var root = new GameObject("Trench").transform;
-            var dirt = Mat("Dirt", new Color(0.30f, 0.22f, 0.14f), 0.08f);
-            var dirtDark = Mat("DirtDark", new Color(0.22f, 0.16f, 0.11f), 0.15f);
-            var mud = Mat("Mud", new Color(0.16f, 0.12f, 0.08f), 0.5f);
-            var wood = Mat("Wood", new Color(0.33f, 0.24f, 0.15f), 0.12f);
-            var bag = Mat("Sandbag", new Color(0.42f, 0.38f, 0.27f), 0.05f);
-
-            float L = TrenchHalfLength * 2f;
-            Box("Floor", root, new Vector3(0f, -0.1f, 0f), new Vector3(L, 0.2f, TrenchHalfWidth * 2f), mud);
-
-            // walls + the ground surface beyond them
-            for (int side = -1; side <= 1; side += 2)
-            {
-                float z = side * (TrenchHalfWidth + 0.25f);
-                Box(side > 0 ? "Wall_Front" : "Wall_Back", root, new Vector3(0f, TrenchDepth * 0.5f, z),
-                    new Vector3(L, TrenchDepth, 0.5f), dirtDark);
-                Box(side > 0 ? "Ground_Front" : "Ground_Back", root,
-                    new Vector3(0f, TrenchDepth - 0.1f, side * (TrenchHalfWidth + 0.5f + 12f)),
-                    new Vector3(60f, 0.2f, 24f), dirt);
-
-                // plank revetment with posts
-                float wz = side * (TrenchHalfWidth - 0.02f);
-                for (int i = 0; i < 4; i++)
-                {
-                    float y = 0.18f + i * 0.3f;
-                    Box("Plank", root, new Vector3(0f, y, wz), new Vector3(L, 0.26f, 0.04f), wood,
-                        Quaternion.Euler(0f, 0f, (i % 2 == 0 ? 0.25f : -0.3f)), collider: false);
-                }
-                for (float x = -TrenchHalfLength + 0.6f; x < TrenchHalfLength; x += 1.8f)
-                    Box("Post", root, new Vector3(x, TrenchDepth * 0.5f, wz - side * 0.05f),
-                        new Vector3(0.1f, TrenchDepth + 0.1f, 0.1f), wood, collider: false);
-
-                // sandbag parapet: two staggered rows
-                for (int row = 0; row < 2; row++)
-                for (float x = -TrenchHalfLength; x < TrenchHalfLength; x += 0.52f)
-                {
-                    float jitter = Mathf.Sin(x * 7.3f + row * 2.1f + side) * 0.03f;
-                    var p = new Vector3(x + row * 0.26f, TrenchDepth + 0.07f + row * 0.13f, side * (TrenchHalfWidth + 0.22f) + jitter);
-                    Sandbag(root, p, Quaternion.Euler(0f, jitter * 120f, jitter * 30f), bag);
-                }
-            }
-
-            // end caps so the desktop player cannot walk out
-            for (int end = -1; end <= 1; end += 2)
-                Box("Wall_End", root, new Vector3(end * (TrenchHalfLength + 0.25f), TrenchDepth * 0.5f, 0f),
-                    new Vector3(0.5f, TrenchDepth, TrenchHalfWidth * 2f + 1f), dirtDark);
-
-            // duckboards on the floor
-            for (float x = -TrenchHalfLength + 0.5f; x < TrenchHalfLength; x += 1.25f)
-            {
-                var db = new GameObject("Duckboard").transform;
-                db.SetParent(root, false);
-                db.localPosition = new Vector3(x, 0.03f, 0f);
-                db.localRotation = Quaternion.Euler(0f, Mathf.Sin(x) * 2f, 0f);
-                for (int s = -1; s <= 1; s += 2)
-                    Box("Rail", db, new Vector3(0f, 0f, s * 0.28f), new Vector3(1.15f, 0.05f, 0.06f), wood, collider: false);
-                for (float sx = -0.5f; sx <= 0.51f; sx += 0.2f)
-                    Box("Slat", db, new Vector3(sx, 0.035f, 0f), new Vector3(0.12f, 0.02f, 0.72f), wood, collider: false);
-            }
-        }
-
-        static void Sandbag(Transform parent, Vector3 pos, Quaternion rot, Material m)
-        {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            go.name = "Sandbag";
-            Object.DestroyImmediate(go.GetComponent<Collider>());
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = pos;
-            go.transform.localRotation = rot * Quaternion.Euler(0f, 0f, 90f);
-            go.transform.localScale = new Vector3(0.16f, 0.27f, 0.3f);
-            go.GetComponent<Renderer>().sharedMaterial = m;
-            go.isStatic = true;
         }
 
         // ---------------------------------------------------------------- rig + hands
@@ -199,7 +126,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
             var eyeT = FindDeep(rig.transform, "CenterEyeAnchor");
             var cam = eyeT.GetComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.clearFlags = CameraClearFlags.Skybox;
             cam.backgroundColor = RenderSettings.fogColor;
             cam.nearClipPlane = 0.03f;
             cam.farClipPlane = 120f;
@@ -281,6 +208,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         static void BuildProps()
         {
             var root = new GameObject("TestProps").transform;
+            root.position = new Vector3(0f, 0f, -0.34f); // the S4 trench is 1.2 m wide: keep the crate off the wall
             var crateM = Mat("Crate", new Color(0.27f, 0.30f, 0.18f), 0.15f);
             var metal = Mat("Metal", new Color(0.22f, 0.24f, 0.2f), 0.55f, 0.6f);
             var cloth = Mat("Canvas", new Color(0.30f, 0.29f, 0.2f), 0.05f);
@@ -377,10 +305,11 @@ namespace FieldMedic.EditorTools.SceneBuilders
             ifak.head = FindDeep(rig.transform, "CenterEyeAnchor");
 
             var cover = new GameObject("CoverZone_Dugout");
-            cover.transform.position = new Vector3(-7.4f, 0.8f, 0f);
-            cover.AddComponent<CoverZone>().size = new Vector3(2.6f, 2f, 2.3f);
+            cover.transform.position = TrenchBuilder.DugoutCentre + new Vector3(0f, 0.9f, 0f);
+            cover.AddComponent<CoverZone>().size = new Vector3(3.0f, 1.9f, 1.9f);
 
             new GameObject("FeedbackHud").AddComponent<FeedbackHud>();
+            new GameObject("DemoScenario").AddComponent<DemoScenarioStarter>(); // S5 replaces with the scenario system
         }
 
         static Material UnlitMat(string name, Color c)
@@ -402,7 +331,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             // over-the-shoulder view of the player's spot, crate and props
             Bookmark(root, "s1_main", new Vector3(-0.9f, 1.75f, -0.75f), new Vector3(0.15f, 0.55f, 0.62f), 62f);
             Bookmark(root, "s1_props", new Vector3(0.05f, 1.05f, 0.05f), new Vector3(0.3f, 0.52f, 0.64f), 55f);
-            Bookmark(root, "s1_trench", new Vector3(-6f, 1.9f, 0f), new Vector3(2f, 0.6f, 0.2f), 60f);
+            Bookmark(root, "s1_trench", new Vector3(-4.2f, 1.6f, 0f), new Vector3(2f, 0.6f, 0.2f), 60f);
             Bookmark(root, "s2_erlan_idle", ErlanPosition + new Vector3(-1.5f, 1.3f, -0.6f), ErlanPosition + new Vector3(0f, 0.65f, 0f), 50f);
         }
 

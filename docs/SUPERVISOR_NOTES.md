@@ -14,3 +14,6 @@
 - s3_05_drag.png: casualty lies FACE DOWN during the drag and the IFAK is an open crate with saturated primitive blocks (pure red/blue/white). Drag must be supine (on the back), pulled head-first by the plate-carrier drag handle, arms crossed/limp, heels dragging. IFAK must look like a real pouch kit (coyote/olive fabric pouch, rip-away panel, items in muted real colours: black CAT with red tab, white/olive packaged gauze, olive Israeli bandage) - no primary-colour boxes anywhere in the scene.
 - s3_04_tq_locked_time.png: too dark and too close to read. Debug/presentation shots should be framed at ~0.6-0.8 m with a soft fill light so the CAT band, windlass, clip and time label are readable. The red slab top-right is unexplained geometry - check.
 - Overall: everything readable in the headset matters more than screenshots, but screenshots are what the owner sees first in MORNING_REPORT - frame them well.
+## 09:21 review
+- s3_11_packing.png: blood "drops" render as long thin vertical red streaks hanging in the air above the body (stretched particles / velocity-stretched billboards). Drops should be short, fall and splat; arterial spurts pulse with heartbeat; no static streaks.
+- APK safety build is on the Desktop (09:15, 76.5 MB). Disk is tight (~5.8 GB): delete Bee android intermediates only right before the final build if needed.

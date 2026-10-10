@@ -8,6 +8,8 @@
 | Mixamo animation FBX copies (Assets/Art/Characters/Erlan/Anims) | Adobe Mixamo | Mixamo terms |
 | Gear models, amputation stump, blood/wound textures | Procedural, made for this project (tools/blender/prepare_casualty.py, tools/make_blood_textures.py) | Project-owned |
 | Voice placeholders (Assets/Audio/Voice) | Generated with Windows TTS "Microsoft Irina" + tools/voice_post.py; to be replaced by real recordings | Project-owned placeholder |
+| Trench textures (Assets/Art/Environment/Textures/Env_*): excavated_soil_wall, brown_mud_02, burned_ground_01, raw_plank_wall, bark_brown_02, hessian_230, green_metal_rust (1k JPG, smoothness packed by tools/textures/prep_env_textures.py) | Poly Haven, https://polyhaven.com/textures (authors listed per asset page, e.g. Rob Tuytel, Dimitrios Savva, Charlotte Baglioni) | CC0 1.0 |
+| Trench geometry, sky, net/FX textures, shaders (NightSky, EnvLit, Particle) | Procedural, made for this project (Assets/Editor/SceneBuilders/TrenchBuilder.cs, AtmosphereBuilder.cs) | Project-owned |
 
 <!-- SFX-BEGIN -->
 ## Sound effects (Freesound.org, via tools/fetch_sounds.ps1)
