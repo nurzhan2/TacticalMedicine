@@ -43,6 +43,13 @@ namespace FieldMedic.Medical
         public bool packed;
         public float packingHoldSeconds;
         public float bloodLostMl;
+        /// Position along the limb in LimbGeometry units (0 hip/shoulder .. 2 ankle/wrist); negative = default for region.
+        public float limbPosition = -1f;
+        /// Clothing over the wound cut open (shears) — needed for packing / skin-level care.
+        public bool exposed;
+        /// Bleed multiplier from tourniquets proximal to this wound (1 none, above 1 = venous congestion, 0 occluded).
+        public float tourniquetFactor = 1f;
+        public bool sealVented;
         [NonSerialized] public bool handsPressing; // set by interaction each frame, cleared by physiology tick
 
         public const float PackingHoldRequired = 180f;
@@ -59,8 +66,20 @@ namespace FieldMedic.Medical
             _ => 0f,
         };
 
-        /// Fraction of bleeding that remains with the current control method.
-        public float ResidualFactor => control switch
+        public float LimbPos => limbPosition >= 0f ? limbPosition : LimbGeometry.DefaultWoundPosition(region);
+        public string LimbId => BodyRegions.LimbId(region) ?? JunctionLimb(region);
+
+        static string JunctionLimb(BodyRegion r) => r switch
+        {
+            BodyRegion.GroinL => "legL", BodyRegion.GroinR => "legR",
+            BodyRegion.AxillaL => "armL", BodyRegion.AxillaR => "armR",
+            _ => null,
+        };
+
+        /// Fraction of bleeding that remains (control method x tourniquet effect).
+        public float ResidualFactor => ControlResidual * (control == BleedControl.Tourniquet ? 1f : tourniquetFactor);
+
+        float ControlResidual => control switch
         {
             BleedControl.None => handsPressing ? DirectPressureResidual : 1f,
             BleedControl.DirectPressure => DirectPressureResidual,
@@ -91,6 +110,8 @@ namespace FieldMedic.Medical
             type is WoundType.ArterialLimb or WoundType.TraumaticAmputation or WoundType.Junctional;
 
         public bool IsControlled => ResidualFactor <= 0.01f;
+        /// Still bleeding when tourniquets are ignored (used to judge where a band is needed).
+        public bool ControlResidualOpen => ControlResidual > 0.01f && control != BleedControl.Tourniquet;
 
         public bool IsLimb => BodyRegions.IsLimb(region);
         public bool IsJunctionalRegion => BodyRegions.IsJunctional(region);

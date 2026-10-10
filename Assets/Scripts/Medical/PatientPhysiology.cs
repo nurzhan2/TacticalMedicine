@@ -6,6 +6,7 @@ namespace FieldMedic.Medical
     public enum Consciousness { Alert, Voice, Pain, Unresponsive }   // AVPU
     public enum PneumoState { None, Open, Sealed, Tension, Decompressed }
     public enum Outcome { Ongoing, Stabilized, Died }
+    public enum PulseSite { Carotid, RadialL, RadialR, PedalL, PedalR, FemoralL, FemoralR }
 
     /// Engine-agnostic casualty model. Call Tick() every frame with scaled seconds.
     /// Numbers follow ATLS hemorrhage classes and TCCC teaching; tuned for gameplay, NOT for clinical use.
@@ -28,6 +29,8 @@ namespace FieldMedic.Medical
         public float secondsSinceSeal;
         public float secondsSinceStart;
         public readonly Dictionary<string, float> tourniquetSeconds = new(); // limbId -> time on
+        /// Physical tourniquets (hands-on CAT). Their occlusion drives bleeding and distal pulses.
+        public readonly List<TourniquetState> tourniquets = new();
         public Outcome outcome = Outcome.Ongoing;
         public string causeOfDeath;
         float _criticalSeconds;
@@ -143,6 +146,7 @@ namespace FieldMedic.Medical
         {
             if (outcome != Outcome.Ongoing || dt <= 0f) return;
             secondsSinceStart += dt;
+            RefreshTourniquets();
 
             foreach (var w in wounds)
             {
@@ -170,8 +174,11 @@ namespace FieldMedic.Medical
             {
                 case PneumoState.Sealed:
                     secondsSinceSeal += dt;
-                    // Air keeps leaking from the injured lung under a non-vented seal: tension develops.
-                    if (secondsSinceSeal > 120f) { pneumo = PneumoState.Tension; OnEvent?.Invoke("tension_pneumo"); }
+                    tensionSeverity = Math.Max(0f, tensionSeverity - dt / 30f); // after a burp
+                    // Air keeps leaking from the injured lung under the seal: tension develops
+                    // (a vented seal delays it a lot but does not make it impossible).
+                    if (secondsSinceSeal > (SealVented ? VentedTensionDelay : SealedTensionDelay))
+                    { pneumo = PneumoState.Tension; OnEvent?.Invoke("tension_pneumo"); }
                     break;
                 case PneumoState.Tension:
                     tensionSeverity = Math.Min(1f, tensionSeverity + dt / 180f);
@@ -218,10 +225,100 @@ namespace FieldMedic.Medical
             if (limb != null && !tourniquetSeconds.ContainsKey(limb)) tourniquetSeconds[limb] = 0f;
         }
 
-        public void SealChest(Wound w)
+        public const float SealedTensionDelay = 120f;
+        public const float VentedTensionDelay = 420f;
+
+        bool SealVented
+        {
+            get { foreach (var w in wounds) if (w.type == WoundType.PenetratingChest && !w.sealVented) return false; return true; }
+        }
+
+        /// Seal one chest wound. The chest is closed only when entry AND exit wounds are sealed.
+        public void SealChest(Wound w, bool vented = false)
         {
             w.control = BleedControl.OcclusiveSeal;
-            if (pneumo == PneumoState.Open) { pneumo = PneumoState.Sealed; secondsSinceSeal = 0f; }
+            w.sealVented = vented;
+            bool allSealed = true;
+            foreach (var x in wounds)
+                if (x.type == WoundType.PenetratingChest && x.control != BleedControl.OcclusiveSeal) allSealed = false;
+            if (pneumo == PneumoState.Open && allSealed) { pneumo = PneumoState.Sealed; secondsSinceSeal = 0f; }
+        }
+
+        /// Lift a seal edge on exhale: trapped air escapes, tension is relieved (then reseal).
+        public bool BurpSeal()
+        {
+            if (pneumo != PneumoState.Tension && pneumo != PneumoState.Sealed) return false;
+            bool wasTension = pneumo == PneumoState.Tension;
+            pneumo = PneumoState.Sealed;
+            secondsSinceSeal = 0f;
+            tensionSeverity *= 0.5f;
+            if (wasTension) OnEvent?.Invoke("burped");
+            return wasTension;
+        }
+
+        // ---------- tourniquets & pulses ----------
+        public void AddTourniquet(TourniquetState tq)
+        {
+            if (!tourniquets.Contains(tq)) tourniquets.Add(tq);
+            RefreshTourniquets();
+        }
+
+        public void RemoveTourniquet(TourniquetState tq) { tourniquets.Remove(tq); RefreshTourniquets(); }
+
+        /// Recompute every wound's tourniquet factor and the tourniquet clock. Call after any band change.
+        public void RefreshTourniquets()
+        {
+            foreach (var w in wounds)
+            {
+                float lo = float.MaxValue, hi = 1f;
+                string limb = w.LimbId;
+                float pos = w.LimbPos;
+                foreach (var tq in tourniquets)
+                {
+                    if (!tq.IsProximalTo(limb, pos)) continue;
+                    float f = tq.BleedFactor;
+                    lo = Math.Min(lo, f);
+                    hi = Math.Max(hi, f);
+                }
+                // any band that really compresses wins over a loose one (which only adds congestion)
+                w.tourniquetFactor = lo == float.MaxValue ? 1f : lo < 1f ? lo : hi;
+            }
+            foreach (var tq in tourniquets)
+            {
+                if (tq.stage < TourniquetStage.WindlassTwisted || tq.limbId == null) continue;
+                if (tq.appliedAtSeconds < 0f) tq.appliedAtSeconds = secondsSinceStart;
+                if (!tourniquetSeconds.ContainsKey(tq.limbId)) tourniquetSeconds[tq.limbId] = 0f;
+            }
+        }
+
+        public static string LimbOf(PulseSite s) => s switch
+        {
+            PulseSite.RadialL => "armL", PulseSite.RadialR => "armR",
+            PulseSite.PedalL => "legL", PulseSite.PedalR => "legR",
+            _ => null,
+        };
+
+        /// Palpable pulse strength 0..1 at a site (for haptics). Peripheral pulses fade with BP;
+        /// distal pulses vanish below a fully occluding tourniquet and in an amputated limb.
+        public float PulseStrength(PulseSite site)
+        {
+            if (outcome == Outcome.Died) return 0f;
+            float sbp = SystolicBP;
+            float s = site switch
+            {
+                PulseSite.Carotid => sbp >= 50f ? Math.Clamp((sbp - 40f) / 80f, 0.15f, 1f) : 0f,
+                PulseSite.FemoralL or PulseSite.FemoralR => sbp >= 65f ? Math.Clamp((sbp - 55f) / 70f, 0.15f, 1f) : 0f,
+                _ => sbp >= 80f ? Math.Clamp((sbp - 70f) / 55f, 0.15f, 1f) : 0f,
+            };
+            var limb = LimbOf(site);
+            if (limb == null || s <= 0f) return s;
+            foreach (var w in wounds)
+                if (w.type == WoundType.TraumaticAmputation && w.LimbId == limb) return 0f;
+            foreach (var tq in tourniquets)
+                if (tq.OnLimb && tq.limbId == limb) s *= tq.DistalPulseFactor;
+            foreach (var w in wounds) // a severed artery above: weak or absent distal pulse
+                if (w.type == WoundType.ArterialLimb && w.LimbId == limb && !w.IsControlled) s *= 0.5f;
+            return s;
         }
 
         public bool NeedleDecompress()
