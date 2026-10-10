@@ -4,6 +4,10 @@
 |---|---|---|
 | Character "Swat Guy" + animations (SourceAssets/Mixamo) | Adobe Mixamo, https://www.mixamo.com | Mixamo terms: royalty-free use in projects (raw files must not be redistributed standalone) |
 | Meta XR SDK 207 | Meta | Oculus SDK License |
+| Erlan.fbx + textures (Assets/Art/Characters/Erlan) | Derived from Mixamo "Swat Guy": decimated, retinted to olive/khaki digital camo, plate carrier added (tools/blender/prepare_casualty.py) | Mixamo terms (as above) |
+| Mixamo animation FBX copies (Assets/Art/Characters/Erlan/Anims) | Adobe Mixamo | Mixamo terms |
+| Gear models, amputation stump, blood/wound textures | Procedural, made for this project (tools/blender/prepare_casualty.py, tools/make_blood_textures.py) | Project-owned |
+| Voice placeholders (Assets/Audio/Voice) | Generated with Windows TTS "Microsoft Irina" + tools/voice_post.py; to be replaced by real recordings | Project-owned placeholder |
 
 <!-- SFX-BEGIN -->
 ## Sound effects (Freesound.org, via tools/fetch_sounds.ps1)

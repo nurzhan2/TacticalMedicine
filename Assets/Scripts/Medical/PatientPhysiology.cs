@@ -128,19 +128,25 @@ namespace FieldMedic.Medical
             }
         }
 
+        /// Perfusion pressure drives flow: as BP falls, wounds bleed slower.
+        public float Perfusion => Math.Clamp(SystolicBP / 120f, 0.15f, 1.1f);
+
+        /// Current blood flow out of a wound, ml/s (0 once dead: no cardiac output).
+        public float CurrentFlowMlPerSec(Wound w)
+        {
+            if (outcome == Outcome.Died) return 0f;
+            return w.BaseRateMlPerMin / 60f * w.ResidualFactor * Perfusion * CoagulopathyMultiplier;
+        }
+
         // ---------- simulation ----------
         public void Tick(float dt)
         {
             if (outcome != Outcome.Ongoing || dt <= 0f) return;
             secondsSinceStart += dt;
 
-            // Perfusion pressure drives flow: as BP falls, wounds bleed slower.
-            float perfusion = Math.Clamp(SystolicBP / 120f, 0.15f, 1.1f);
-
             foreach (var w in wounds)
             {
-                float rate = w.BaseRateMlPerMin / 60f * w.ResidualFactor * perfusion * CoagulopathyMultiplier;
-                float lost = rate * dt;
+                float lost = CurrentFlowMlPerSec(w) * dt;
                 w.bloodLostMl += lost;
                 bloodLostMl += lost;
                 w.handsPressing = false; // must be re-asserted by interaction every frame

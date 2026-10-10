@@ -1,0 +1,170 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60c9737ca6be52e45b31d0ce742a9402, type: 3}
+  m_Name: VoiceBank
+  m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Audio.VoiceBank
+  lines:
+  - id: blood_much
+    ru:
+    - {fileID: 8300000, guid: fad6dc32566ffad40b9b952f8131a660, type: 3}
+    kz:
+    - {fileID: 8300000, guid: aa54fae414903ad4587825e7949bd8f0, type: 3}
+  - id: breathe
+    ru:
+    - {fileID: 8300000, guid: a2908a1db1be1ca4d90911c72487c01d, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 302a849bac3990d41863ae6f7dd1c2ab, type: 3}
+  - id: brother
+    ru:
+    - {fileID: 8300000, guid: 9675f2d8b27106847a74f91e998d9a07, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 5f438ade360adc142ad552a2515dece2, type: 3}
+  - id: cant_breathe
+    ru:
+    - {fileID: 8300000, guid: 6d828dba0f76a074dad165e327dcfe7f, type: 3}
+    kz:
+    - {fileID: 8300000, guid: ab236b04c8a0ce14b85ce9c44b50f9eb, type: 3}
+  - id: cant_hear
+    ru:
+    - {fileID: 8300000, guid: e5213256cdd1bc943b50176f0e8832bb, type: 3}
+    kz:
+    - {fileID: 8300000, guid: c3482a3aa39a93f45bdda97dc96bddfc, type: 3}
+  - id: cold
+    ru:
+    - {fileID: 8300000, guid: 72625dadca27879428b7fff2bf98251e, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 1a6e54510dd8d9c4d8d16561082497e8, type: 3}
+  - id: dizzy
+    ru:
+    - {fileID: 8300000, guid: 4ba7d2677453159489bb953d3264a379, type: 3}
+    kz:
+    - {fileID: 8300000, guid: fd80cb55d6271974bb7e9bf922e6c27c, type: 3}
+  - id: dont_leave
+    ru:
+    - {fileID: 8300000, guid: 50f0f20ce6d15f044994b8dc448d0109, type: 3}
+    kz:
+    - {fileID: 8300000, guid: e5ccafe2a36433743b0371145ec7e24a, type: 3}
+  - id: drone_above
+    ru:
+    - {fileID: 8300000, guid: 524dc15f8e5cdf34091efb412504a7b2, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 847e4db139c9ffd4cbde884a2adb2a67, type: 3}
+  - id: help
+    ru:
+    - {fileID: 8300000, guid: 4c4a660542f5f884eac7f1ea153426b6, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 4e0348edee4186a4094142bffbb56a24, type: 3}
+  - id: hit_leg
+    ru:
+    - {fileID: 8300000, guid: fa7e3f9c5525c3f4a8adb4b9bd16b81c, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 297979b607db1d54482179650469fe10, type: 3}
+  - id: hit_mixed
+    ru:
+    - {fileID: 8300000, guid: 66abe2051c09e3c44ac76f3b70eef381, type: 3}
+    kz:
+    - {fileID: 8300000, guid: b0b825922ca0f2144b4b4fbee6960a07, type: 3}
+  - id: hold_on
+    ru:
+    - {fileID: 8300000, guid: 49b552fbebeef19488033418c33196b2, type: 3}
+    kz:
+    - {fileID: 8300000, guid: e21e23a838a0b404e99a7f7f262ca70a, type: 3}
+  - id: holding
+    ru:
+    - {fileID: 8300000, guid: fb172a9310c3129479aeae4f31a344a6, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 50ee58c89e3c05345ab627cf05a9951b, type: 3}
+  - id: hurts
+    ru:
+    - {fileID: 8300000, guid: 4e192665881689449ab1545ecbdc7901, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 39e71aa48e29d0e47ae82bcefd15d971, type: 3}
+  - id: look_at_me
+    ru:
+    - {fileID: 8300000, guid: 2efcefd8cad6fb04ea2a6759c79d62c7, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 0dce0e1b28900234abab10e3e7cc16cf, type: 3}
+  - id: radio_air
+    ru:
+    - {fileID: 8300000, guid: 3f3c2f075db89a6459024d7267a5a655, type: 3}
+    kz:
+    - {fileID: 8300000, guid: c8af1729d711d074397c30dd269e11b8, type: 3}
+  - id: take_off
+    ru:
+    - {fileID: 8300000, guid: 6785006c289b4214ba05d2463b7b6546, type: 3}
+    kz:
+    - {fileID: 8300000, guid: be7ebe64f7142fc48b1423de20fad26a, type: 3}
+  - id: tell_mom
+    ru:
+    - {fileID: 8300000, guid: 7fdba59d06c274d42aaf8643402e7437, type: 3}
+    kz:
+    - {fileID: 8300000, guid: a574c5ee9334c5c49929018d08bdff87, type: 3}
+  - id: thanks
+    ru:
+    - {fileID: 8300000, guid: 8e513c689bb76304fbd3462adda6854d, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 2b9637ecc97497b45929cf23bde1951f, type: 3}
+  - id: water
+    ru:
+    - {fileID: 8300000, guid: 65444685663b3104a9035b107facbfda, type: 3}
+    kz:
+    - {fileID: 8300000, guid: b2a37d9a9540650468c2eb84ec1af1d5, type: 3}
+  - id: what_happened
+    ru:
+    - {fileID: 8300000, guid: 958a672a2b18e5e4eab5916372338285, type: 3}
+    kz:
+    - {fileID: 8300000, guid: a84980f6a4b35f145857f043e9d61225, type: 3}
+  - id: where_leg
+    ru:
+    - {fileID: 8300000, guid: 0ee73b76ad79d564a8bf69a94ba02ec9, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 25ca15dcf01d5d64e8aacd455a52aec8, type: 3}
+  - id: will_i_die
+    ru:
+    - {fileID: 8300000, guid: 988d8a141ba059e4b8e1a928f4a6a5f6, type: 3}
+    kz:
+    - {fileID: 8300000, guid: 4536236b2a89b80489928b37a8a80381, type: 3}
+  - id: wounded
+    ru:
+    - {fileID: 8300000, guid: b42e17dd55db7304b94b6ad4e8044eae, type: 3}
+    kz:
+    - {fileID: 8300000, guid: a24e5e0091592c84b98ee457eabfdae4, type: 3}
+  groan:
+  - {fileID: 8300000, guid: 0fb8ad38dc1e89f4f907c2d40802b08f, type: 3}
+  - {fileID: 8300000, guid: 4bd70f8eb3c6b2d4db09460392e83106, type: 3}
+  - {fileID: 8300000, guid: 509fee7a7cd2f4d4aa48c185f0f68969, type: 3}
+  - {fileID: 8300000, guid: 00c8ab138436548479403ca07a7e977a, type: 3}
+  scream:
+  - {fileID: 8300000, guid: e24ad13e0f07bd841a5775d784eb366c, type: 3}
+  - {fileID: 8300000, guid: fde2519db26db8d4ca0f778e761c6644, type: 3}
+  - {fileID: 8300000, guid: c9dabe114f3d1494f8097f7a68e11fff, type: 3}
+  - {fileID: 8300000, guid: 8e88086d60fa8e444910c02aa8d7b799, type: 3}
+  gasp:
+  - {fileID: 8300000, guid: 8704565cab0a6fd4aada9a3de18ab7f0, type: 3}
+  - {fileID: 8300000, guid: 7e3aa7c8dc4bf0040be1bc9b09506f04, type: 3}
+  - {fileID: 8300000, guid: 2191b9756a25b7d4185f56c7d9da337e, type: 3}
+  - {fileID: 8300000, guid: 0675ad1497d751f47a763897eace913d, type: 3}
+  cough:
+  - {fileID: 8300000, guid: 0ceaead6e79975443bdc84a380fc56dc, type: 3}
+  - {fileID: 8300000, guid: 7e33e270a98e68248b43f2756831a4f6, type: 3}
+  - {fileID: 8300000, guid: 86c6f3cda6af67f479d3edfa3e50913e, type: 3}
+  - {fileID: 8300000, guid: 8d8b88adbf8d30c4d97c0c10994616d8, type: 3}
+  breathHeavy:
+  - {fileID: 8300000, guid: 817b9f26b982a774fb6e696c324d2891, type: 3}
+  - {fileID: 8300000, guid: 9b9e663d9d92a7947a7aeea43bc4a21e, type: 3}
+  - {fileID: 8300000, guid: 581731cbd7b4ac14982cf145455009fc, type: 3}
+  snore:
+  - {fileID: 8300000, guid: 4ba349e4c6fc80a43b1df6689e1c9f88, type: 3}
+  heartbeat:
+  - {fileID: 8300000, guid: 872cebdef819be342b691dbe303d8be7, type: 3}
+  - {fileID: 8300000, guid: 9a5ab282b92ed0241b1af8ba60e8bb6d, type: 3}
+  - {fileID: 8300000, guid: 976004565051f0a40b99708e15cbe1ee, type: 3}

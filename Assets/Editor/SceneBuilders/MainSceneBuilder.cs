@@ -1,5 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using FieldMedic.Casualty;
+using FieldMedic.Casualty.Blood;
 using FieldMedic.Input;
 using FieldMedic.Interaction;
 using FieldMedic.Util;
@@ -14,7 +16,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
     /// <summary>
     /// Generates Assets/Scenes/Main.unity: OVRCameraRig (floor origin) + desktop simulator, two hands
     /// (HandRig + HandGrabber + placeholder glove), a night trench placeholder lit by the moon, and a few
-    /// grabbable / pressable test props. Idempotent — the scene is rebuilt from scratch every run.
+    /// grabbable / pressable test props. Idempotent вЂ” the scene is rebuilt from scratch every run.
     /// Batch: -executeMethod FieldMedic.EditorTools.SceneBuilders.MainSceneBuilder.Build
     /// </summary>
     public static class MainSceneBuilder
@@ -44,6 +46,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var rig = BuildRig(out var sim);
             BuildHands(rig, sim);
             BuildProps();
+            BuildCasualty();
             BuildBookmarks();
 
             RenderSettings.sun = moon;
@@ -246,6 +249,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 hr.desktop = sim;
                 go.AddComponent<HandGrabber>();
                 BuildGloveVisual(go.transform, side, glove);
+                var boh = go.AddComponent<BloodOnHands>();
+                boh.gloves = go.GetComponentsInChildren<Renderer>();
             }
         }
 
@@ -343,6 +348,19 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return go.AddComponent<Grabbable>();
         }
 
+        // ---------------------------------------------------------------- casualty
+        public static readonly Vector3 ErlanPosition = new Vector3(1.9f, 0f, -0.15f);
+
+        static void BuildCasualty()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(CasualtyAssetBuilder.PrefabPath);
+            if (prefab == null) { Debug.LogWarning("[FMVR] Erlan prefab missing - run CasualtyAssetBuilder.BuildAll"); return; }
+            var erlan = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            erlan.name = "Erlan";
+            // crouched at the front wall, watching the field (+Z), 2 m to the player's right
+            erlan.transform.SetPositionAndRotation(ErlanPosition, Quaternion.Euler(0f, -25f, 0f));
+        }
+
         // ---------------------------------------------------------------- camera bookmarks
         static void BuildBookmarks()
         {
@@ -351,6 +369,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Bookmark(root, "s1_main", new Vector3(-0.9f, 1.75f, -0.75f), new Vector3(0.15f, 0.55f, 0.62f), 62f);
             Bookmark(root, "s1_props", new Vector3(0.05f, 1.05f, 0.05f), new Vector3(0.3f, 0.52f, 0.64f), 55f);
             Bookmark(root, "s1_trench", new Vector3(-6f, 1.9f, 0f), new Vector3(2f, 0.6f, 0.2f), 60f);
+            Bookmark(root, "s2_erlan_idle", ErlanPosition + new Vector3(-1.5f, 1.3f, -0.6f), ErlanPosition + new Vector3(0f, 0.65f, 0f), 50f);
         }
 
         static void Bookmark(Transform root, string name, Vector3 pos, Vector3 lookAt, float fov)

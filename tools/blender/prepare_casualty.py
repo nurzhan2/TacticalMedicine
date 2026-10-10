@@ -29,6 +29,7 @@ CHAR_DIR = os.path.join(ROOT, "Assets", "Art", "Characters", "Erlan")
 GEAR_DIR = os.path.join(ROOT, "Assets", "Art", "Gear")
 TEX_DIR = os.path.join(CHAR_DIR, "Textures")
 MAX_TRIS = 40000
+INCLUDE_PC = False
 random.seed(7)
 
 
@@ -526,10 +527,13 @@ def main():
     def to_unity(p):
         return [round(-p[0], 4), round(p[2], 4), round(-p[1], 4)]
     out = {"bones_rest_unity": {k: to_unity(v) for k, v in attach.items()},
-           "drag_handle_unity": to_unity((0, pcinfo["back_y"] + 0.045, pcinfo["plate_top"] - 0.005)),
-           "ifak_unity": to_unity((-pcinfo["cummerbund_x"] * 0.62, pcinfo["front_y"] + 0.02, pcinfo["cummerbund_z"] + 0.0)),
+           "drag_handle_unity": to_unity((0, pcinfo["back_y"] + (0.045 if INCLUDE_PC else 0.0), pcinfo["plate_top"] - (0.005 if INCLUDE_PC else 0.06))),
+           "ifak_unity": to_unity((-pcinfo["cummerbund_x"] * 0.55, pcinfo["front_y"] + (0.02 if INCLUDE_PC else 0.04), pcinfo["cummerbund_z"] - 0.03)),
            "plate_carrier": {k: round(v, 4) for k, v in pcinfo.items()}}
-    export_fbx(os.path.join(CHAR_DIR, "Erlan.fbx"), [arm, body, pc], armature=True)
+    # The Swat model's own (retinted) vest reads as the plate carrier; the procedural shell is only used to
+    # measure the torso and is not exported (it floated off the back in bent poses). INCLUDE_PC re-enables it.
+    export_objs = [arm, body] + ([pc] if INCLUDE_PC else [])
+    export_fbx(os.path.join(CHAR_DIR, "Erlan.fbx"), export_objs, armature=True)
 
     # gear, one file each
     for builder, fname in ((build_drag_handle, "DragHandle"), (build_ifak, "IFAK_Pouch"), (build_helmet, "Helmet")):

@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e20c40bce876b84a9cc76cf84c2ce68, type: 3}
+  m_Name: BloodSettings
+  m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Casualty.Blood.BloodSettings
+  particle: {fileID: 2100000, guid: 738c9eb2d4f1b334eb46ef44f8dcb6f9, type: 2}
+  pool: {fileID: 2100000, guid: 2b42d8f487b32ad4380267b9c39991cb, type: 2}
+  woundFragment: {fileID: 2100000, guid: b689bc29e1afbb84c86643f62ecba5e6, type: 2}
+  woundRagged: {fileID: 2100000, guid: 07dbad0a9b0e0b74887a9af931100582, type: 2}
+  woundChestEntry: {fileID: 2100000, guid: 07e45ccfc7a6bd14b841fc8af40a5ed5, type: 2}
+  woundExit: {fileID: 2100000, guid: 4842521eabccaaf48a55684c542938fe, type: 2}
+  stumpFlesh: {fileID: 2100000, guid: eeb2fa51cafb2b84c97ce7ac5ff2ff07, type: 2}
+  stumpPrefab: {fileID: 919132149155446097, guid: 6f55c577834ba8a49bb732ce249f05b2, type: 3}
+  poolThickness: 0.0035
+  maxPoolRadius: 0.9
+  maxJetParticles: 400

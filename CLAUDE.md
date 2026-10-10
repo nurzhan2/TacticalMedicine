@@ -42,3 +42,7 @@ Read before any work: this file, `docs/GDD.md` (game design — the source of tr
 - Update `docs/PROGRESS.md` (append, dated, short) after each sub-step: what was done, what's next, known issues. This file is how the next session continues if you get interrupted (usage limits happen — work in small resumable steps).
 - Do NOT touch anything outside `C:\TacticalMedicine` except temp files in `%TEMP%`, Downloads (read/move the asset files described in the stage prompts) and the Blender/Unity executables.
 - If something is blocked (e.g. a package/API doesn't exist), find a workaround, note it in PROGRESS.md, continue. Never stop early: if your stage's done-criteria are met and time remains, improve quality within the stage scope (visual polish, more tests, realism details).
+
+## Disk guard (added by night supervisor 05:30)
+An Android IL2CPP build leaves ~8 GB in Library\Bee (Bee\Android, Bee\artifacts\Android, Bee\artifacts\objcopy_*). Before any heavy step check free space on C:. If it is below 5 GB and no Unity process is running, delete those Bee Android folders (the next build becomes a full rebuild, ~20 min). Never build more often than needed; prefer EditMode/PlayMode tests and editor screenshots for iteration.
+
