@@ -292,7 +292,7 @@ namespace FieldMedic.Medical
                 timeSkipMinutes = new[] { 30, 60, 120, 240 },
                 skillsRu = new[] { "Переоценка жгута ≤ 2 ч", "Условия конверсии: нет шока, нет ампутации, < 6 ч", "Тампон + давящая повязка, затем ослабить жгут", "Тепло, не давать спать, записи времени" },
                 skillsKz = new[] { "Жгутты 2 сағатқа дейін бағалау", "Ауыстыру шарттары", "Таңғыш, сосын жгутты босату", "Жылу, ұйықтатпау" },
-                incidentDelay = 2f, evacMinutes = 360f, clockHour = 22, clockMinute = 25,
+                incidentDelay = 2f, evacMinutes = 30f, clockHour = 22, clockMinute = 25,
             },
         };
     }

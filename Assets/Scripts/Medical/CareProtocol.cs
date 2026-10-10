@@ -303,7 +303,7 @@ namespace FieldMedic.Medical
                     return new(Severity.Ok, "tq_marked", "Время наложения жгута записано.");
 
                 case MedAction.ThermalBlanket:
-                    if (!patient.AllBleedingControlled || patient.pneumo == PneumoState.Tension)
+                    if (CriticalBleedOpen || patient.pneumo == PneumoState.Tension)
                         return new(Severity.Error, "blanket_early", Penalty["blanket_early"].text);
                     patient.ApplyBlanket();
                     return new(Severity.Ok, "blanket", "Раненый укрыт: профилактика гипотермии.");

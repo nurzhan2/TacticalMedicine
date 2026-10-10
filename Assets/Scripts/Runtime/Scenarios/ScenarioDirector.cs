@@ -199,6 +199,7 @@ namespace FieldMedic.Scenarios
             }
             ApplyWounds(false);
             casualty.Hit(def.hit);
+            casualty.Protocol.phase = def.startPhase;
             Timeline.Incident();
             Timeline.CasualtyDown(def.startPhase);
             if (def.startPhase == Phase.CareUnderFire && ThreatSystem.Instance != null) ThreatSystem.Instance.underFire = true;
@@ -235,7 +236,7 @@ namespace FieldMedic.Scenarios
                     _preTq.allowConversion = def.timeSkipMinutes.Length > 0;
                     casualty.Protocol.tourniquetTimeMarked = tq.timeMarked;
                 }
-                foreach (var w in p.wounds) w.discovered = true; // known from the earlier treatment
+                foreach (var w in p.wounds) { w.discovered = true; casualty.Interaction.Expose(w.region); } // cut open at the earlier treatment
             }
             if (alreadyDown)
             {
@@ -268,7 +269,8 @@ namespace FieldMedic.Scenarios
                 casualty.simulationSpeed = Mathf.Max(casualty.simulationSpeed, Timeline.evacTimeScale);
                 evacDt = dt * casualty.simulationSpeed;
             }
-            var due = Timeline.Tick(dt, proto.phase, proto.medevacRequested, casualty.Patient.outcome, _hit, evacDt);
+            // the schedule follows the casualty's clock (tests and time-compression speed it up together)
+            var due = Timeline.Tick(dt * Mathf.Max(0f, Timeline.State == ScenarioState.Evacuation ? 1f : casualty.simulationSpeed), proto.phase, proto.medevacRequested, casualty.Patient.outcome, _hit, evacDt);
             foreach (var c in due) Complication(c);
             if (Timeline.State == ScenarioState.Debrief) return;
             WatchRules(dt);
@@ -370,7 +372,7 @@ namespace FieldMedic.Scenarios
             }
 
             // unconscious, supine, airway unprotected
-            if (casualty.IsDown && p.AVPU >= Consciousness.Pain && p.AirwayCompromised)
+            if (casualty.IsDown && p.AVPU >= Consciousness.Pain && p.AirwayCompromised && p.LossFraction < 0.3f)
             {
                 _supineUnconscious += dt * casualty.simulationSpeed;
                 if (_supineUnconscious > 90f && !proto.penalties.ContainsKey("left_supine")) proto.ScenarioMistake("left_supine");
@@ -452,9 +454,9 @@ namespace FieldMedic.Scenarios
         {
             var proto = casualty.Protocol;
             var p = casualty.Patient;
+            if (_slipDone && _preTq != null && !_preTq.Retightened && !_preTq.State.FullOcclusion) proto.ScenarioMistake("tq_not_rechecked");
             if (Timeline.EndReason == "evacuated")
             {
-                if (_slipDone && _preTq != null && !_preTq.Retightened && !_preTq.State.FullOcclusion) proto.ScenarioMistake("tq_not_rechecked");
                 if (p.coreTempC < 35.5f && !p.insulated) proto.ScenarioMistake("hypothermia");
                 if (p.vomitInMouth) proto.ScenarioMistake("airway_not_cleared");
                 if (_preTq != null && _preTq.Slipped == false && Run.def.timeSkipMinutes.Length > 0 && p.conversionFailed && !_preTq.State.Locked)

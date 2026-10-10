@@ -518,6 +518,56 @@ namespace FieldMedic.Scenarios.Bots
             yield return Move(right, right.PalmPosition + Vector3.up * 0.2f);
         }
 
+        /// <summary>Thermal blanket: both hands pull the pack apart (unfolds), carry it over his hips, let go.</summary>
+        public IEnumerator Blanket(BlanketItem b, CasualtyController c)
+        {
+            lastStep = "blanket";
+            yield return Grab(left, b);
+            yield return Grab(right, b);
+            Vector3 mid = (left.PalmPosition + right.PalmPosition) * 0.5f;
+            Vector3 side = Vector3.Cross(Vector3.up, c.rig.BodyUp).sqrMagnitude > 0.01f ? Vector3.Cross(Vector3.up, c.rig.BodyUp).normalized : Vector3.right;
+            for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f)
+            {
+                SetPalm(left, mid - side * 0.35f * t);
+                SetPalm(right, mid + side * 0.35f * t);
+                yield return null;
+            }
+            for (int k = 0; k < 5 && !b.Unfolded; k++) yield return Frame();
+            Vector3 hips = c.rig.Bone(HumanBodyBones.Hips).position + Vector3.up * 0.45f;
+            yield return Move(left, hips - side * 0.35f, false, 1.5f);
+            yield return Move(right, hips + side * 0.35f, false, 1.5f);
+            yield return Release(left);
+            yield return Release(right);
+            yield return Move(left, left.PalmPosition + Vector3.up * 0.2f);
+            yield return Move(right, right.PalmPosition + Vector3.up * 0.2f);
+        }
+
+        /// <summary>Slipped band (S7) or failed conversion: grab the rod, twist until the bleeding stops, lock.</summary>
+        public IEnumerator Retighten(TourniquetCAT cat, HandGrabber h = null)
+        {
+            h ??= right;
+            lastStep = "retighten";
+            var rod = cat.RodHandle;
+            if (rod == null || !rod.gameObject.activeInHierarchy) { lastStep = "retighten: rod not available"; yield break; }
+            yield return Grab(h, rod, rod.transform.position);
+            for (int k = 0; k < 16 && (!cat.State.FullOcclusion || cat.State.HalfTurns < 4); k++) yield return Twist(h, cat.transform.up, 90f);
+            float err = cat.State.LockError;
+            if (err > 20f) yield return Twist(h, cat.transform.up, 180f - (Mathf.Abs(cat.State.windlassDegrees) % 180f) + 4f);
+            yield return Release(h);
+        }
+
+        /// <summary>Conversion (S8): grab the locked rod and unwind it (≥ 270°) — the band is loosened if allowed.</summary>
+        public IEnumerator ConvertTourniquet(TourniquetCAT cat, HandGrabber h = null)
+        {
+            h ??= right;
+            lastStep = "convert";
+            for (int k = 0; k < 10 && !cat.RodHandle.gameObject.activeInHierarchy; k++) yield return Frame();
+            var rod = cat.RodHandle;
+            yield return Grab(h, rod, rod.transform.position);
+            yield return Twist(h, cat.transform.up, -360f, 240f);
+            yield return Release(h);
+        }
+
         public IEnumerator LiftLeg(CasualtyController c, Limb leg, float height, float holdSeconds, HandGrabber h = null)
         {
             h ??= left;
