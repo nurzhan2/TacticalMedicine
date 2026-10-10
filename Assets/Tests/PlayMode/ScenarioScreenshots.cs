@@ -77,12 +77,22 @@ namespace FieldMedic.Tests
             Debug.Log("[FMVR] screenshot " + name);
         }
 
+        /// <summary>The desktop hands, belt IFAK and radio float in front of the eyes: hide them for presentation shots.</summary>
+        static void HidePlayerKit(bool hide)
+        {
+            foreach (var n in new[] { "Hands", "PlayerIFAK", "Radio" })
+            {
+                var g = GameObject.Find(n);
+                if (g != null) foreach (var r in g.GetComponentsInChildren<Renderer>()) r.enabled = !hide;
+            }
+        }
+
         static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
 
         static void BoardShot(MenuBoard b, string name)
         {
             var t = b.transform;
-            Vector3 from = t.position - t.forward * 1.25f + Vector3.up * 0.12f;
+            Vector3 from = t.position - t.forward * 1.25f * t.localScale.x + Vector3.up * 0.12f * t.localScale.x;
             Shot(name, from, t.position, 52f);
         }
 
@@ -97,6 +107,7 @@ namespace FieldMedic.Tests
             Assert.That(d, Is.Not.Null);
             Assert.That(d.InMenu, Is.True);
             var b = d.board;
+            HidePlayerKit(true);
             yield return new WaitForSeconds(0.5f);
             BoardShot(b, "s5_menu_main");
             b.ShowScenarios(); yield return Frames(5);
@@ -142,11 +153,16 @@ namespace FieldMedic.Tests
             yield return new WaitForSeconds(id == "S7" || id == "S8" ? 1f : 6f); // pool grows, blood soaks
             Time.timeScale = 1f;
             var hips = c.rig.Bone(HumanBodyBones.Hips).position;
-            Vector3 side = Vector3.Cross(Vector3.up, c.rig.BodyUp).normalized;
-            if (side.sqrMagnitude < 0.01f) side = Vector3.right;
-            Vector3 from = hips + side * 1.0f + Vector3.up * 0.95f - c.rig.BodyUp * 0.3f;
-            if (Physics.Linecast(hips + Vector3.up * 0.3f, from)) from = hips - side * 1.0f + Vector3.up * 0.95f - c.rig.BodyUp * 0.3f;
+            // pick a camera spot with a clear line to him: beside, at the feet or at the head end
+            Vector3 along = Vector3.ProjectOnPlane(c.rig.BodyUp, Vector3.up).normalized;
+            Vector3 side = Vector3.Cross(Vector3.up, along).normalized;
+            Vector3 from = hips - along * 1.0f + Vector3.up * 1.05f;
+            foreach (var cand in new[] { hips + side * 0.9f + Vector3.up * 1.0f - along * 0.3f, hips - side * 0.9f + Vector3.up * 1.0f - along * 0.3f,
+                                         hips - along * 1.1f + Vector3.up * 1.0f, hips + along * 1.3f + Vector3.up * 1.0f })
+                if (!Physics.Linecast(hips + Vector3.up * 0.35f, cand)) { from = cand; break; }
+            HidePlayerKit(true);
             Shot($"s5_{id.ToLower()}_{Names[int.Parse(id.Substring(1))]}", from, hips + Vector3.up * 0.05f, 58f, 0.6f);
+            HidePlayerKit(false);
             if (id == "S3")
             {
                 var h = d.head.position;
@@ -155,10 +171,13 @@ namespace FieldMedic.Tests
             if (id == "S1")
             {
                 // debrief: evacuate quickly and render the board that comes to the player
+                c.Protocol.Perform(MedAction.MoveToCover);
+                yield return Frames(3);
                 c.Protocol.Perform(MedAction.MedevacRequest);
                 d.Timeline.evacTimeScale = 600f;
                 while (d.Report == null && Time.realtimeSinceStartup - t0 < 90f) yield return null;
                 yield return Frames(5);
+                HidePlayerKit(true);
                 BoardShot(d.board, "s5_debrief");
             }
         }
@@ -174,8 +193,10 @@ namespace FieldMedic.Tests
             var c = t.director.casualty;
             var hips = c.rig.Bone(HumanBodyBones.Hips).position;
             var panel = GameObject.Find("TrainingPanel").transform;
-            Vector3 from = panel.position - panel.forward * 1.6f + Vector3.up * 0.15f;
-            Shot("s5_training_tq", from, Vector3.Lerp(panel.position, hips, 0.45f), 62f, 0.5f);
+            HidePlayerKit(true);
+            Vector3 from = panel.position - panel.forward * 1.1f + Vector3.up * 0.25f;
+            Shot("s5_training_tq", from, Vector3.Lerp(panel.position, hips, 0.25f), 70f, 1.6f);
+            foreach (var d in ScenarioCatalog.All) PlayerPrefs.DeleteKey("fm_best_" + d.id); // screenshot runs are not records
         }
     }
 }

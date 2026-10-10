@@ -333,7 +333,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             }
             d.spots = new[]
             {
-                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FireBay, casualty = Anchor("Spot_FireBay_Casualty", ErlanPosition, -25f), player = Anchor("Spot_FireBay_Player", new Vector3(0.2f, 0f, -0.1f), 60f) },
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FireBay, casualty = Anchor("Spot_FireBay_Casualty", ErlanPosition, 90f), player = Anchor("Spot_FireBay_Player", new Vector3(0.2f, 0f, -0.1f), 60f) },
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.CommTrench, casualty = Anchor("Spot_Comm_Casualty", new Vector3(-2.95f, 0f, -4.6f), 168f), player = Anchor("Spot_Comm_Player", new Vector3(-3.1f, 0f, -2.3f), 175f) },
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FarBay, casualty = Anchor("Spot_Far_Casualty", new Vector3(3.6f, 0f, 0.05f), 90f), player = Anchor("Spot_Far_Player", new Vector3(2.7f, 0f, -0.1f), 90f) },
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.Dugout, casualty = Anchor("Spot_Dugout_Casualty", new Vector3(-8.0f, 0.05f, -1.55f), 90f), player = Anchor("Spot_Dugout_Player", new Vector3(-7.1f, 0f, -1.2f), 255f) },

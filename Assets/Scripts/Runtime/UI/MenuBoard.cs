@@ -78,7 +78,7 @@ namespace FieldMedic.UI
         /// <summary>Back to the dugout wall (after a debrief was shown in front of the player).</summary>
         public void ReturnHome()
         {
-            if (_homeSet) transform.SetPositionAndRotation(_homePos, _homeRot);
+            if (_homeSet) { transform.SetPositionAndRotation(_homePos, _homeRot); transform.localScale = Vector3.one; }
         }
 
         TextMesh Txt(string text, float x, float y, float h, Color c, TextAnchor a = TextAnchor.UpperLeft, TextAlignment al = TextAlignment.Left) =>
@@ -151,10 +151,14 @@ namespace FieldMedic.UI
             Header(GameSettings.T("Брифинг", "Брифинг"));
             bool kz = GameSettings.KZ;
             Txt($"S{def.number}  {def.Title(kz)}", -W / 2 + 0.06f, H / 2 - 0.15f, 0.04f, Amber);
-            Txt(WorldUI.Wrap(def.Briefing(kz), 70), -W / 2 + 0.06f, H / 2 - 0.23f, 0.019f, Ink);
+            var brief = Txt(WorldUI.Wrap(def.Briefing(kz), 70), -W / 2 + 0.06f, H / 2 - 0.23f, 0.019f, Ink);
+            float sy = H / 2 - 0.23f - brief.text.Split('\n').Length * 0.03f - 0.04f;
             string sk = string.Join("\n", (kz ? def.skillsKz : def.skillsRu).Select(s => "•  " + s));
-            Txt(GameSettings.T("Навыки:", "Дағдылар:"), -W / 2 + 0.06f, -0.02f, 0.02f, Dim);
-            Txt(sk, -W / 2 + 0.06f, -0.06f, 0.018f, new Color(0.7f, 0.9f, 0.62f));
+            Txt(GameSettings.T("Навыки:", "Дағдылар:"), -W / 2 + 0.06f, sy, 0.02f, Dim);
+            Txt(sk, -W / 2 + 0.06f, sy - 0.04f, 0.018f, new Color(0.7f, 0.9f, 0.62f));
+            Txt(GameSettings.T("Эвакуация: ", "Эвакуация: ") + def.evacMinutes.ToString("0") + GameSettings.T(" мин после запроса по радио", " мин") +
+                (def.timeSkipMinutes.Length > 0 ? GameSettings.T("   ·   часы на руке: «+» — следующая веха", "   ·   сағат: «+»") : ""),
+                -W / 2 + 0.06f, -H / 2 + 0.1f, 0.015f, Dim);
             if (!interactive) return;
             Btn(GameSettings.T("ПУСК", "БАСТА"), W / 2 - 0.2f, -0.2f, 0.2f, new Color(0.62f, 0.16f, 0.1f),
                 () => Go("scenario:" + def.id, () => ScenarioLaunch.Scenario(def.id, ScenarioRandom())),
@@ -211,10 +215,12 @@ namespace FieldMedic.UI
             RememberHome();
             if (viewer != null)
             {
-                Vector3 fwd = viewer.forward; fwd.y = 0f;
-                if (fwd.sqrMagnitude < 1e-4f) fwd = Vector3.forward;
-                fwd.Normalize();
-                transform.SetPositionAndRotation(viewer.position + fwd * 1.15f + Vector3.down * 0.25f, Quaternion.LookRotation(fwd));
+                // in a 1.2 m wide trench "in front of the eyes" is often a wall: take the freest direction
+                Vector3 eye = viewer.position + Vector3.down * 0.25f;
+                Vector3 fwd = WorldUI.FreeDirection(eye, viewer.forward, 2f, out float clear);
+                float dist = Mathf.Clamp(clear - 0.2f, 0.6f, 0.85f);
+                transform.SetPositionAndRotation(eye + fwd * dist, Quaternion.LookRotation(fwd));
+                transform.localScale = Vector3.one * 0.68f; // 1.0 m wide: fits between the trench walls, same angular size
             }
             ShownReport = r;
             Clear(); Page = "debrief"; _refresh = () => ShowDebrief(r);

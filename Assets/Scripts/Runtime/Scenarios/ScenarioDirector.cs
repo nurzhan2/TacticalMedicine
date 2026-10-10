@@ -465,7 +465,7 @@ namespace FieldMedic.Scenarios
             casualty.autoTick = Timeline.EndReason != "evacuated"; // he is handed over; keep a dead/abandoned one as is
             Report = DebriefBuilder.Build(Run.def, proto, Timeline.EndReason, ScenarioClock.Format, IncidentPatientTime, _hitText, GameSettings.KZ);
             int best = GameSettings.BestScore(Run.def.id);
-            if (DebriefBuilder.UpdateBest(Report, Mathf.Max(0, best)) || best < 0) GameSettings.SetBestScore(Run.def.id, Report.bestScore);
+            if ((DebriefBuilder.UpdateBest(Report, Mathf.Max(0, best)) || best < 0) && !testMode) GameSettings.SetBestScore(Run.def.id, Report.bestScore);
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.forceDroneOverhead = false; }
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.3f;
             Log($"debrief {Run.def.id}: {Timeline.EndReason}, score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");

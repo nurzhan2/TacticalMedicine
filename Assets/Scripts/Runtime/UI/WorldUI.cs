@@ -120,6 +120,29 @@ namespace FieldMedic.UI
             return c;
         }
 
+        /// <summary>
+        /// Horizontal direction from `origin` with the most free space (trench walls!), preferring `preferred`.
+        /// Returns the direction and how far it is clear (capped at maxDist).
+        /// </summary>
+        public static Vector3 FreeDirection(Vector3 origin, Vector3 preferred, float maxDist, out float clear, Vector3? avoid = null)
+        {
+            preferred.y = 0f;
+            if (preferred.sqrMagnitude < 1e-4f) preferred = Vector3.forward;
+            preferred.Normalize();
+            Vector3 best = preferred;
+            float bestScore = float.MinValue;
+            clear = 0f;
+            for (int i = 0; i < 24; i++)
+            {
+                Vector3 d = Quaternion.Euler(0f, i * 15f, 0f) * preferred;
+                float free = Physics.Raycast(origin, d, out var hit, maxDist, ~0, QueryTriggerInteraction.Ignore) ? hit.distance : maxDist;
+                float score = free + 0.35f * Vector3.Dot(d, preferred);
+                if (avoid.HasValue) score -= 0.6f * Mathf.Max(0f, Vector3.Dot(d, avoid.Value));
+                if (score > bestScore) { bestScore = score; best = d; clear = free; }
+            }
+            return best;
+        }
+
         public static string Hex(Color c) => ColorUtility.ToHtmlStringRGB(c);
     }
 }

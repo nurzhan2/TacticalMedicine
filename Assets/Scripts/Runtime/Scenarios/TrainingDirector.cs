@@ -53,6 +53,7 @@ namespace FieldMedic.Scenarios
             muted |= director.testMode;
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.25f;
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.enableHits = false; }
+            if (Headlamp.Instance != null) Headlamp.Instance.SetMode(LightMode.White); // training: no threat, white light allowed
 
             var spot = director.spots.FirstOrDefault(s => s.spot == CasualtySpot.FireBay);
             if (spot != null && spot.casualty != null) C.transform.SetPositionAndRotation(spot.casualty.position, spot.casualty.rotation);
@@ -200,7 +201,9 @@ namespace FieldMedic.Scenarios
             Vector3 viewer = director.head != null ? director.head.position : hips + Vector3.left;
             Vector3 toV = viewer - hips; toV.y = 0f;
             Vector3 side = Vector3.Cross(Vector3.up, toV.normalized);
-            _panel.position = hips + side * 0.9f + Vector3.up * 1.15f;
+            // beside him where the trench is open (not inside a wall), not between him and the trainee
+            Vector3 dir = WorldUI.FreeDirection(hips + Vector3.up * 0.8f, side, 1.5f, out float clear, toV.normalized);
+            _panel.position = hips + dir * Mathf.Clamp(clear - 0.25f, 0.5f, 1.0f) + Vector3.up * 0.8f;
             Vector3 face = _panel.position - viewer; face.y = 0f;
             _panel.rotation = Quaternion.LookRotation(face.sqrMagnitude > 1e-4f ? face.normalized : Vector3.forward);
             WorldUI.Quad(_panel, "Bg", new Vector3(0f, 0f, 0.01f), new Vector2(0.62f, 0.5f), WorldUI.Unlit(new Color(0.02f, 0.03f, 0.025f)));

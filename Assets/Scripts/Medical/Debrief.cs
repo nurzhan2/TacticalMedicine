@@ -84,7 +84,7 @@ namespace FieldMedic.Medical
                 if (!p.wounds.Any(w => w.type == WoundType.TraumaticAmputation && w.LimbId == kv.Key))
                     limbs.Add(LimbName(kv.Key, kz) + ": " + TourniquetConversion.LimbOutcome(kv.Value + (endReason == "evacuated" ? 3600f : 0f), false, false, kz));
             if (p.tourniquetConverted) limbs.Add(kz ? "Жгут ауыстырылды — аяқ сақталады" : "Жгут конвертирован — конечность сохранена");
-            r.limbOutcome = limbs.Count == 0 ? (kz ? "Аяқ-қолдар сақталды" : "Конечности сохранены") : string.Join("; ", limbs);
+            r.limbOutcome = limbs.Count == 0 ? (kz ? "барлығы сақталды" : "все сохранены") : string.Join("; ", limbs);
 
             // timeline: protocol log (skip noise)
             foreach (var e in protocol.log)
