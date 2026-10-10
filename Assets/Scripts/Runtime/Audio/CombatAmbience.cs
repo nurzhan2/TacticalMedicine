@@ -170,13 +170,43 @@ namespace FieldMedic.Audio
             StartCoroutine(DropRoutine(position));
         }
 
+        /// <summary>Height of the drop drone's hover (m above the aim point). 15 m → 1.75 s fall.</summary>
+        public const float DropHeight = 15f;
+        /// <summary>Seconds from <see cref="PlayDropGrenade"/> to the blast (operator pause + free fall).</summary>
+        public static float DropDelay => 0.55f + EnvMath.FallTime(DropHeight);
+
         IEnumerator DropRoutine(Vector3 p)
         {
-            PlayAt(Pick(droneRecon), p + Vector3.up * 30f, 0.5f, 6f, 200f);
-            yield return new WaitForSeconds(1.2f);
+            DroneAudio drone = null;
+            foreach (var d in _drones)
+                if (d.Active && d.kind == DroneKind.Recon && (drone == null || (d.transform.position - p).sqrMagnitude < (drone.transform.position - p).sqrMagnitude)) drone = d;
+            if (drone == null) PlayAt(Pick(droneRecon), p + Vector3.up * 30f, 0.5f, 6f, 200f);
+            yield return new WaitForSeconds(0.55f);
+            // the clamp opens: a visible VOG falls straight down from the hovering drone
+            Vector3 from = drone != null && drone.Hovering ? drone.transform.position + Vector3.down * 0.08f : p + Vector3.up * DropHeight;
+            float fall = EnvMath.FallTime(from.y - p.y);
+            var m = FallingMunition.Spawn(from, p);
+            if (drone != null) drone.ReleaseHover();
+            float whistleAt = Mathf.Max(0f, fall - 1.1f);
+            yield return new WaitForSeconds(whistleAt);
             PlayAt(Pick(incomingWhistle), p + Vector3.up * 6f, 0.35f, 3f, 60f, 1.6f);
-            yield return new WaitForSeconds(1.1f);
+            yield return new WaitForSeconds(fall - whistleAt);
+            if (m != null) Destroy(m.gameObject);
             Detonate(p, 0.6f);
+        }
+
+        /// <summary>A random FPV hunting in the field: you hear (and may see) it dive, then the hit 30–70 m out.</summary>
+        IEnumerator AmbientFpv(float life)
+        {
+            var target = ListenerPos + Polar(Random.Range(-60f, 60f), Random.Range(30f, 70f));
+            target.y = 1.75f;
+            var d = StartDrone(DroneKind.Fpv, life);
+            if (d == null) yield break;
+            d.DiveAt(target);
+            yield return new WaitForSeconds(life * 0.97f);
+            if (!d.Active) yield break;
+            d.Stop();
+            Detonate(target + Vector3.up * 0.3f, 0.5f);
         }
 
         /// <summary>Incoming artillery/mortar: whistle grows for ~2 s, then the blast (near or far by distance).</summary>
@@ -285,7 +315,7 @@ namespace FieldMedic.Audio
                 float r = Random.value;
                 if (r < 0.5f) StartDrone(DroneKind.Recon, Random.Range(35f, 70f));
                 else if (r < 0.8f) StartDrone(DroneKind.Shahed, Random.Range(45f, 70f));
-                else StartDrone(DroneKind.Fpv, Random.Range(9f, 14f));
+                else StartCoroutine(AmbientFpv(Random.Range(5f, 7f)));
             }
         }
 

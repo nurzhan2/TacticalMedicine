@@ -173,12 +173,15 @@ namespace FieldMedic.Scenarios
             switch (def.incident)
             {
                 case IncidentKind.DroneDrop:
-                    if (amb != null) amb.StartDrone(DroneKind.Recon, 45f);
-                    yield return Wait(3f);
-                    if (amb != null) amb.PlayDropGrenade(new Vector3(c.x + 0.9f, 0.05f, c.z + 0.25f));
+                {
                     blast = new Vector3(c.x + 0.9f, 0.05f, c.z + 0.25f);
-                    yield return Wait(2.3f);
+                    var recon = amb != null ? amb.StartDrone(DroneKind.Recon, 45f) : null;
+                    if (recon != null) recon.HoverOver(blast, CombatAmbience.DropHeight); // it comes down over the trench
+                    yield return Wait(3f);
+                    if (amb != null) amb.PlayDropGrenade(blast);
+                    yield return Wait(CombatAmbience.DropDelay);
                     break;
+                }
                 case IncidentKind.SniperShot:
                     if (amb != null) { amb.PlaySniperCrack(); amb.BulletImpact(c + Vector3.up * 1.3f); }
                     break;
@@ -192,11 +195,15 @@ namespace FieldMedic.Scenarios
                     yield return Wait(2.4f);
                     break;
                 case IncidentKind.Fpv:
-                    if (amb != null) amb.StartDrone(DroneKind.Fpv, 5f);
-                    yield return Wait(4.5f);
+                {
                     blast = new Vector3(c.x + 1.4f, 0.05f, c.z + 0.1f);
+                    var fpv = amb != null ? amb.StartDrone(DroneKind.Fpv, 4.6f) : null;
+                    if (fpv != null) fpv.DiveAt(blast + Vector3.up * 0.35f); // it comes over the parapet straight at you
+                    yield return Wait(4.5f);
+                    if (fpv != null) fpv.Stop();
                     if (amb != null) amb.Detonate(blast + Vector3.up * 0.35f, 0.7f);
                     break;
+                }
                 case IncidentKind.GlideBomb:
                     if (amb != null) amb.Detonate(new Vector3(c.x + 14f, 1.75f, c.z + 22f), 2.5f);
                     if (amb != null) amb.NearBlast(6f, 1f);

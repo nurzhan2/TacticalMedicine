@@ -85,5 +85,11 @@ namespace FieldMedic.Environment
             float a = charge * 0.05f / Mathf.Max(1f, distance * distance * 0.15f);
             return Mathf.Min(a, comfortLimit);
         }
+
+        /// <summary>Free-fall time from height h (m), no drag: t = √(2h/g). A VOG dropped from 15 m lands in ~1.75 s.</summary>
+        public static float FallTime(float height) => Mathf.Sqrt(2f * Mathf.Max(0f, height) / 9.81f);
+
+        /// <summary>Where a hovering drop drone waits: straight above the aim point, nudged a little upwind of it.</summary>
+        public static Vector3 HoverPoint(Vector3 aim, float height, Vector3 wind) => aim + Vector3.up * height - new Vector3(wind.x, 0f, wind.z) * 0.15f;
     }
 }

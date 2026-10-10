@@ -1,3 +1,4 @@
+using FieldMedic.Environment;
 using UnityEngine;
 
 namespace FieldMedic.Audio
@@ -22,6 +23,16 @@ namespace FieldMedic.Audio
         Vector3 _from, _to;
         public bool Active { get; private set; }
 
+        // visible silhouette (recon + FPV; the Shahed at 450 m is only a sound)
+        DroneVisual _visual;
+        Vector3 _lastPos;
+        // recon "hover over target" mode for the VOG drop: glide down to the hover point, hold, then climb away
+        bool _hover;
+        Vector3 _hoverAt;
+        float _hoverBlend, _hoverRelease = -1f;
+        public bool Hovering => _hover && _hoverBlend > 0.98f;
+        public DroneVisual Visual => _visual;
+
         public bool IsOverhead(Vector3 player, float radius = 35f)
         {
             if (!Active || kind == DroneKind.Shahed) return false;
@@ -35,6 +46,10 @@ namespace FieldMedic.Audio
         {
             if (_src == null) _src = GetComponent<AudioSource>();
             kind = k; centre = around; lifetime = life; _age = 0f; _seed = Random.value * 100f; Active = true;
+            _hover = false; _hoverBlend = 0f; _hoverRelease = -1f;
+            if (_visual != null && _visual.Kind != k) { Destroy(_visual.gameObject); _visual = null; }
+            if (_visual == null && k != DroneKind.Shahed) _visual = DroneVisual.Build(transform, k);
+            if (_visual != null) _visual.gameObject.SetActive(true);
             _src.clip = clip;
             _src.loop = true;
             _src.spatialBlend = 1f;
@@ -60,13 +75,42 @@ namespace FieldMedic.Audio
                     break;
             }
             Step(0f);
+            _lastPos = transform.position;
             _src.Play();
+        }
+
+        /// <summary>Recon only: come down to <paramref name="height"/> m above <paramref name="aim"/> and hold there
+        /// (the operator lines up the drop on the thermal camera) until <see cref="ReleaseHover"/>.</summary>
+        public void HoverOver(Vector3 aim, float height)
+        {
+            if (kind != DroneKind.Recon) return;
+            _hover = true;
+            _hoverAt = EnvMath.HoverPoint(aim, height, new Vector3(0.6f, 0f, 0.3f));
+            _hoverRelease = -1f;
+        }
+
+        /// <summary>After the drop: climb back to the patrol orbit over a few seconds.</summary>
+        public void ReleaseHover() { if (_hover) _hoverRelease = _age; }
+
+        /// <summary>FPV only: aim the terminal dive at a point (the impact) instead of a random spot near the player.</summary>
+        public void DiveAt(Vector3 target)
+        {
+            if (kind != DroneKind.Fpv) return;
+            var d = _from - target; d.y = 0f;
+            float a = Random.Range(-0.5f, 0.5f);
+            var dir = d.sqrMagnitude > 1f ? Quaternion.Euler(0f, a * Mathf.Rad2Deg, 0f) * d.normalized : Vector3.forward;
+            _from = target + dir * 90f + Vector3.up * 20f; // ~140 km/h at the end of the dive
+            _to = target;
+            Step(0f);
+            _lastPos = transform.position;
         }
 
         public void Stop()
         {
             Active = false;
+            _hover = false;
             if (_src != null) _src.Stop();
+            if (_visual != null) _visual.gameObject.SetActive(false);
         }
 
         void Update()
@@ -85,7 +129,18 @@ namespace FieldMedic.Audio
                 {
                     float r = 18f + 10f * Mathf.Sin(_age * 0.05f + _seed);
                     float ang = _age * 0.12f + _seed;
-                    transform.position = centre + new Vector3(Mathf.Cos(ang) * r, 32f + 6f * Mathf.Sin(_age * 0.07f), 12f + Mathf.Sin(ang) * r);
+                    var orbit = centre + new Vector3(Mathf.Cos(ang) * r, 32f + 6f * Mathf.Sin(_age * 0.07f), 12f + Mathf.Sin(ang) * r);
+                    if (_hover)
+                    {
+                        bool leaving = _hoverRelease >= 0f;
+                        _hoverBlend = Mathf.MoveTowards(_hoverBlend, leaving ? 0f : 1f, dt / (leaving ? 6f : 2.5f));
+                        if (leaving && _hoverBlend <= 0f) _hover = false;
+                        // station-keeping wobble in the wind
+                        var hold = _hoverAt + new Vector3(Mathf.Sin(_age * 0.8f + _seed) * 0.25f, Mathf.Sin(_age * 1.3f) * 0.12f, Mathf.Cos(_age * 0.6f + _seed) * 0.2f);
+                        float e = Mathf.SmoothStep(0f, 1f, _hoverBlend);
+                        orbit = Vector3.Lerp(orbit, hold, e);
+                    }
+                    transform.position = orbit;
                     _src.pitch = 1f + 0.03f * Mathf.Sin(_age * 0.9f + _seed);
                     _src.volume = 0.55f * Fade(k);
                     break;
@@ -102,6 +157,11 @@ namespace FieldMedic.Audio
                     transform.position = Vector3.Lerp(_from, _to, k);
                     _src.volume = 0.9f * Fade(k);
                     break;
+            }
+            if (_visual != null && dt > 0f)
+            {
+                _visual.Pose((transform.position - _lastPos) / dt, dt);
+                _lastPos = transform.position;
             }
             if (_age >= lifetime) Stop();
         }

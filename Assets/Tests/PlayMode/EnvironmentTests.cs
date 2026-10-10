@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using FieldMedic.Audio;
 using FieldMedic.Comfort;
 using FieldMedic.Environment;
@@ -99,6 +100,77 @@ namespace FieldMedic.Tests
             Assert.AreEqual(0.3f, EnvMath.DistanceToPolygonXZ(new Vector3(0.7f, 1.6f, 0f), square), 1e-4f);
             Assert.IsTrue(EnvMath.InsidePolygonXZ(Vector3.zero, square));
             Assert.IsFalse(EnvMath.InsidePolygonXZ(new Vector3(2f, 0f, 0f), square));
+        }
+
+        [Test]
+        public void FallTime_And_HoverPoint()
+        {
+            Assert.AreEqual(1.749f, EnvMath.FallTime(15f), 0.01f);
+            Assert.AreEqual(0f, EnvMath.FallTime(-2f));
+            var h = EnvMath.HoverPoint(new Vector3(1f, 0f, 2f), 15f, Vector3.zero);
+            Assert.AreEqual(new Vector3(1f, 15f, 2f), h);
+            Assert.AreEqual(0.55f + EnvMath.FallTime(15f), CombatAmbience.DropDelay, 1e-4f);
+        }
+
+        [UnityTest]
+        public IEnumerator Drone_ReconHoversOverAim_DropsVisibleVog_ThenClimbsAway()
+        {
+            var go = new GameObject("Drone", typeof(AudioSource));
+            var d = go.AddComponent<DroneAudio>();
+            var clip = AudioClip.Create("hum", 4410, 1, 44100, false);
+            var aim = new Vector3(2f, 0.05f, 1f);
+            d.Begin(DroneKind.Recon, clip, Vector3.zero, 60f);
+            Assert.IsNotNull(d.Visual, "recon drone has a visible body");
+            Assert.AreEqual(4, d.Visual.GetComponentsInChildren<Transform>().Count(t => t.name == "Rotor"));
+            float far = Vector3.Distance(d.transform.position, aim);
+            d.HoverOver(aim, 15f);
+            Time.timeScale = 8f;
+            float t0 = Time.realtimeSinceStartup;
+            while (!d.Hovering && Time.realtimeSinceStartup - t0 < 5f) yield return null;
+            Time.timeScale = 1f;
+            Assert.IsTrue(d.Hovering);
+            var pos = d.transform.position;
+            Assert.AreEqual(aim.y + 15f, pos.y, 0.6f);
+            Assert.That(new Vector2(pos.x - aim.x, pos.z - aim.z).magnitude, Is.LessThan(0.6f), "straight above the aim");
+            Assert.That(far, Is.GreaterThan(10f), "it came down from the patrol orbit");
+
+            var vog = FallingMunition.Spawn(pos, aim);
+            Assert.AreEqual(EnvMath.FallTime(pos.y - aim.y), vog.Duration, 1e-4f);
+            float tf = 0f;
+            while (vog != null && tf < vog.Duration * 0.5f) { tf += Time.deltaTime; yield return null; }
+            Assert.That(vog.transform.position.y, Is.GreaterThan(aim.y + 15f * 0.6f), "free fall: slow first half");
+            d.ReleaseHover();
+            Time.timeScale = 8f;
+            t0 = Time.realtimeSinceStartup;
+            while (Time.realtimeSinceStartup - t0 < 1.2f) yield return null;
+            Time.timeScale = 1f;
+            Assert.IsFalse(d.Hovering);
+            Assert.That(d.transform.position.y, Is.GreaterThan(aim.y + 15.5f), "climbs back towards the orbit");
+            d.Stop();
+            Assert.IsFalse(d.Visual.gameObject.activeSelf);
+            Object.Destroy(go);
+            if (vog != null) Object.Destroy(vog.gameObject);
+        }
+
+        [UnityTest]
+        public IEnumerator Drone_FpvDivesAtTarget_ShahedHasNoVisual()
+        {
+            var go = new GameObject("Fpv", typeof(AudioSource));
+            var d = go.AddComponent<DroneAudio>();
+            var clip = AudioClip.Create("whine", 4410, 1, 44100, false);
+            var target = new Vector3(5f, 1.75f, 40f);
+            d.Begin(DroneKind.Fpv, clip, Vector3.zero, 2f);
+            d.DiveAt(target);
+            float start = Vector3.Distance(d.transform.position, target);
+            Assert.That(start, Is.InRange(85f, 95f));
+            Assert.IsNotNull(d.Visual);
+            float t0 = Time.realtimeSinceStartup;
+            while (d.Active && Time.realtimeSinceStartup - t0 < 4f) yield return null;
+            Assert.That(Vector3.Distance(d.transform.position, target), Is.LessThan(3f), "dive ends on the target");
+            d.Begin(DroneKind.Shahed, clip, Vector3.zero, 2f);
+            Assert.IsNull(d.Visual, "a Shahed at 450 m is only heard");
+            d.Stop();
+            Object.Destroy(go);
         }
 
         [UnityTest]

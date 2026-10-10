@@ -73,9 +73,15 @@ namespace FieldMedic.Casualty.Blood
             sol.enabled = true;
             sol.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 1, 1, 0.6f));
             var r = go.GetComponent<ParticleSystemRenderer>();
-            r.renderMode = ParticleSystemRenderMode.Stretch;
-            r.velocityScale = isJet ? 0.035f : 0.02f;
-            r.lengthScale = 1.5f;
+            // Drips are round drops (billboards): velocity-stretched drips read as long red threads hanging in the air.
+            // Jets keep a short stretch so a spurt reads as a fast pulse, capped at a few drop diameters.
+            if (isJet)
+            {
+                r.renderMode = ParticleSystemRenderMode.Stretch;
+                r.velocityScale = 0.008f;
+                r.lengthScale = 1.2f;
+            }
+            else r.renderMode = ParticleSystemRenderMode.Billboard;
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             if (s != null) r.sharedMaterial = s.particle;
             return ps;
