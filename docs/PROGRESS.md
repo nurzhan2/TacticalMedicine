@@ -127,3 +127,18 @@
 - **Screenshots**: scenario shots now centre on the visible wound (`s7_s1..s8_*.jpg`). New shots: `s7_drone_hover_zoom`, `s7_vog_falling`, `s7_fpv_dive`, `s7_gloves`, `s7_glove_iso_*`, `s7_field_wrecks`. Tests: `PolishScreenshots` (category Screenshots).
 - Tests: EditMode 63/63. New PlayMode tests: EnvironmentTests +3 (fall time/hover point, recon hover + VOG + climb-away, FPV dive / Shahed no visual) and GloveHandTests ×2. Targeted runs are green; the full PlayMode run is in progress.
 - Next: full PlayMode regression → APK rebuild → Desktop copy.
+
+## 10.10 17:30 — S7 polish DONE (this session)
+- Supervisor 14:24 notes addressed: the wound diamond (decal edge), darker wound tint, battlefield wrecks/craters/smoke, drone LED. The FPV buzz already ramps in pitch on the dive.
+- APK rebuilt 17:06 (20.8 min, full rebuild of changed code), 97.7 MB → `Builds/` + Desktop. BuildReport `errors=1` as in every earlier successful build.
+- Tests:
+  - EditMode 63/63.
+  - PlayMode full run #1: 55/57. S3_Mine hit the 180 s timeout and the TQ bot failed at "time written with the marker". Both passed in isolation (S3 score 100, TQ loss 3%).
+  - PlayMode full run #2: **57/57** (16.4 min). These two are order-sensitive flakes; watch them.
+  - The S5 buttock-packing protocol fallback is still logged (bot can't grab the hemostatic gauze).
+- Next ideas:
+  - fabric texture/normal for the gloves;
+  - fix the bot gauze grab in S5;
+  - flare-lit shot of the new wrecks;
+  - real RU/KZ voices;
+  - on-device check of glove alignment vs controller.
