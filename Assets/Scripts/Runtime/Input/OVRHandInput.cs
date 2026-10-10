@@ -18,6 +18,7 @@ namespace FieldMedic.Input
         public float Grip { get; private set; }
         public float Trigger { get; private set; }
         public bool PrimaryButton { get; private set; }
+        public Vector2 Thumbstick { get; private set; }
 
         readonly Transform _anchor;
         readonly OVRHand _hand;
@@ -44,6 +45,7 @@ namespace FieldMedic.Input
                 Grip = OVRInput.Get(OVRInput.Axis1D.PrimaryHandTrigger, _touch);
                 Trigger = OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger, _touch);
                 PrimaryButton = OVRInput.Get(OVRInput.Button.One, _touch);
+                Thumbstick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _touch);
                 IsTracked = OVRInput.GetControllerPositionTracked(_touch);
             }
             else if (handTracked)
@@ -56,6 +58,7 @@ namespace FieldMedic.Input
                 Grip = Mathf.Clamp01(Mathf.Max(middle, (middle + ring + pinky) / 2.2f));
                 Trigger = _hand.GetFingerPinchStrength(OVRHand.HandFinger.Index);
                 PrimaryButton = false;
+                Thumbstick = Vector2.zero;
                 IsTracked = true;
             }
             else
@@ -63,6 +66,7 @@ namespace FieldMedic.Input
                 Source = HandSource.None;
                 Grip = Trigger = 0f;
                 PrimaryButton = false;
+                Thumbstick = Vector2.zero;
                 IsTracked = false;
             }
 

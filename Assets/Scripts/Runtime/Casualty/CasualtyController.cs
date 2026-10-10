@@ -41,6 +41,10 @@ namespace FieldMedic.Casualty
         public bool IsFalling { get; private set; }
         public bool recoveryPosition;
         public bool carried;
+        /// <summary>Propped on his side by a log roll (procedural): body language stays a lying clip.</summary>
+        public bool rolledOnSide;
+        public static readonly List<CasualtyController> All = new List<CasualtyController>();
+        public CasualtyInteraction Interaction { get; private set; }
         public CasualtyPose CurrentPose { get; private set; } = (CasualtyPose)(-1);
         public float Pallor { get; private set; }
         public float Cyanosis { get; private set; }
@@ -63,10 +67,42 @@ namespace FieldMedic.Casualty
             if (PoolManager == null) PoolManager = GetComponent<BloodPoolManager>();
         }
 
+        void OnEnable() { if (!All.Contains(this)) All.Add(this); }
+        void OnDisable() => All.Remove(this);
+
         void Start()
         {
             if (rig != null) rig.Init();
             if (!IsDown) SetPose(standingPose, true);
+            EnsureInteraction();
+        }
+
+        /// <summary>Hands-on handles (limbs, drag, roll, wounds, his IFAK) — built at runtime from the rig.</summary>
+        public CasualtyInteraction EnsureInteraction()
+        {
+            if (Interaction == null) Interaction = GetComponent<CasualtyInteraction>();
+            if (Interaction == null)
+            {
+                Interaction = gameObject.AddComponent<CasualtyInteraction>();
+                Interaction.casualty = this;
+            }
+            Interaction.Build();
+            return Interaction;
+        }
+
+        /// <summary>Nearest casualty to a point (within maxDistance of his hips).</summary>
+        public static CasualtyController Nearest(Vector3 p, float maxDistance = 2.5f)
+        {
+            CasualtyController best = null;
+            float bd = maxDistance;
+            foreach (var c in All)
+            {
+                if (c == null) continue;
+                var hips = c.rig != null ? c.rig.Bone(HumanBodyBones.Hips) : null;
+                float d = Vector3.Distance(p, hips != null ? hips.position : c.transform.position);
+                if (d < bd) { bd = d; best = c; }
+            }
+            return best;
         }
 
         public void EnsurePatient()
@@ -87,7 +123,7 @@ namespace FieldMedic.Casualty
             Patient = null;
             EnsurePatient();
             IsDown = IsFalling = false;
-            recoveryPosition = carried = false;
+            recoveryPosition = carried = rolledOnSide = false;
             SetPose(standingPose, true);
         }
 
@@ -218,6 +254,9 @@ namespace FieldMedic.Casualty
             }
             site.Bind(this, w, visual);
             WoundSites.Add(site);
+            if (rig != null && w.limbPosition < 0f && BodyRegions.IsLimb(w.region))
+                w.limbPosition = LimbMath.WoundLimbPosition(rig, w.region, site.transform.position);
+            if (Interaction != null) Interaction.SyncWoundCare();
             return site;
         }
 
@@ -304,7 +343,8 @@ namespace FieldMedic.Casualty
                 return;
             }
             if (carried) { SetPose(CasualtyPose.Carried); return; }
-            var want = CasualtyPoseMapper.LyingPose(Patient, Pain.level, recoveryPosition);
+            var want = CasualtyPoseMapper.LyingPose(Patient, Pain.level, recoveryPosition && !rolledOnSide);
+            if (rolledOnSide && want == CasualtyPose.LyingWrithing) want = CasualtyPose.LyingMoaning; // no thrashing on the side
             bool urgent = want == CasualtyPose.LyingDying || want == CasualtyPose.Unconscious || want == CasualtyPose.RecoverySide;
             if (want != CurrentPose && (urgent || _poseTimer >= poseHold)) SetPose(want);
         }

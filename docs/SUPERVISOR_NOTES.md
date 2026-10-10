@@ -3,3 +3,10 @@
 ## 06:30 review of docs/screens
 - s2_erlan_wounded.png: casualty, gear and blood stream look good. The blood-soaked trouser area has bright GREEN specular highlights (probably the green chemlight/point light or a reflection probe reflecting on a very glossy blood material). Blood on cloth should be dark, mostly matte (smoothness ~0.3-0.45 when wet, lower when soaked into fabric); keep the fresh pool glossy but tint the light/reflection neutral. Fix in S2/S3 or S7.
 - s1_trench.png: the trench is still a flat greybox (untextured planks, uniform grey sandbags, flat ground, empty dark sky). S4 must make it read as a real night trench: mud/soil texture with wet normal map, wood grain on revetment, sandbag cloth texture with variation, dirt on duckboards, debris, wires, puddles, sky with faint stars/cloud glow + distant flare/fire light on the horizon, fog/haze. This is what the user sees first - top priority for the WOW effect.
+## 07:05 morning deadline
+- Owner wakes ~09:30. S4 and S5 prompts now end with a "Morning checkpoint" (APK to Desktop + docs/MORNING_REPORT.md). Any stage running after 09:00 must make sure a working APK from the current state exists on the Desktop before continuing.
+- Scenario S1 «Сброс» must be fully playable end-to-end in that APK (wound -> tourniquet hands-on -> time mark -> debrief) - that is the demo the owner will try first.
+## 07:06 review of s2_erlan_wide.png
+- Chemlight mesh renders MAGENTA/pink (missing or broken shader -> URP error colour) while its light is green. Fix the material (URP/Unlit or Lit emissive green) and check every material for pink after shader changes.
+- Blood pool / drops on the duckboards look like flat saturated red discs (unlit-looking, too bright for night). Use a dark wet decal-like material, irregular shape, slightly glossy, darker red-brown, soaked into wood/mud; grow it over time.
+- Casualty must rest ON the duckboards/ground (check no floating, feet/hips contact) and partly in mud, not hovering.

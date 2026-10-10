@@ -18,6 +18,9 @@ namespace FieldMedic.Input
         public float Grip { get; set; }
         public float Trigger { get; set; }
         public bool PrimaryButton { get; set; }
+        public Vector2 Thumbstick { get; set; }
+        /// <summary>Desktop only: keep the grip closed without holding the mouse button (G).</summary>
+        public bool GripLocked;
 
         /// <summary>Hand position in camera-local space (metres).</summary>
         public Vector3 LocalOffset;

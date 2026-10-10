@@ -276,6 +276,19 @@ namespace FieldMedic.Casualty
         /// <summary>Short involuntary flinch (curl, head jerk). strength 0..1.</summary>
         public void Flinch(float strength) => _flinchVel += Mathf.Clamp01(strength) * 9f;
 
+        float _nod, _nodVel;
+        /// <summary>Head nods from a jolt (drag): degrees of impulse, springs back.</summary>
+        public void HeadJolt(float degrees) => _nodVel += degrees * 6f;
+
+        void ApplyNod(float dt)
+        {
+            _nodVel += (-80f * _nod - 9f * _nodVel) * dt;
+            _nod += _nodVel * dt;
+            if (Mathf.Abs(_nod) < 0.01f && Mathf.Abs(_nodVel) < 0.05f) return;
+            var head = Bone(HumanBodyBones.Head);
+            if (head != null) head.rotation = Quaternion.AngleAxis(Mathf.Clamp(_nod, -20f, 20f), BodyRight) * head.rotation;
+        }
+
         // ------------------------------------------------------------------ per-frame
         void LateUpdate() => ApplyProcedural(Time.deltaTime);
 
@@ -285,6 +298,7 @@ namespace FieldMedic.Casualty
             if (groundClamp) GroundClamp(dt);
             Breathe(dt);
             ApplyFlinch(dt);
+            ApplyNod(dt);
             LookAt(dt);
             for (int i = 0; i < 4; i++)
             {

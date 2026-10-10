@@ -6,8 +6,9 @@ namespace FieldMedic.Input
     /// <summary>
     /// Mouse + keyboard VR simulator for the editor (no headset).
     /// WASD move, mouse look (click to capture, Esc to release), RMB + mouse = move active hand in a plane
-    /// in front of the camera, scroll = hand depth, LMB = grip, Shift+LMB = trigger, Space = primary button,
-    /// Tab = switch hand, Q/E = rotate wrist, C = crouch toggle.
+    /// in front of the camera, scroll = hand depth, LMB = grip, G = lock grip (keep holding),
+    /// F / MMB / Shift+LMB = trigger (shears, marker, lube...), Space = primary button, Tab = switch hand,
+    /// Q/E = rotate wrist, C = crouch toggle, X = thumbstick back (pull-to-crawl while dragging).
     /// Only active when no XR device is running.
     /// </summary>
     [DefaultExecutionOrder(-100)]
@@ -110,12 +111,17 @@ namespace FieldMedic.Input
 
                 bool shift = kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed);
                 bool lmb = mouse.leftButton.isPressed;
-                a.Grip = lmb && !shift ? 1f : 0f;
-                a.Trigger = lmb && shift ? 1f : 0f;
+                if (kb != null && kb.gKey.wasPressedThisFrame) a.GripLocked = !a.GripLocked;
+                // Shift+LMB squeezes the trigger; it keeps holding whatever the hand already holds
+                a.Grip = a.GripLocked || (lmb && (!shift || a.Grip > 0.5f)) ? 1f : 0f;
+                a.Trigger = (lmb && shift) || mouse.middleButton.isPressed || (kb != null && kb.fKey.isPressed) ? 1f : 0f;
                 a.PrimaryButton = kb != null && kb.spaceKey.isPressed;
+                a.Thumbstick = kb != null && kb.xKey.isPressed ? new Vector2(0f, -1f) : Vector2.zero;
                 var idle = _activeRight ? Left : Right;
-                idle.Grip = idle.Trigger = 0f;
+                idle.Grip = idle.GripLocked ? 1f : 0f; // a locked hand keeps holding while the other one works
+                idle.Trigger = 0f;
                 idle.PrimaryButton = false;
+                idle.Thumbstick = Vector2.zero;
             }
 
             _eyeHeight = Mathf.MoveTowards(_eyeHeight, Crouched ? crouchEyeHeight : standingEyeHeight, 2.5f * dt);
@@ -134,7 +140,7 @@ namespace FieldMedic.Input
             string hand = a.Handedness == Handedness.Left ? "ЛЕВАЯ" : "ПРАВАЯ";
             GUI.color = new Color(1f, 1f, 1f, 0.75f);
             GUI.Label(new Rect(10, 10, 900, 22),
-                $"Рука: {hand}  |  ПКМ+мышь — рука, колесо — глубина, ЛКМ — хват, Shift+ЛКМ — триггер, Tab — рука, Q/E — кисть, C — присесть, WASD — шаг");
+                $"Рука: {hand}{(a.GripLocked ? " [держит]" : "")}  |  ПКМ+мышь — рука, колесо — глубина, ЛКМ — хват, G — зафиксировать хват, F — триггер, Tab — рука, Q/E — кисть, C — присесть, WASD — шаг, X — ползти назад");
             if (Time.unscaledTime < a.HapticUntil)
             {
                 GUI.color = new Color(1f, 0.3f, 0.2f, Mathf.Clamp01(a.LastHapticAmplitude));

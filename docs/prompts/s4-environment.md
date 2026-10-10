@@ -14,3 +14,11 @@ Read CLAUDE.md, docs/GDD.md (§7, §8), docs/RESEARCH.md (§1 sounds/visuals), d
 
 ## Done criteria
 Compiles, tests green, screenshots convincing, perf report within budget (or documented), pushed; `logs/s4-environment.done`.
+
+## Morning checkpoint (added by night supervisor 07:05 - mandatory)
+The owner wakes up around 09:30 local time and stages run ~65-70 min each, so S6 would come too late. Therefore, as the LAST step of this stage (before writing logs/<stage>.done):
+1. Build the APK with BuildTools.BuildAndroid (the Android build cache was cleared to save disk, first build is a full IL2CPP build ~20 min; check free disk >= 5 GB first).
+2. Copy it to C:\Users\user\Desktop\FieldMedicVR.apk (overwrite).
+3. Write/refresh docs/MORNING_REPORT.md (Russian, short, honest): what works now, how to install (MQDH drag&drop or adb install -r), what to try first in the headset, screenshots list, what is still in progress (the night pipeline keeps running).
+4. Commit + push.
+If the local time is already past 09:00 when you start this stage, do the checkpoint FIRST (build what exists), then continue the stage.

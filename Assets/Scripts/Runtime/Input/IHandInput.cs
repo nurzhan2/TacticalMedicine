@@ -26,6 +26,8 @@ namespace FieldMedic.Input
         /// <summary>0..1, fine action (controller trigger / index pinch).</summary>
         float Trigger { get; }
         bool PrimaryButton { get; }
+        /// <summary>Primary thumbstick (zero for tracked hands / desktop). Used for pull-to-crawl.</summary>
+        Vector2 Thumbstick { get; }
         /// <summary>Called once per frame by HandRig before anyone reads the values.</summary>
         void Tick(float dt);
         void Haptic(float amplitude, float duration);
