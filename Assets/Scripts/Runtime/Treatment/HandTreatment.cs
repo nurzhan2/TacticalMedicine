@@ -78,7 +78,8 @@ namespace FieldMedic.Treatment
                 float lateral = care.Lateral(palm);
                 if (lateral > Mathf.Max(0.06f, s.size)) continue;
                 float h = care.Height(palm);
-                if (h > 0.03f) continue;
+                if (h > 0.03f || h < -0.07f) continue; // deeper than flesh gives = the hand is on the other side of the body
+                if (s.Wound != null && s.Wound.posterior && !c.rolledOnSide) continue; // under his back
                 // pushed 0..4 cm into the wound (flesh/clothing give); a fist (grip) counts the same as a palm
                 float pressure = Mathf.Clamp01((0.03f - h) / 0.05f);
                 care.AddPressure(pressure);

@@ -221,6 +221,20 @@ namespace FieldMedic.Tests
             Assert.That(cat.State.Locked, Is.True, _bot.lastStep + " " + cat.State.stage);
         }
 
+        /// <summary>Israeli bandage; if the pad did not land (he moved), try again with his own bandage.</summary>
+        IEnumerator BandageWithRetry(WoundCare care)
+        {
+            var b = _pouch.Find<BandageItem>();
+            yield return _bot.Bandage(b, care);
+            if (care.Wound.control == BleedControl.PressureDressing) yield break;
+            Debug.Log("[FMVR] bandage retry: " + _bot.lastStep + " " + b.LastHint);
+            yield return _bot.Release(_bot.right);
+            yield return Reposition();
+            // pad already on the wound: keep wrapping with the same roll; otherwise his own bandage
+            var next = b.ApplyingTo != null ? b : _c.Interaction.Ifak != null ? _c.Interaction.Ifak.Find<BandageItem>() : null;
+            if (next != null) yield return _bot.Bandage(next, care);
+        }
+
         WoundCare Care(System.Func<Wound, bool> f) => _c.Interaction.Care(_c.Patient.wounds.First(f));
 
         // ================================================================== S1 «Сброс»
@@ -304,14 +318,19 @@ namespace FieldMedic.Tests
             yield return Run("S3");
             Assert.That(_c.Protocol.phase, Is.EqualTo(Phase.TacticalFieldCare));
             yield return _bot.Gloves(_pouch.Find<GlovesItem>());
+            // field care: band on the skin → cut the trouser leg first
+            yield return _bot.CutClothing(_pouch.Find<ShearsItem>(), _c, Limb.RightLeg, 0.9f, 0.08f);
             yield return Tq(Limb.RightLeg, 0.12f);
+            var cat3 = _c.Interaction.Tourniquets.First();
+            if (!cat3.State.TimeMarked) yield return _bot.Write(_pouch.Find<MarkerItem>(), cat3.TimeLabelPoint);
             var stump = _c.Patient.wounds.First(w => w.type == WoundType.TraumaticAmputation);
             yield return Fast(60f, 20f); // past the vasospasm
             Assert.That(stump.IsControlled, Is.True, "band above the stump holds after the spasm");
             yield return _bot.BloodSweep(_c);
             var shin = Care(w => w.region == BodyRegion.ShinL);
-            yield return _bot.CutClothing(_pouch.Find<ShearsItem>(), _c, Limb.LeftLeg, 1.7f, 1.2f);
-            yield return _bot.Bandage(_pouch.Find<BandageItem>(), shin);
+            // the whole left trouser leg: shin fragment and the groin
+            yield return _bot.CutClothing(_pouch.Find<ShearsItem>(), _c, Limb.LeftLeg, 1.7f, 0.05f);
+            yield return BandageWithRetry(shin);
             Assert.That(shin.Wound.IsControlled, Is.True, _bot.lastStep);
             yield return _bot.Blanket(_pouch.Find<BlanketItem>(), _c);
             yield return Evacuate();
@@ -324,7 +343,7 @@ namespace FieldMedic.Tests
         {
             yield return Run("S3");
             yield return Fast(50f, 10f); // the spasm lets go: massive bleed
-            yield return _bot.LiftLeg(_c, Limb.RightLeg, 0.3f, 1f);
+            yield return _bot.LiftLeg(_c, Limb.RightLeg, 0.4f, 16f); // holding the stump up instead of a band
             yield return FinishWrong();
             AssertMistake("elevation");
         }
@@ -368,7 +387,8 @@ namespace FieldMedic.Tests
             yield return _bot.BloodSweep(_c);
             var shin = Care(w => w.region == BodyRegion.ShinL);
             yield return _bot.CutClothing(_pouch.Find<ShearsItem>(), _c, Limb.LeftLeg, 1.7f, 1.2f);
-            yield return _bot.Bandage(_pouch.Find<BandageItem>(), shin);
+            yield return BandageWithRetry(shin);
+            Assert.That(shin.Wound.IsControlled, Is.True, "shin dressed " + _bot.lastStep);
             yield return _bot.Roll(_c, false);
             var hidden = _c.Patient.wounds.First(w => w.posterior);
             Assert.That(hidden.discovered, Is.True, "log roll reveals the buttock wound");
@@ -410,6 +430,7 @@ namespace FieldMedic.Tests
             Assert.That(_c.rolledOnSide, Is.True);
             Assert.That(_c.Patient.recoveryPosition, Is.True);
             Assert.That(_c.Patient.AirwayCompromised, Is.False);
+            yield return _bot.BloodSweep(_c); // scalp wound
             yield return Fast(240f, 30f); // both vomiting episodes happen while he is on his side
             Assert.That(_d.Events.Count(e => e.Contains("Vomit")), Is.GreaterThanOrEqualTo(1), string.Join(";", _d.Events));
             Assert.That(_c.Patient.outcome, Is.EqualTo(Outcome.Ongoing), _c.Patient.causeOfDeath);
@@ -469,9 +490,8 @@ namespace FieldMedic.Tests
             yield return _bot.Gloves(_pouch.Find<GlovesItem>());
             var shin = Care(w => w.region == BodyRegion.ShinR);
             Assert.That(shin.Wound.exposed, Is.True, "trouser leg already cut at the first treatment");
-            var band = _pouch.Find<BandageItem>();
-            yield return _bot.Bandage(band, shin);
-            Assert.That(shin.Wound.control, Is.EqualTo(BleedControl.PressureDressing), _bot.lastStep + " " + band.LastHint);
+            yield return BandageWithRetry(shin);
+            Assert.That(shin.Wound.control, Is.EqualTo(BleedControl.PressureDressing), _bot.lastStep);
             yield return _bot.ConvertTourniquet(cat);
             Assert.That(_c.Protocol.log.Any(e => e.code == "converted"), Is.True, string.Join(",", _c.Protocol.log.Select(e => e.code)));
             Assert.That(shin.Wound.IsControlled, Is.True, "the dressing holds without the band");

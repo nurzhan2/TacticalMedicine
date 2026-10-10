@@ -520,13 +520,14 @@ namespace FieldMedic.Medical
         /// Final score 0..100 (0 if the casualty died). Each mistake type is counted once.
         public int Score()
         {
-            if (patient.outcome == Outcome.Died) return 0;
+            // derived mistakes are recorded even when he died (the debrief lists them)
             if (patient.tourniquetSeconds.Count > 0 && !tourniquetTimeMarked) penalties.TryAdd("tq_not_marked", 1);
             foreach (var tq in patient.tourniquets)
                 if (tq.Locked && !tq.FullOcclusion && patient.wounds.Any(x => tq.IsProximalTo(x.LimbId, x.LimbPos) && !x.IsControlled))
                     penalties.TryAdd("tq_loose", 1);
             if (patient.LossFraction > 0.30f) penalties.TryAdd("big_blood_loss", 1);
             if (patient.wounds.Any(w => !w.discovered)) penalties.TryAdd("missed_wound", 1);
+            if (patient.outcome == Outcome.Died) return 0;
             int total = 100;
             foreach (var kv in penalties) total -= Penalty[kv.Key].points;
             return Math.Max(0, total);
