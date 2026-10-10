@@ -70,7 +70,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RenderSettings.ambientEquatorColor = new Color(0.025f, 0.025f, 0.03f);
             RenderSettings.ambientGroundColor = new Color(0.01f, 0.009f, 0.008f);
             RenderSettings.defaultReflectionMode = DefaultReflectionMode.Skybox;
-            RenderSettings.reflectionIntensity = 0.8f;
+            RenderSettings.reflectionIntensity = 0.35f; // night sky reflections greyed the field at grazing angles
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogDensity = 0.032f;

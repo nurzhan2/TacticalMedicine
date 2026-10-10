@@ -17,3 +17,6 @@
 ## 09:21 review
 - s3_11_packing.png: blood "drops" render as long thin vertical red streaks hanging in the air above the body (stretched particles / velocity-stretched billboards). Drops should be short, fall and splat; arterial spurts pulse with heartbeat; no static streaks.
 - APK safety build is on the Desktop (09:15, 76.5 MB). Disk is tight (~5.8 GB): delete Bee android intermediates only right before the final build if needed.
+## 09:55 review of s4_* screenshots
+- s4_01_trench_flare.png: big improvement (wood grain, starry sky, sandbags, mud). Remaining: left wall is almost black while right wall is lit - add a weak cool moon fill so both walls read; sandbags look like smooth pillows - add cloth normal/sag and colour variation.
+- s4_08_headlamp_casualty.png: red headlamp saturates the casualty to pure orange-red, wound and blood become unreadable (red on red). Reduce red headlamp intensity ~50%, widen falloff, add a white-light mode (toggle) for treatment under cover - TCCC allows white light in cover; red/IR only under fire.

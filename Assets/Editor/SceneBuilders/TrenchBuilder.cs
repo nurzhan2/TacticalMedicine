@@ -141,7 +141,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
         static Material SoilWall => Env("Env_SoilWall", "Env_Soil", new Color(0.62f, 0.55f, 0.48f), 0.55f, 1f, 0.35f, 0.35f, 1f, 1.2f);
         static Material MudFloor => Env("Env_MudFloor", "Env_Mud", new Color(0.55f, 0.5f, 0.45f), 0.75f, 1f, 0.55f, 0.3f, 1f, 1.1f);
-        static Material Field => Env("Env_Field", "Env_Field", new Color(0.26f, 0.21f, 0.17f), 0.25f, 0f, 0.4f, 0.4f, 1f, 1f);
+        static Material Field => Env("Env_Field", "Env_Field", new Color(0.3f, 0.22f, 0.15f), 0.1f, 0f, 0.4f, 0.4f, 1f, 1f);
         static Material Planks => Tiled(Env("Env_Planks", "Env_Planks", new Color(0.46f, 0.43f, 0.39f), 0.25f, 0f, 0.0f, 0.45f, 0f, 1f));
         static Material PlanksWet => Tiled(Env("Env_PlanksWet", "Env_Planks", new Color(0.34f, 0.31f, 0.27f), 0.35f, 0f, 0.35f, 0.45f, 0f, 1f));
         static Material Bark => Env("Env_Bark", "Env_Bark", new Color(0.55f, 0.5f, 0.45f), 0.2f, 0f, 0f, 0.3f, 0f, 1.2f);
@@ -515,7 +515,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 q.transform.SetParent(_root, false);
                 q.transform.position = c;
                 q.transform.localScale = s * 0.1f;
-                q.GetComponent<Renderer>().sharedMaterial = Env("Env_FieldFar", "Env_Field", new Color(0.2f, 0.18f, 0.16f), 0.2f, 0f, 0.2f, 0.6f);
+                q.GetComponent<Renderer>().sharedMaterial = Env("Env_FieldFar", "Env_Field", new Color(0.16f, 0.12f, 0.09f), 0.08f, 0f, 0.2f, 0.6f);
             }
         }
 
