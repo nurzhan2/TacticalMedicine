@@ -286,6 +286,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
             for (int i = 0; i < 5; i++) Craters.Add(new Vector4(F(-28, 28), F(-24, -7), F(1.0, 2.8), F(0.35, 0.9)));
             Craters.Add(new Vector4(3.4f, 4.6f, 1.7f, 0.85f));   // fresh hit right in front of the bay
             Craters.Add(new Vector4(-6.5f, -5.2f, 1.4f, 0.6f));  // behind the dugout
+            // S7: the no-man's-land is pounded by months of shelling: big overlapping shell holes
+            for (int i = 0; i < 12; i++) Craters.Add(new Vector4(F(-30, 30), F(16, 46), F(2.0, 4.5), F(0.7, 1.4)));
+            Craters.Add(new Vector4(-17f, 33f, 3.2f, 0.9f)); // the BMP sits half in this one
         }
 
         static float Perlin(float x, float z) => Mathf.PerlinNoise(x + 100f, z + 100f) - 0.5f;
@@ -1039,6 +1042,143 @@ namespace FieldMedic.EditorTools.SceneBuilders
                     Object.DestroyImmediate(stake.GetComponent<Collider>());
                 }
             }
+            BuildWrecks(root);
+        }
+
+        // ------------------------------------------------------------------ S7: wrecks on the battlefield
+        /// <summary>
+        /// Silhouettes that make the field read as a battlefield under the flare light: a burnt-out BMP nosed into
+        /// a crater, a T-72 hull with its turret blown off beside it (ammo cook-off), a burnt truck on the far
+        /// road; thin smoke columns with dull embers, two distant fires. Primitive parts, static, no colliders.
+        /// </summary>
+        static void BuildWrecks(Transform field)
+        {
+            var root = new GameObject("Wrecks").transform;
+            root.SetParent(field, false);
+            var hullM = Rust;
+            var burnt = BarkBurnt;
+            // BMP-2: hull, sloped glacis, small turret + 30 mm gun, road wheels, thrown track
+            {
+                var w = Wreck(root, "Wreck_BMP", new Vector3(-17f, GroundHeight(-17f, 33f, 99f, HalfWidth, out _) - 0.35f, 33f), new Vector3(-6f, 35f, 4f));
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 0.75f, 0f), Vector3.zero, new Vector3(3.1f, 1.1f, 5.2f), hullM);
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 0.62f, 2.95f), new Vector3(-38f, 0f, 0f), new Vector3(3.0f, 0.12f, 1.6f), hullM);
+                Part(w, PrimitiveType.Cylinder, new Vector3(0.1f, 1.48f, 0.3f), Vector3.zero, new Vector3(1.6f, 0.22f, 1.6f), burnt);
+                Part(w, PrimitiveType.Cylinder, new Vector3(0.1f, 1.55f, 1.9f), new Vector3(86f, 0f, 0f), new Vector3(0.09f, 1.4f, 0.09f), burnt);
+                for (int i = 0; i < 6; i++)
+                    foreach (float sx in new[] { -1.45f, 1.45f })
+                        Part(w, PrimitiveType.Cylinder, new Vector3(sx, 0.32f, -2f + i * 0.8f), new Vector3(0f, 0f, 90f), new Vector3(0.6f, 0.12f, 0.6f), burnt);
+                Part(w, PrimitiveType.Cube, new Vector3(1.6f, 0.15f, 2.6f), new Vector3(0f, 20f, 0f), new Vector3(0.12f, 0.12f, 2.6f), burnt);
+                Smoke(w, new Vector3(0f, 1.6f, 0f), 0.6f, false);
+            }
+            // T-72: hull + road wheels, turret upside down 5 m away, barrel in the mud
+            {
+                var w = Wreck(root, "Wreck_T72", new Vector3(26f, G - 0.25f, 72f), new Vector3(2f, -20f, -3f));
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 0.8f, 0f), Vector3.zero, new Vector3(3.6f, 1.0f, 6.9f), hullM);
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 0.7f, 3.6f), new Vector3(-30f, 0f, 0f), new Vector3(3.4f, 0.15f, 1.2f), hullM);
+                for (int i = 0; i < 6; i++)
+                    foreach (float sx in new[] { -1.65f, 1.65f })
+                        Part(w, PrimitiveType.Cylinder, new Vector3(sx, 0.38f, -2.6f + i * 1.0f), new Vector3(0f, 0f, 90f), new Vector3(0.75f, 0.14f, 0.75f), burnt);
+                var t = Wreck(root, "Wreck_T72_Turret", new Vector3(31.5f, G - 0.1f, 67f), new Vector3(168f, 40f, 12f));
+                Part(t, PrimitiveType.Sphere, Vector3.zero, Vector3.zero, new Vector3(2.4f, 0.9f, 2.6f), hullM);
+                Part(t, PrimitiveType.Cylinder, new Vector3(0f, 0.1f, 2.6f), new Vector3(90f, 0f, 0f), new Vector3(0.16f, 2.3f, 0.16f), burnt);
+                Smoke(w, new Vector3(0f, 1.4f, 0f), 1f, true);
+            }
+            // burnt truck on the far road
+            {
+                var w = Wreck(root, "Wreck_Truck", new Vector3(-58f, G - 0.25f, 96f), new Vector3(0f, 75f, 6f));
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 1.4f, 2.6f), Vector3.zero, new Vector3(2.4f, 1.5f, 1.8f), hullM);
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 0.9f, -0.8f), Vector3.zero, new Vector3(2.4f, 0.25f, 5f), burnt);
+                Part(w, PrimitiveType.Cube, new Vector3(0f, 1.3f, -1f), new Vector3(0f, 0f, 8f), new Vector3(2.3f, 0.7f, 4.2f), hullM);
+                foreach (float z in new[] { 2.4f, -0.6f, -2.2f })
+                    foreach (float sx in new[] { -1.1f, 1.1f })
+                        Part(w, PrimitiveType.Cylinder, new Vector3(sx, 0.55f, z), new Vector3(0f, 0f, 90f), new Vector3(1.1f, 0.2f, 1.1f), burnt);
+                Smoke(w, new Vector3(0f, 1.8f, 2.4f), 0.8f, true);
+            }
+            // distant smoke columns lit from below by fires beyond the horizon
+            foreach (var pos in new[] { new Vector3(-140f, G, 260f), new Vector3(95f, G, 320f) })
+                Smoke(Wreck(root, "DistantFire", pos, Vector3.zero), Vector3.zero, 3.5f, true);
+        }
+
+        static Transform Wreck(Transform root, string name, Vector3 pos, Vector3 euler)
+        {
+            var t = new GameObject(name).transform;
+            t.SetParent(root, false);
+            t.position = pos;
+            t.rotation = Quaternion.Euler(euler);
+            return t;
+        }
+
+        static void Part(Transform w, PrimitiveType type, Vector3 pos, Vector3 euler, Vector3 scale, Material m)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            go.name = type.ToString();
+            Object.DestroyImmediate(go.GetComponent<Collider>());
+            go.transform.SetParent(w, false);
+            go.transform.localPosition = pos;
+            go.transform.localRotation = Quaternion.Euler(euler);
+            go.transform.localScale = scale;
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = m;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            go.isStatic = true;
+        }
+
+        /// <summary>Slow rising, wind-drifted smoke column (alpha) + optional dull ember glow at its base (additive).</summary>
+        static void Smoke(Transform w, Vector3 local, float scale, bool embers)
+        {
+            var go = new GameObject("SmokeColumn");
+            go.transform.SetParent(w, false);
+            go.transform.localPosition = local;
+            go.transform.rotation = Quaternion.identity;
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.loop = true; main.playOnAwake = true; main.prewarm = true;
+            main.duration = 10f;
+            main.startLifetime = 14f;
+            main.startSpeed = 0.6f * scale;
+            main.startSize = new ParticleSystem.MinMaxCurve(1.5f * scale, 3.2f * scale);
+            main.startColor = new Color(0.2f, 0.19f, 0.18f, 0.45f);
+            main.maxParticles = 24;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            var em = ps.emission; em.rateOverTime = 1.6f;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.4f * scale;
+            var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.World;
+            vel.x = new ParticleSystem.MinMaxCurve(0.25f * scale, 0.45f * scale);
+            vel.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            vel.z = new ParticleSystem.MinMaxCurve(0.1f, 0.1f);
+            var sol = ps.sizeOverLifetime; sol.enabled = true; sol.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 2.2f));
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(embers ? new Color(1f, 0.55f, 0.3f) : Color.white, 0f), new GradientColorKey(Color.white, 0.25f), new GradientColorKey(new Color(0.6f, 0.6f, 0.65f), 1f) },
+                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.1f), new GradientAlphaKey(0.5f, 0.6f), new GradientAlphaKey(0f, 1f) });
+            col.color = g;
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = AtmosphereBuilder.FxMat("FX_Smoke", Color.white, false);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            if (!embers) return;
+            var eg = new GameObject("Embers");
+            eg.transform.SetParent(w, false);
+            eg.transform.localPosition = local + Vector3.down * 0.3f;
+            var eps = eg.AddComponent<ParticleSystem>();
+            var em2 = eps.main;
+            em2.loop = true; em2.playOnAwake = true; em2.prewarm = true;
+            em2.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.6f);
+            em2.startSpeed = 0f;
+            em2.startSize = new ParticleSystem.MinMaxCurve(0.6f * scale, 1.3f * scale);
+            em2.startColor = new Color(1f, 0.38f, 0.1f, 0.35f);
+            em2.maxParticles = 8;
+            var e2 = eps.emission; e2.rateOverTime = 5f;
+            var sh2 = eps.shape; sh2.shapeType = ParticleSystemShapeType.Sphere; sh2.radius = 0.5f * scale;
+            var c2 = eps.colorOverLifetime; c2.enabled = true;
+            var g2 = new Gradient();
+            g2.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                       new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.3f), new GradientAlphaKey(0f, 1f) });
+            c2.color = g2;
+            var er = eg.GetComponent<ParticleSystemRenderer>();
+            er.sharedMaterial = AtmosphereBuilder.FxMat("FX_Glow", Color.white, true, 2f);
+            er.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         static Material WireMaterial()

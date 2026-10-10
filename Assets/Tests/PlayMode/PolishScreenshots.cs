@@ -112,5 +112,22 @@ namespace FieldMedic.Tests
             Shot("s7_glove_iso_side", new Vector3(0.5f, 1.05f, 0.06f), new Vector3(0f, 1f, 0.06f), 40f, 0f, true);
             Shot("s7_glove_iso_front", new Vector3(0.02f, 1.12f, 0.5f), new Vector3(0f, 1f, 0.05f), 40f, 0f, true);
         }
+
+        [UnityTest]
+        public IEnumerator Field_WrecksAndCraters()
+        {
+            ScenarioLaunch.Scenario("S1", ScenarioVariant.Default);
+            yield return LoadMain();
+            yield return Frames(30);
+            var d = ScenarioDirector.Instance;
+            var bmp = GameObject.Find("Wreck_BMP");
+            var tank = GameObject.Find("Wreck_T72");
+            Assert.That(bmp, Is.Not.Null);
+            Assert.That(tank, Is.Not.Null);
+            HidePlayerKit(true);
+            var eye = d.head.position + Vector3.up * 1.0f; // peeking over the parapet
+            Shot("s7_field_wrecks", eye, Vector3.Lerp(bmp.transform.position, tank.transform.position, 0.35f) + Vector3.up * 1.5f, 70f, 0f, true);
+            HidePlayerKit(false);
+        }
     }
 }

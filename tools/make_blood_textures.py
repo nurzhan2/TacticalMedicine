@@ -57,6 +57,14 @@ def smooth(e0, e1, x):
 
 
 def save_rgba(path, rgb, a):
+    # fade to zero before the border: a decal quad must never show its straight edges
+    n = a.shape[0]
+    t = np.linspace(-1, 1, n)
+    w1 = smooth(1.0, 0.82, np.abs(t))
+    win = np.outer(w1, w1)
+    y, x = np.mgrid[0:n, 0:n] / (n - 1) * 2 - 1
+    win *= smooth(1.0, 0.86, np.sqrt(x * x + y * y))  # round, so a rotated quad has no corners either
+    a = a * win
     arr = np.dstack([np.clip(rgb, 0, 1), np.clip(a, 0, 1)])
     Image.fromarray((arr * 255 + 0.5).astype(np.uint8), "RGBA").save(path, optimize=True)
 

@@ -15,7 +15,9 @@ namespace FieldMedic.Environment
     {
         static Material _body, _dark, _prop, _orange, _olive;
         readonly Transform[] _rotors = new Transform[4];
-        float _spin;
+        float _spin, _blink;
+        Transform _led;
+        static Material _ledMat;
         public DroneKind Kind { get; private set; }
 
         public static DroneVisual Build(Transform parent, DroneKind kind)
@@ -26,6 +28,7 @@ namespace FieldMedic.Environment
             var v = go.AddComponent<DroneVisual>();
             v.Kind = kind;
             if (kind == DroneKind.Recon) v.BuildRecon(); else v.BuildFpv();
+            v.BuildLed();
             return v;
         }
 
@@ -129,10 +132,42 @@ namespace FieldMedic.Environment
             return g.transform;
         }
 
+        /// <summary>
+        /// The status LED most operators never manage to tape over completely: a faint red point under the body,
+        /// blinking ~1.5 Hz. Kept at least ~1.5 px wide at any distance so the player can track the drone by it.
+        /// </summary>
+        void BuildLed()
+        {
+            if (_ledMat == null) _ledMat = WorldUI.Unlit(new Color(0.9f, 0.08f, 0.05f));
+            var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            Destroy(g.GetComponent<Collider>());
+            g.name = "Led";
+            g.transform.SetParent(transform, false);
+            g.transform.localPosition = new Vector3(0f, -0.035f, -0.06f);
+            var r = g.GetComponent<Renderer>();
+            r.sharedMaterial = _ledMat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _led = g.transform;
+        }
+
+        public bool LedOn => _led != null && _led.gameObject.activeSelf;
+
+        void UpdateLed(float dt)
+        {
+            if (_led == null) return;
+            _blink += dt;
+            bool on = (_blink * 1.5f) % 1f < 0.35f;
+            if (_led.gameObject.activeSelf != on) _led.gameObject.SetActive(on);
+            var cam = Camera.main;
+            float dist = cam != null ? Vector3.Distance(cam.transform.position, _led.position) : 10f;
+            _led.localScale = Vector3.one * Mathf.Max(0.012f, dist * 0.0022f);
+        }
+
         /// <summary>Orient along the flight velocity: nose forward, pitched down into the motion (FPV dives nose-first).</summary>
         public void Pose(Vector3 velocity, float dt)
         {
             _spin += dt * (Kind == DroneKind.Fpv ? 2900f : 2300f);
+            UpdateLed(dt);
             for (int i = 0; i < 4; i++)
                 if (_rotors[i] != null) _rotors[i].localRotation = Quaternion.Euler(0f, (i % 2 == 0 ? _spin : -_spin) + i * 37f, 0f);
             var flat = new Vector3(velocity.x, 0f, velocity.z);

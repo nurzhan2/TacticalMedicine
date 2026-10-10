@@ -191,7 +191,7 @@ namespace FieldMedic.EditorTools
         {
             var m = GetMat(name, Shader.Find("FieldMedic/BloodDecal"));
             m.SetTexture("_BaseMap", Tex(tex));
-            m.SetColor("_BaseColor", Color.white);
+            m.SetColor("_BaseColor", new Color(0.62f, 0.6f, 0.6f)); // night-plausible, not a glowing red patch
             m.SetFloat("_Gloss", gloss);
             m.renderQueue = (int)RenderQueue.Transparent + queueOffset;
             m.enableInstancing = true;
