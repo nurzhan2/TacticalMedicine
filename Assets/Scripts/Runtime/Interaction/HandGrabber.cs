@@ -39,7 +39,7 @@ namespace FieldMedic.Interaction
         public event Action<HandGrabber, Grabbable> GrabStarted;
         public event Action<HandGrabber, Grabbable> GrabEnded;
 
-        readonly Collider[] _buffer = new Collider[32];
+        readonly Collider[] _buffer = new Collider[128]; // a body next to the hand alone has ~30 trigger parts
         readonly HashSet<Grabbable> _seen = new HashSet<Grabbable>();
 
         void Awake() => Rig = GetComponent<HandRig>();
@@ -86,7 +86,8 @@ namespace FieldMedic.Interaction
                 var g = col.GetComponentInParent<Grabbable>();
                 if (g == null || !g.CanBeGrabbedBy(this)) continue;
 
-                float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm);
+                // inside several handles at once: the one whose centre is nearest wins
+                float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm) + 0.1f * Vector3.Distance(col.bounds.center, palm);
                 bool first = _seen.Add(g);
 
                 GrabPoint point = null;

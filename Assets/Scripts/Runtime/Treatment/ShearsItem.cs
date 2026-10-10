@@ -52,28 +52,41 @@ namespace FieldMedic.Treatment
             if (c == null || c.rig == null || c.Interaction == null) { _hasLast = false; return; }
             // tip on the clothing of a body region
             CasualtyBodyPart part = null; float best = 0.045f; Vector3 surf = Vector3.zero;
-            foreach (var p in c.rig.Parts)
+            BodyRegion region = BodyRegion.Abdomen;
+            // limbs: skeleton geometry of the current pose (sleeve / trouser leg)
+            if (LimbMath.Nearest(c.rig, TipPosition, out var limb, out float lpos, out float skin) && skin < 0.04f)
             {
-                if (p == null || p.region is BodyRegion.Head or BodyRegion.Neck) continue;
-                var col = p.GetComponent<Collider>();
-                Vector3 q = col.ClosestPoint(TipPosition);
-                float d = Vector3.Distance(q, TipPosition);
-                if (d < best) { best = d; part = p; surf = q; }
+                region = LimbGeometry.RegionAt(LimbMath.Id(limb), Mathf.Min(lpos, 2.4f));
+                part = c.rig.Part(region);
+                Vector3 ax = LimbMath.PointAt(c.rig, limb, lpos);
+                surf = ax + (TipPosition - ax).normalized * LimbMath.RadiusAt(limb, lpos);
+            }
+            else
+            {
+                foreach (var p in c.rig.Parts)
+                {
+                    if (p == null || p.region is BodyRegion.Head or BodyRegion.Neck) continue;
+                    var col = p.GetComponent<Collider>();
+                    Vector3 q = col.ClosestPoint(TipPosition);
+                    float d = Vector3.Distance(q, TipPosition);
+                    if (d < best) { best = d; part = p; surf = q; region = p.region; }
+                }
             }
             if (part == null) { _hasLast = false; return; }
             Vector3 t = TipPosition;
             if (_hasLast)
             {
                 float step = Vector3.Distance(t, _lastTip);
-                if (step > 0.0005f && step < 0.08f)
+                if (step <= 0.003f) return; // accumulate from the last counted point (frame-rate independent)
+                if (step < 0.08f)
                 {
-                    CutLength.TryGetValue(part.region, out float len);
+                    CutLength.TryGetValue(region, out float len);
                     float before = len;
                     len += step;
-                    CutLength[part.region] = len;
+                    CutLength[region] = len;
                     Haptics.Play(HolderInput, Haptics.Contact, 1.2f);
                     if (Mathf.Floor(len / 0.03f) > Mathf.Floor(before / 0.03f)) Mark(surf, part);
-                    if (before < CutNeeded && len >= CutNeeded) Open(c, part.region);
+                    if (before < CutNeeded && len >= CutNeeded) Open(c, region);
                 }
             }
             _lastTip = t;

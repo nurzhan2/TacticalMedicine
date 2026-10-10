@@ -76,6 +76,7 @@ namespace FieldMedic.Casualty
                 // pain: how fast the injured limb is moved, how close to the wound
                 float speed = (_target - _lastTip).magnitude / dt;
                 casualty.Handle(Vector3.Lerp(mid, _target, 0.5f), speed, dt);
+                casualty.Handle(Vector3.Lerp(root, mid, 0.5f), speed * 0.6f, dt); // the whole limb moves
                 Haptics.Tension(Input, Mathf.Clamp01(Clearance * 2.5f) * 0.5f);
             }
             else if (_fallT >= 0f)

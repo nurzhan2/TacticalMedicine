@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using FieldMedic.Casualty;
 using FieldMedic.Casualty.Blood;
 using FieldMedic.Input;
 using FieldMedic.Interaction;
+using FieldMedic.Scenarios;
+using FieldMedic.Treatment;
+using FieldMedic.UI;
 using FieldMedic.Util;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -47,6 +50,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             BuildHands(rig, sim);
             BuildProps();
             BuildCasualty();
+            BuildTreatment(rig);
             BuildBookmarks();
 
             RenderSettings.sun = moon;
@@ -251,6 +255,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 BuildGloveVisual(go.transform, side, glove);
                 var boh = go.AddComponent<BloodOnHands>();
                 boh.gloves = go.GetComponentsInChildren<Renderer>();
+                go.AddComponent<HandTreatment>(); // sweep, pulse, pressure, nitrile gloves
             }
         }
 
@@ -296,7 +301,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
             // chemlight: grabbable + the scene's small warm-ish fill light
             var chem = Prim(PrimitiveType.Cylinder, "Chemlight", root, new Vector3(0.55f, top + 0.012f, 0.55f),
-                new Vector3(0.022f, 0.075f, 0.022f), Emissive("Chemlight", new Color(0.35f, 1f, 0.35f), 1.6f));
+                new Vector3(0.022f, 0.075f, 0.022f), UnlitMat("ChemlightGlow", new Color(0.45f, 1f, 0.45f)));
             chem.transform.localRotation = Quaternion.Euler(0f, 30f, 90f);
             MakeGrabbable(chem, 0.05f);
             var lgo = new GameObject("ChemlightGlow");
@@ -359,6 +364,35 @@ namespace FieldMedic.EditorTools.SceneBuilders
             erlan.name = "Erlan";
             // crouched at the front wall, watching the field (+Z), 2 m to the player's right
             erlan.transform.SetPositionAndRotation(ErlanPosition, Quaternion.Euler(0f, -25f, 0f));
+        }
+
+        // ---------------------------------------------------------------- treatment (S3)
+        /// <summary>Player IFAK on the belt (body-locked), cover zone in the dugout corner, desktop feedback HUD.</summary>
+        static void BuildTreatment(GameObject rig)
+        {
+            var pouch = new GameObject("PlayerIFAK");
+            pouch.transform.position = new Vector3(0f, 0.95f, 0.25f);
+            var ifak = pouch.AddComponent<IfakPouch>();
+            ifak.bodyLocked = true;
+            ifak.head = FindDeep(rig.transform, "CenterEyeAnchor");
+
+            var cover = new GameObject("CoverZone_Dugout");
+            cover.transform.position = new Vector3(-7.4f, 0.8f, 0f);
+            cover.AddComponent<CoverZone>().size = new Vector3(2.6f, 2f, 2.3f);
+
+            new GameObject("FeedbackHud").AddComponent<FeedbackHud>();
+        }
+
+        static Material UnlitMat(string name, Color c)
+        {
+            string path = $"{MaterialDir}/{name}.mat";
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (m == null) { m = new Material(shader); AssetDatabase.CreateAsset(m, path); }
+            m.shader = shader;
+            m.SetColor("_BaseColor", c);
+            EditorUtility.SetDirty(m);
+            return m;
         }
 
         // ---------------------------------------------------------------- camera bookmarks

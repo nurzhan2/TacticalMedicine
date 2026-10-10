@@ -155,7 +155,8 @@ Shader "FieldMedic/CasualtyLit"
                     half lumA = dot(albedo.rgb, half3(0.3, 0.59, 0.11));
                     half3 stained = blood * (0.55 + 0.9 * lumA);
                     albedo.rgb = lerp(albedo.rgb, stained, saturate(soak * 1.3));
-                    smooth = lerp(smooth, 0.78, saturate(soak * 1.5 - 0.3));
+                    // blood soaked into fabric is wet but mostly matte (supervisor review): ~0.42 at the fresh centre
+                    smooth = lerp(smooth, 0.42, saturate(soak * 1.5 - 0.3));
                     nTS = normalize(lerp(nTS, half3(0, 0, 1), soak * 0.6)); // wet fabric: flatter weave
                 }
 

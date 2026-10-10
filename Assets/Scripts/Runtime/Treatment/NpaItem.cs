@@ -114,7 +114,7 @@ namespace FieldMedic.Treatment
         void Disengage()
         {
             Engaged = false;
-            if (!Attached) { Body.isKinematic = false; Npa.depthCm = 0f; Npa.resistance = false; }
+            if (!Attached) { Body.isKinematic = IsHeld; Npa.depthCm = 0f; Npa.resistance = false; }
         }
 
         protected override void FixedUpdate()

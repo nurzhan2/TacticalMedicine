@@ -59,7 +59,7 @@ namespace FieldMedic.Treatment
             if (col == null) col = gameObject.AddComponent<BoxCollider>();
             var b = new Bounds(Vector3.zero, Vector3.zero);
             bool any = false;
-            foreach (var r in GetComponentsInChildren<MeshRenderer>(true))
+            foreach (var r in GetComponentsInChildren<MeshRenderer>(false)) // only what is visible now (not the unfolded blanket, the CAT on a limb...)
             {
                 if (r.GetComponent<TextMesh>() != null) continue;
                 var mf = r.GetComponent<MeshFilter>();
@@ -107,6 +107,8 @@ namespace FieldMedic.Treatment
         protected override void OnGrabbed(HandGrabber hand, GrabPoint point)
         {
             if (InPouch) LeavePouch();
+            // small tools follow the hand exactly (kinematic) while held; physics again once dropped
+            if (!Attached) { Body.isKinematic = true; Body.useGravity = false; }
             OnItemGrabbed(hand);
         }
 
@@ -119,6 +121,12 @@ namespace FieldMedic.Treatment
                 ReturnToSlot();
                 OnItemReleased(hand);
                 return;
+            }
+            if (!InPouch && !Attached && !Consumed)
+            {
+                Body.isKinematic = false;
+                Body.useGravity = true;
+                if (hand != null && hand.Input != null) Body.linearVelocity = Vector3.ClampMagnitude(hand.Input.Velocity, maxSpeed);
             }
             OnItemReleased(hand);
         }
@@ -134,6 +142,8 @@ namespace FieldMedic.Treatment
             Body.useGravity = false;
             Body.linearVelocity = Vector3.zero;
             transform.SetParent(parent, true);
+            // on the body it must not shove other tools away (marker on the TIME strap, fingers on the seal)
+            foreach (var col in GetComponents<Collider>()) col.isTrigger = true;
         }
 
         /// <summary>Used up (dressing applied, gloves on...): released and hidden.</summary>

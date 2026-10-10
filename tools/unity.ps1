@@ -71,6 +71,7 @@ function Invoke-UnityTests {
     param(
         [ValidateSet('EditMode', 'PlayMode')][string]$Platform = 'EditMode',
         [string]$Filter = '',
+        [string]$Category = '',
         [int]$TimeoutMin = 40
     )
     if (-not (Test-UnityProjectFree)) { return $false }
@@ -81,6 +82,7 @@ function Invoke-UnityTests {
     $a = @('-batchmode', '-projectPath', $Global:FmvrProject, '-buildTarget', 'Android', '-runTests',
            '-testPlatform', $Platform, '-testResults', $xml, '-logFile', $log)
     if ($Filter -ne '') { $a += @('-testFilter', $Filter) }
+    if ($Category -ne '') { $a += @('-testCategory', $Category) }
     $t0 = Get-Date
     $code = Start-UnityProcess $a $TimeoutMin
     $mins = [math]::Round(((Get-Date) - $t0).TotalMinutes, 1)

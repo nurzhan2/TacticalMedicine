@@ -36,7 +36,8 @@ namespace FieldMedic.Treatment
         bool _holding;
         readonly float[] _strokeDepth = new float[2];
         readonly bool[] _inStroke = new bool[2];
-        readonly bool[] _inWipe = new bool[2];
+        readonly float[] _wipePath = new float[2];
+        readonly Vector3[] _lastPalm = new Vector3[2];
         Transform _gauzeVis, _bandageVis, _exposedSkin;
         TextMesh _hint;
         int _wrapsShown = -1;
@@ -133,9 +134,10 @@ namespace FieldMedic.Treatment
                 // wiping: open palm swept across the area (before a chest seal)
                 bool open = h.Held == null && h.Input.Grip < 0.5f;
                 Vector3 palm = h.PalmPosition;
-                bool near = open && Lateral(palm) < 0.09f && Mathf.Abs(Height(palm)) < 0.05f;
-                if (near && !_inWipe[i] && h.Input.Velocity.magnitude > 0.12f) { _inWipe[i] = true; Wipes++; }
-                else if (!near) _inWipe[i] = false;
+                bool near = open && Lateral(palm) < 0.1f && Mathf.Abs(Height(palm)) < 0.06f;
+                if (near) _wipePath[i] += Vector3.ProjectOnPlane(palm - _lastPalm[i], Normal).magnitude;
+                _lastPalm[i] = palm;
+                if (_wipePath[i] >= 0.08f) { _wipePath[i] = 0f; Wipes++; Haptics.Play(h.Input, Haptics.Contact); }
             }
         }
 

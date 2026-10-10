@@ -194,6 +194,7 @@ namespace FieldMedic.Treatment
             Casualty = c;
             Limb = limb;
             Attached = true;
+            GetComponent<BoxCollider>().isTrigger = true; // the marker must reach the TIME strap
             Body.isKinematic = true;
             Body.useGravity = false;
             _slideHand = PrimaryHolder;
@@ -320,6 +321,7 @@ namespace FieldMedic.Treatment
         void OnLocked()
         {
             _rodVisual = State.windlassDegrees;
+            if (State.HalfTurns > _lastHalfTurns) { Casualty.Pain.TourniquetTwist(State.limbId, State.HalfTurns); _lastHalfTurns = State.HalfTurns; }
             Casualty.Patient.RefreshTourniquets();
             LastFeedback = Casualty.Protocol.TourniquetApplied(State);
             Haptics.Play(RodHandle.Input, Haptics.PressClick);
