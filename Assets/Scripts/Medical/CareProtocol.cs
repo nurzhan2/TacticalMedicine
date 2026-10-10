@@ -14,6 +14,8 @@ namespace FieldMedic.Medical
         MarkTourniquetTime, ThermalBlanket, CasualtyCard, MoveToCover,
         // S3 hands-on additions (append only: values are logged/serialized)
         PulseCheck, LogRoll, WoundFound, MarkForehead, LimbElevation, SealBurp, PlayerDrag,
+        // S5 scenario additions
+        ClearMouth, TourniquetConversion, TourniquetRetighten, MedevacRequest, TourniquetReassess, Scenario,
     }
 
     public enum Severity { Info, Ok, Warning, Error }
@@ -76,7 +78,87 @@ namespace FieldMedic.Medical
             ["needle_shallow"]  = (5,  "Игла введена неглубоко — нужна игла 3,25 дюйма на всю глубину."),
             ["npa_technique"]   = (5,  "НФВ: подобрать размер (ноздря–мочка уха), смазать, срез к перегородке, вводить перпендикулярно лицу «к земле»."),
             ["seal_no_wipe"]    = (3,  "Перед наклейкой вытрите кровь вокруг раны, иначе она не держится."),
+            // S5 scenario rules
+            ["tq_slow"]         = (10, "Жгут под огнём наложен позже 60 секунд после ранения."),
+            ["left_supine"]     = (15, "Раненый без сознания оставлен на спине без воздуховода: язык и рвота перекрывают дыхательные пути."),
+            ["stepped_off_path"] = (20, "Шаг в сторону от своих следов на минном поле — риск второго подрыва."),
+            ["player_exposed"]  = (10, "Голова над бруствером / в полный рост под огнём."),
+            ["white_light"]     = (5,  "Белый свет под дроном: демаскировка позиции."),
+            ["tq_not_rechecked"] = (15, "После перемещения жгут не перепроверен (сполз, кровотечение возобновилось)."),
+            ["no_medevac"]      = (5,  "Не запрошена эвакуация (MEDEVAC) по радио."),
+            ["tq_not_reassessed"] = (15, "Жгут не переоценён в течение 2 часов."),
+            ["conv_shock"]      = (20, "Конверсия жгута при шоке запрещена."),
+            ["conv_amputation"] = (20, "Жгут на ампутированной конечности не конвертируют."),
+            ["conv_too_late"]   = (20, "Жгут, наложенный более 6 часов назад, не снимают в поле."),
+            ["conv_no_dressing"] = (10, "Перед ослаблением жгута рану нужно затампонировать/наложить давящую повязку."),
+            ["conv_after_fail"] = (15, "После неудачной конверсии повторно жгут не ослабляют."),
+            ["conv_not_retightened"] = (20, "Кровотечение после ослабления жгута — жгут нужно немедленно затянуть."),
+            ["airway_not_cleared"] = (10, "Рвотные массы во рту не удалены."),
+            ["hypothermia"]     = (5,  "Раненый переохлаждён: не укрыт термоодеялом."),
         };
+
+        /// What would have happened in reality (debrief "consequence" column).
+        public static readonly Dictionary<string, string> Consequence = new()
+        {
+            ["no_gloves"] = "Риск заражения медика и раны.",
+            ["fire_non_tq"] = "Под огнём вы оба остаётесь мишенью; потерянные секунды стоят жизни.",
+            ["tq_on_joint"] = "Артерия не пережата — кровотечение продолжается, смерть через несколько минут.",
+            ["tq_below_wound"] = "Кровь продолжает уходить выше жгута.",
+            ["tq_junctional"] = "Жгут не работает на паху/подмышке — без тампонады раненый погибает.",
+            ["tq_unneeded"] = "Лишний жгут на долгой эвакуации — частая причина потери конечности.",
+            ["tq_not_marked"] = "Хирург не знает, сколько конечность без кровотока: решение о сохранении ноги — вслепую.",
+            ["march_order"] = "Пока вы заняты второстепенным, главная угроза убивает.",
+            ["wrong_tool"] = "Средство не останавливает этот тип кровотечения.",
+            ["needle_no_signs"] = "Лишняя травма лёгкого и риск кровотечения.",
+            ["blanket_early"] = "Время потрачено до остановки кровотечения.",
+            ["missed_wound"] = "Незамеченная рана кровоточит под одеждой/бронежилетом — шок через 5–10 минут.",
+            ["big_blood_loss"] = "Шок III–IV класса: даже после остановки кровотечения нужна срочная трансфузия.",
+            ["tq_loose"] = "Венозный застой: кровотечение усиливается, пульс ниже жгута сохраняется.",
+            ["tq_over_clothes"] = "Жгут на одежде может сползти и пережимает хуже.",
+            ["elevation"] = "Артериальное кровотечение не останавливается подъёмом конечности.",
+            ["not_exposed"] = "Тампон в ткани, а не в ране — кровотечение не остановлено.",
+            ["pressure_released"] = "Сгусток не сформировался — повторное кровотечение.",
+            ["needle_wrong_site"] = "Риск ранения сердца и крупных сосудов.",
+            ["needle_through_seal"] = "Герметичность нарушена, наклейка испорчена.",
+            ["needle_angle"] = "Игла уходит мимо плевральной полости.",
+            ["needle_shallow"] = "Напряжённый пневмоторакс не устранён.",
+            ["npa_technique"] = "Травма носовых ходов, кровотечение, воздуховод не проходит.",
+            ["seal_no_wipe"] = "Наклейка отклеивается — открытый пневмоторакс возвращается.",
+            ["tq_slow"] = "Бедренная артерия: каждые 10 секунд — около 100 мл крови.",
+            ["left_supine"] = "Асфиксия / аспирация через 3–4 минуты.",
+            ["stepped_off_path"] = "Второй подрыв — теперь раненых двое.",
+            ["player_exposed"] = "Снайпер или дрон: медик выбывает, раненый остаётся без помощи.",
+            ["white_light"] = "Позицию обнаружили — прилёт по окопу.",
+            ["tq_not_rechecked"] = "Сползший жгут не держит: раненый снова теряет кровь.",
+            ["no_medevac"] = "Эвакуация задерживается — «золотой час» потерян.",
+            ["tq_not_reassessed"] = "Ишемия конечности > 2 ч — растёт риск ампутации.",
+            ["conv_shock"] = "Повторное кровотечение у раненого в шоке смертельно.",
+            ["conv_amputation"] = "Культя кровит массивно — повторная кровопотеря.",
+            ["conv_too_late"] = "Синдром реперфузии: калий и токсины из ишемизированной ноги останавливают сердце.",
+            ["conv_no_dressing"] = "Без повязки рана кровоточит сразу после ослабления жгута.",
+            ["conv_after_fail"] = "Повторная кровопотеря без шанса на успех.",
+            ["conv_not_retightened"] = "Кровопотеря продолжается до шока.",
+            ["airway_not_cleared"] = "Аспирация рвотных масс.",
+            ["hypothermia"] = "Летальная триада: гипотермия усиливает кровотечение.",
+        };
+
+        /// A scenario-level mistake (detected by the scenario director, e.g. stepping off the path).
+        public void ScenarioMistake(string code, string target = null)
+        {
+            if (!Penalty.ContainsKey(code)) return;
+            Log(MedAction.Scenario, target, new Feedback(Severity.Error, code, Penalty[code].text));
+        }
+
+        /// A scenario note for the debrief timeline (no score effect).
+        public void Note(string code, string text, Severity sev = Severity.Info)
+        {
+            log.Add(new LoggedAction { time = patient.secondsSinceStart, action = MedAction.Scenario, severity = sev, code = code, text = text });
+        }
+
+        public bool medevacRequested;
+        public float medevacRequestedAt = -1f;
+        public bool tourniquetReassessed;
+        public float tourniquetReassessedAt = -1f;
 
         public CareProtocol(PatientPhysiology p, Phase start) { patient = p; phase = start; }
 
@@ -109,7 +191,20 @@ namespace FieldMedic.Medical
                 case MedAction.PlayerDrag:
                     return new(Severity.Info, "drag", "Раненый перемещён волоком.");
                 case MedAction.LogRoll:
-                    return new(Severity.Ok, "log_roll", "Перекат «бревном»: осмотрите спину.");
+                {
+                    int found = 0;
+                    foreach (var x in patient.wounds) if (x.posterior && !x.discovered) { x.discovered = true; found++; }
+                    return found > 0
+                        ? new(Severity.Ok, "log_roll_found", "Перекат «бревном»: на спине найдено ранение!")
+                        : new(Severity.Ok, "log_roll", "Перекат «бревном»: осмотрите спину.");
+                }
+                case MedAction.TourniquetReassess:
+                    tourniquetReassessed = true;
+                    if (tourniquetReassessedAt < 0f) tourniquetReassessedAt = patient.secondsSinceStart;
+                    return new(Severity.Ok, "tq_reassessed", "Жгут переоценён: пульс ниже жгута, кровотечение, время.");
+                case MedAction.MedevacRequest:
+                    if (!medevacRequested) { medevacRequested = true; medevacRequestedAt = patient.secondsSinceStart; }
+                    return new(Severity.Ok, "medevac", "Запрос на эвакуацию передан.");
                 case MedAction.LimbElevation:
                     if (CriticalBleedOpen) return new(Severity.Error, "elevation", Penalty["elevation"].text);
                     return new(Severity.Info, "limb_lift", "Конечность приподнята.");
@@ -129,8 +224,21 @@ namespace FieldMedic.Medical
                     return new(Severity.Ok, "gloves", "Перчатки надеты.");
 
                 case MedAction.BloodSweep:
-                    foreach (var x in patient.wounds) x.discovered = true;
-                    return new(Severity.Ok, "sweep", "Осмотр «прочёсом»: найдены все ранения.");
+                {
+                    bool missedBack = false;
+                    foreach (var x in patient.wounds)
+                    {
+                        if (x.posterior && !patient.recoveryPosition) { missedBack |= !x.discovered; continue; }
+                        x.discovered = true;
+                    }
+                    return missedBack
+                        ? new(Severity.Ok, "sweep_front", "Осмотр спереди завершён. Спину не видно — переверните раненого.")
+                        : new(Severity.Ok, "sweep", "Осмотр «прочёсом»: найдены все ранения.");
+                }
+
+                case MedAction.ClearMouth:
+                    patient.ClearMouth();
+                    return new(Severity.Ok, "mouth_cleared", "Рот очищен от рвотных масс.");
 
                 case MedAction.Tourniquet:
                     return Tourniquet(site);
@@ -183,9 +291,11 @@ namespace FieldMedic.Medical
                     return new(Severity.Ok, "decompressed", "Свист воздуха — давление в груди сброшено.");
 
                 case MedAction.NasalAirway:
-                case MedAction.RecoveryPosition:
                     patient.InsertAirwayAdjunct();
                     return new(Severity.Ok, "airway", "Дыхательные пути обеспечены.");
+                case MedAction.RecoveryPosition:
+                    patient.recoveryPosition = true;
+                    return new(Severity.Ok, "recovery", "Устойчивое боковое положение: язык не западает, рвота стекает.");
 
                 case MedAction.MarkTourniquetTime:
                     if (patient.tourniquetSeconds.Count == 0) return new(Severity.Warning, "no_tq", "Жгут не наложен.");
@@ -330,6 +440,55 @@ namespace FieldMedic.Medical
             w.packingHoldSeconds = 0f; // the clot is disturbed: the hold starts over
         }
 
+        /// <summary>S8: loosen a band after re-assessment. Validates the rules, loosens it if allowed and reports
+        /// whether the wound bleeds again (then the trainee must re-tighten and not try again).</summary>
+        public Feedback ConvertTourniquet(TourniquetState tq)
+        {
+            float t = tq != null && tq.appliedAtSeconds >= 0f ? patient.secondsSinceStart - tq.appliedAtSeconds : 0f;
+            string code = TourniquetConversion.Check(patient, tq, t);
+            if (code == "no_tq") return new(Severity.Warning, "no_tq", "Жгут не наложен.");
+            tourniquetReassessed = true;
+            if (tourniquetReassessedAt < 0f) tourniquetReassessedAt = patient.secondsSinceStart;
+            if (code != "ok")
+            {
+                var bad = new Feedback(Severity.Error, code, Penalty[code].text);
+                Log(MedAction.TourniquetConversion, tq.Region.ToString(), bad);
+                return bad;
+            }
+            if (t > TourniquetConversion.ReassessBySeconds) AddPenalty("tq_not_reassessed");
+            tq.Loosen();
+            bool rebleed = false;
+            foreach (var w in patient.wounds)
+                if (tq.IsProximalTo(w.LimbId, w.LimbPos) && TourniquetConversion.WillRebleed(w))
+                { rebleed = true; w.control = BleedControl.None; }
+            patient.RefreshTourniquets();
+            Feedback fb;
+            if (rebleed)
+            {
+                patient.conversionFailed = true;
+                fb = new(Severity.Warning, "conv_rebleed", "Кровотечение возобновилось — немедленно затяните жгут, запишите время. Больше не ослаблять.");
+            }
+            else
+            {
+                patient.tourniquetConverted = true;
+                patient.tourniquetSeconds.Remove(tq.limbId);
+                fb = new(Severity.Ok, "converted", "Жгут ослаблен, повязка держит. Жгут оставлен на месте ослабленным; запишите время конверсии.");
+            }
+            Log(MedAction.TourniquetConversion, tq.Region.ToString(), fb);
+            return fb;
+        }
+
+        /// The band was tightened again (windlass re-locked) after a slip or a failed conversion.
+        public Feedback TourniquetRetightened(TourniquetState tq)
+        {
+            patient.RefreshTourniquets();
+            var fb = tq.FullOcclusion
+                ? new Feedback(Severity.Ok, "tq_retightened", "Жгут затянут повторно — кровотечение остановлено.")
+                : new Feedback(Severity.Warning, "tq_partial", "Жгут затянут, но не до конца.");
+            Log(MedAction.TourniquetRetighten, tq.Region.ToString(), fb);
+            return fb;
+        }
+
         void Log(MedAction a, string target, Feedback fb)
         {
             log.Add(new LoggedAction { time = patient.secondsSinceStart, action = a, target = target,
@@ -354,7 +513,7 @@ namespace FieldMedic.Medical
             return true;
         }
 
-        void AddPenalty(string code) => penalties[code] = penalties.TryGetValue(code, out var n) ? n + 1 : 1;
+        public void AddPenalty(string code) => penalties[code] = penalties.TryGetValue(code, out var n) ? n + 1 : 1;
         void GloveCheck() { if (!glovesOn) penalties.TryAdd("no_gloves", 1); }
         static Feedback NoWound() => new(Severity.Warning, "no_wound", "Здесь нет раны. Проведите осмотр.");
 

@@ -50,6 +50,13 @@ namespace FieldMedic.Medical
         /// Bleed multiplier from tourniquets proximal to this wound (1 none, above 1 = venous congestion, 0 occluded).
         public float tourniquetFactor = 1f;
         public bool sealVented;
+        /// On the back / buttock: invisible and unreachable while he lies supine — found by a log roll.
+        public bool posterior;
+        /// Bleeding held back by vasospasm / a clot until this scenario second (delayed onset, amputation rebleed).
+        public float onsetDelaySeconds;
+        /// Fraction of the bleed that gets through before the onset (spasm leaks a little).
+        public float preOnsetFactor = 0.08f;
+        public bool onsetFired;
         [NonSerialized] public bool handsPressing; // set by interaction each frame, cleared by physiology tick
 
         public const float PackingHoldRequired = 180f;

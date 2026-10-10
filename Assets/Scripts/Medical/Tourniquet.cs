@@ -252,6 +252,34 @@ namespace FieldMedic.Medical
             return true;
         }
 
+        /// Conversion (S8): unclip and unwind the windlass, loosen the strap — the band stays on the limb, loose,
+        /// ready to be re-tightened if the wound rebleeds.
+        public bool Loosen()
+        {
+            if (!OnLimb || stage < TourniquetStage.WindlassTwisted) return false;
+            windlassDegrees = 0f;
+            slackCm = InitialSlackCm * 0.6f;
+            strapPulledCm = 0f;
+            stage = TourniquetStage.Positioned;
+            StageChanged?.Invoke(this, stage);
+            return true;
+        }
+
+        /// Scenario setup: a band already applied earlier (S7/S8 start with a CAT on the limb).
+        public void PreApply(string limb, float pos, int halfTurns, bool timeMarked, float appliedAt, bool overClothes = true)
+        {
+            limbId = limb;
+            limbPosition = Math.Max(LimbGeometry.MinPosition, pos);
+            slackCm = TightSlackCm;
+            strapPulledCm = 10f;
+            windlassDegrees = halfTurns * 180f;
+            overClothing = overClothes;
+            appliedAtSeconds = appliedAt;
+            stage = TourniquetStage.StrapSecured;
+            if (timeMarked) { timeMarkedAtSeconds = appliedAt; stage = TourniquetStage.TimeMarked; }
+            StageChanged?.Invoke(this, stage);
+        }
+
         /// Rough handling (drag, roll) loosens a band. A locked + secured CAT barely moves.
         public float Slip(float severity01)
         {

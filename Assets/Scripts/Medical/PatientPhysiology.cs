@@ -23,7 +23,14 @@ namespace FieldMedic.Medical
         public float coreTempC;
         public bool insulated;            // thermal blanket applied
         public bool airwayObstructed;
-        public bool airwayAdjunct;        // NPA inserted / recovery position
+        public bool airwayAdjunct;        // NPA inserted
+        public bool recoveryPosition;     // on his side: tongue falls forward, vomit drains
+        public bool vomitInMouth;         // vomitus pooling in the mouth (TBI, blast)
+        public float obstructionSeconds;  // continuous seconds with a compromised airway
+        public bool tbiUnconscious;       // head injury: unresponsive regardless of perfusion
+        public bool eardrumsRuptured;     // blast: cannot hear commands, blood from the ears
+        public bool tourniquetConverted;  // S8: band loosened after a pressure dressing held
+        public bool conversionFailed;     // rebleed on conversion: never try again
         public PneumoState pneumo = PneumoState.None;
         public float tensionSeverity;     // 0..1
         public float secondsSinceSeal;
@@ -44,6 +51,14 @@ namespace FieldMedic.Medical
 
         /// ATLS class 1..4
         public int HemorrhageClass => LossFraction < 0.15f ? 1 : LossFraction < 0.30f ? 2 : LossFraction < 0.40f ? 3 : 4;
+
+        /// Airway open? Supine + unconscious = tongue falls back (NPA or recovery position fixes it);
+        /// vomit in the mouth of a supine casualty is aspirated whatever adjunct is in the nose.
+        public bool AirwayCompromised =>
+            outcome != Outcome.Died && !recoveryPosition && ((airwayObstructed && !airwayAdjunct) || vomitInMouth);
+
+        /// 0..1 how far hypoxia from the blocked airway has progressed (~4 min to full, 2.5x faster with vomit).
+        public float ObstructionSeverity => Math.Clamp(obstructionSeconds / 240f, 0f, 1f);
 
         // ---------- vitals (derived) ----------
         public float HeartRate
@@ -80,7 +95,7 @@ namespace FieldMedic.Medical
             get
             {
                 if (outcome == Outcome.Died) return 0;
-                if (airwayObstructed && !airwayAdjunct) return 6f;
+                if (AirwayCompromised) return 6f;
                 float rr = 15f + 35f * LossFraction + 18f * tensionSeverity;
                 if (pneumo == PneumoState.Open) rr += 6f;
                 return Math.Clamp(rr, 0f, 45f);
@@ -95,7 +110,7 @@ namespace FieldMedic.Medical
                 float s = 98f;
                 if (pneumo == PneumoState.Open) s -= 5f;
                 s -= 40f * tensionSeverity;
-                if (airwayObstructed && !airwayAdjunct) s -= 25f;
+                if (AirwayCompromised) s -= 25f + 35f * ObstructionSeverity;
                 if (LossFraction > 0.35f) s -= (LossFraction - 0.35f) * 60f; // poor perfusion, unreliable reading
                 return Math.Clamp(s, 40f, 100f);
             }
@@ -105,7 +120,7 @@ namespace FieldMedic.Medical
         {
             get
             {
-                if (outcome == Outcome.Died) return Consciousness.Unresponsive;
+                if (outcome == Outcome.Died || tbiUnconscious) return Consciousness.Unresponsive;
                 float hypoxia = Math.Max(0f, 90f - SpO2);
                 float score = LossFraction * 100f + hypoxia * 1.2f;
                 return score < 18f ? Consciousness.Alert
@@ -138,8 +153,12 @@ namespace FieldMedic.Medical
         public float CurrentFlowMlPerSec(Wound w)
         {
             if (outcome == Outcome.Died) return 0f;
-            return w.BaseRateMlPerMin / 60f * w.ResidualFactor * Perfusion * CoagulopathyMultiplier;
+            return w.BaseRateMlPerMin / 60f * w.ResidualFactor * OnsetFactor(w) * Perfusion * CoagulopathyMultiplier;
         }
+
+        /// Delayed onset (vasospasm in an amputation stump, a clot that lets go): only a trickle before the onset.
+        public float OnsetFactor(Wound w) =>
+            w.onsetDelaySeconds > 0f && secondsSinceStart < w.onsetDelaySeconds ? w.preOnsetFactor : 1f;
 
         // ---------- simulation ----------
         public void Tick(float dt)
@@ -150,6 +169,11 @@ namespace FieldMedic.Medical
 
             foreach (var w in wounds)
             {
+                if (w.onsetDelaySeconds > 0f && !w.onsetFired && secondsSinceStart >= w.onsetDelaySeconds)
+                {
+                    w.onsetFired = true;
+                    if (!w.IsControlled) OnEvent?.Invoke("rebleed");
+                }
                 float lost = CurrentFlowMlPerSec(w) * dt;
                 w.bloodLostMl += lost;
                 bloodLostMl += lost;
@@ -164,7 +188,7 @@ namespace FieldMedic.Medical
             coreTempC = Math.Clamp(coreTempC, 30f, 37.2f);
 
             TickChest(dt);
-            TickAirway();
+            TickAirway(dt);
             CheckDeath(dt);
         }
 
@@ -189,13 +213,38 @@ namespace FieldMedic.Medical
             }
         }
 
-        void TickAirway()
+        void TickAirway(float dt)
         {
             bool unconscious = AVPU == Consciousness.Unresponsive || AVPU == Consciousness.Pain;
             if (unconscious && !airwayObstructed && !airwayAdjunct)
             {
                 airwayObstructed = true; // tongue falls back: snoring respirations
                 OnEvent?.Invoke("airway_obstructed");
+            }
+            if (recoveryPosition && vomitInMouth) { vomitInMouth = false; OnEvent?.Invoke("vomit_drained"); }
+            if (AirwayCompromised) obstructionSeconds += dt * (vomitInMouth ? 2.5f : 1f);
+            else obstructionSeconds = Math.Max(0f, obstructionSeconds - dt * 4f);
+        }
+
+        /// He vomits (TBI/blast). Supine and unconscious = aspiration risk; on his side it drains.
+        public void Vomit()
+        {
+            if (outcome != Outcome.Ongoing) return;
+            vomitInMouth = !recoveryPosition;
+            OnEvent?.Invoke("vomit");
+        }
+
+        /// Finger sweep / turning the head: vomitus cleared from the mouth.
+        public void ClearMouth() { vomitInMouth = false; }
+
+        /// Advance the model by a long time in small steps (time-skip milestones, S8).
+        public void Advance(float seconds, float step = 1f)
+        {
+            while (seconds > 0f && outcome == Outcome.Ongoing)
+            {
+                float d = Math.Min(step, seconds);
+                Tick(d);
+                seconds -= d;
             }
         }
 
@@ -206,6 +255,7 @@ namespace FieldMedic.Medical
             _criticalSeconds = critical ? _criticalSeconds + dt : Math.Max(0f, _criticalSeconds - dt);
             if (_criticalSeconds > 45f)
                 Die(tensionSeverity > 0.8f ? "Напряжённый пневмоторакс" :
+                    vomitInMouth && SpO2 < 55f ? "Аспирация рвотных масс (раненый без сознания лежал на спине)" :
                     SpO2 < 55f && LossFraction < 0.3f ? "Гипоксия (нарушение проходимости дыхательных путей)" :
                     "Геморрагический шок");
         }
