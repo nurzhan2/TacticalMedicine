@@ -265,6 +265,17 @@ namespace FieldMedic.Medical
             return true;
         }
 
+        /// The band slipped (rough drag, S7): the windlass jumped out of the clip and unwound to `keepHalfTurns`,
+        /// the strap lost some grip. Partial occlusion → venous congestion → the wound bleeds again.
+        public void SlipLoose(int keepHalfTurns, float addSlackCm)
+        {
+            if (!OnLimb || stage < TourniquetStage.WindlassTwisted) return;
+            windlassDegrees = Math.Max(0, keepHalfTurns) * 180f;
+            slackCm = Math.Min(InitialSlackCm, slackCm + addSlackCm);
+            stage = keepHalfTurns >= 1 ? TourniquetStage.WindlassTwisted : TourniquetStage.StrapPulled;
+            StageChanged?.Invoke(this, stage);
+        }
+
         /// Scenario setup: a band already applied earlier (S7/S8 start with a CAT on the limb).
         public void PreApply(string limb, float pos, int halfTurns, bool timeMarked, float appliedAt, bool overClothes = true)
         {

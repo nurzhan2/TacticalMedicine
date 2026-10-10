@@ -108,6 +108,7 @@ namespace FieldMedic.Treatment
             foreach (var s in c.WoundSites)
             {
                 if (s == null || s.Wound == null || s.Wound.discovered) continue;
+                if (s.Wound.posterior && !c.rolledOnSide) continue; // under his back: roll him first
                 if (Vector3.Distance(palm, s.transform.position) > discoverRadius) continue;
                 c.Protocol.Discover(s.Wound);
                 Haptics.Play(input, Haptics.PressClick);

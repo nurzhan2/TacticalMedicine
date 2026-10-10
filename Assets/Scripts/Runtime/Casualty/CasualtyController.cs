@@ -274,6 +274,15 @@ namespace FieldMedic.Casualty
             if (rig != null) rig.Flinch(1f);
         }
 
+        /// <summary>Scenario start with the casualty already down (S7/S8): lying, no fall animation.</summary>
+        public void StartDown()
+        {
+            EnsurePatient();
+            IsDown = true;
+            IsFalling = false;
+            SetPose(CasualtyPoseMapper.LyingPose(Patient, Pain.level, recoveryPosition), true);
+        }
+
         /// <summary>Tourniquet through the protocol (S3 drives this from the physical CAT state machine).</summary>
         public Feedback ApplyTourniquet(BodyRegion site, int halfTurns = 2)
         {
@@ -313,7 +322,7 @@ namespace FieldMedic.Casualty
             if (dt <= 0f) return;
             EnsurePatient();
             float sdt = dt * Mathf.Max(0f, simulationSpeed);
-            if (IsDown) Patient.Tick(sdt);
+            if (IsDown) { Patient.recoveryPosition = rolledOnSide || recoveryPosition; Patient.Tick(sdt); }
             Pain.Tick(Patient, sdt);
             UpdatePose(dt);
             UpdateBody(dt);

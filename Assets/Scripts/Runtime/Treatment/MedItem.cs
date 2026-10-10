@@ -96,6 +96,13 @@ namespace FieldMedic.Treatment
             transform.localRotation = Quaternion.identity;
         }
 
+        /// <summary>Out of the pouch for good (scenario setup: the item is already in use).</summary>
+        public void TakeOutOfPouch()
+        {
+            if (InPouch) LeavePouch();
+            homeSlot = null;
+        }
+
         void LeavePouch()
         {
             InPouch = false;

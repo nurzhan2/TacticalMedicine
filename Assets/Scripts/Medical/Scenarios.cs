@@ -218,7 +218,7 @@ namespace FieldMedic.Medical
                 complications = { new(ComplicationKind.CasualtyCrawl, 25f), new(ComplicationKind.RadioLine, 15f, "mine") },
                 skillsRu = new[] { "Только по своим следам", "Жгут высоко на бедро над культёй", "Кровотечение после спазма сосудов — второй жгут", "Осмотр паха и второй ноги" },
                 skillsKz = new[] { "Тек өз ізіңмен", "Жгут санның жоғарысына", "Екінші жгут", "Шап пен екінші аяқты тексеру" },
-                incidentDelay = 10f, evacMinutes = 40f, clockHour = 2, clockMinute = 20, tqDeadline = 90f,
+                incidentDelay = 10f, evacMinutes = 40f, clockHour = 2, clockMinute = 20, tqDeadline = 90f, startPhase = Phase.TacticalFieldCare,
             },
             new ScenarioDefinition
             {
@@ -261,7 +261,7 @@ namespace FieldMedic.Medical
                 complications = { new(ComplicationKind.Vomit, 75f), new(ComplicationKind.Vomit, 200f, null, true), new(ComplicationKind.RadioLine, 15f, "kab") },
                 skillsRu = new[] { "Проверка дыхания: храп = западение языка", "НФВ: срез к перегородке, «к земле»", "Устойчивое боковое положение", "Рвота: повернуть, очистить рот" },
                 skillsKz = new[] { "Тынысты тексеру: қорылдау", "НФВ енгізу", "Бүйірге жатқызу", "Құсық: аузын тазалау" },
-                incidentDelay = 10f, evacMinutes = 30f, clockHour = 5, clockMinute = 20, startPhase = Phase.CareUnderFire,
+                incidentDelay = 10f, evacMinutes = 30f, clockHour = 5, clockMinute = 20, startPhase = Phase.TacticalFieldCare,
             },
             new ScenarioDefinition
             {

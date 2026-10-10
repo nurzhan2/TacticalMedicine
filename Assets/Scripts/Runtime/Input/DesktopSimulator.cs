@@ -52,6 +52,9 @@ namespace FieldMedic.Input
             _eyeHeight = standingEyeHeight;
         }
 
+        /// <summary>Teleport the view yaw (scenario start, menu).</summary>
+        public void SnapYaw(float yaw) { _yaw = yaw; _pitch = 0f; }
+
         public DesktopHandInput Get(Handedness h) { EnsureInit(); return h == Handedness.Left ? Left : Right; }
 
         void Update()

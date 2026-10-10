@@ -309,7 +309,59 @@ namespace FieldMedic.EditorTools.SceneBuilders
             cover.AddComponent<CoverZone>().size = new Vector3(3.0f, 1.9f, 1.9f);
 
             new GameObject("FeedbackHud").AddComponent<FeedbackHud>();
-            new GameObject("DemoScenario").AddComponent<DemoScenarioStarter>(); // S5 replaces with the scenario system
+            BuildScenarioSystem(rig, cover.GetComponent<CoverZone>());
+        }
+
+        // ---------------------------------------------------------------- scenarios (S5)
+        /// <summary>Scenario director + spot anchors, the menu/debrief board on the dugout end wall, the radio on
+        /// the vest, the watch on the left wrist and the S3 mine-path footprints in the communication trench.</summary>
+        static void BuildScenarioSystem(GameObject rig, CoverZone cover)
+        {
+            var root = new GameObject("Scenarios").transform;
+            var d = root.gameObject.AddComponent<ScenarioDirector>();
+            var erlan = GameObject.Find("Erlan");
+            d.casualty = erlan != null ? erlan.GetComponent<FieldMedic.Casualty.CasualtyController>() : null;
+            d.playerRig = rig.transform;
+            d.head = FindDeep(rig.transform, "CenterEyeAnchor");
+
+            Transform Anchor(string name, Vector3 pos, float yaw)
+            {
+                var t = new GameObject(name).transform;
+                t.SetParent(root, false);
+                t.SetPositionAndRotation(pos, Quaternion.Euler(0f, yaw, 0f));
+                return t;
+            }
+            d.spots = new[]
+            {
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FireBay, casualty = Anchor("Spot_FireBay_Casualty", ErlanPosition, -25f), player = Anchor("Spot_FireBay_Player", new Vector3(0.2f, 0f, -0.1f), 60f) },
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.CommTrench, casualty = Anchor("Spot_Comm_Casualty", new Vector3(-2.95f, 0f, -4.6f), 168f), player = Anchor("Spot_Comm_Player", new Vector3(-3.1f, 0f, -2.3f), 175f) },
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FarBay, casualty = Anchor("Spot_Far_Casualty", new Vector3(3.6f, 0f, 0.05f), 90f), player = Anchor("Spot_Far_Player", new Vector3(2.7f, 0f, -0.1f), 90f) },
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.Dugout, casualty = Anchor("Spot_Dugout_Casualty", new Vector3(-8.0f, 0.05f, -1.55f), 90f), player = Anchor("Spot_Dugout_Player", new Vector3(-7.1f, 0f, -1.2f), 255f) },
+            };
+            d.menuPlayerSpot = Anchor("Spot_Menu_Player", new Vector3(-8.25f, 0f, -1.5f), 270f);
+
+            var boardGo = new GameObject("MenuBoard");
+            boardGo.transform.SetPositionAndRotation(new Vector3(-9.5f, 1.12f, -1.5f), Quaternion.LookRotation(Vector3.left));
+            d.board = boardGo.AddComponent<MenuBoard>();
+
+            var mine = new GameObject("MinePath");
+            mine.transform.SetParent(root, false);
+            var mp = mine.AddComponent<MinePath>();
+            mp.points = new[] { new Vector3(-3.1f, 0f, -2.1f), new Vector3(-3.2f, 0f, -3.2f), new Vector3(-3.0f, 0f, -4.2f) };
+            mine.SetActive(false);
+            d.minePath = mp;
+
+            var radio = new GameObject("Radio");
+            var rs = radio.AddComponent<RadioSet>();
+            rs.head = d.head;
+
+            var handL = GameObject.Find("Hand_L");
+            if (handL != null)
+            {
+                var w = new GameObject("WristWatch");
+                w.transform.SetParent(handL.transform, false);
+                w.AddComponent<WristWatch>().hand = handL.transform;
+            }
         }
 
         static Material UnlitMat(string name, Color c)
@@ -332,6 +384,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Bookmark(root, "s1_main", new Vector3(-0.9f, 1.75f, -0.75f), new Vector3(0.15f, 0.55f, 0.62f), 62f);
             Bookmark(root, "s1_props", new Vector3(0.05f, 1.05f, 0.05f), new Vector3(0.3f, 0.52f, 0.64f), 55f);
             Bookmark(root, "s1_trench", new Vector3(-4.2f, 1.6f, 0f), new Vector3(2f, 0.6f, 0.2f), 60f);
+            Bookmark(root, "s5_menu", new Vector3(-8.25f, 1.45f, -1.5f), new Vector3(-9.5f, 1.12f, -1.5f), 62f);
             Bookmark(root, "s2_erlan_idle", ErlanPosition + new Vector3(-1.5f, 1.3f, -0.6f), ErlanPosition + new Vector3(0f, 0.65f, 0f), 50f);
         }
 

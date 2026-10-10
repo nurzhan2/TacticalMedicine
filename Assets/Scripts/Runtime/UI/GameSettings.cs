@@ -3,6 +3,7 @@ using UnityEngine;
 namespace FieldMedic.UI
 {
     public enum GameLanguage { RU = 0, KZ = 1 }
+    public enum GoreLevel { Low = 0, Medium = 1, Max = 2 }
 
     /// <summary>Player settings persisted in PlayerPrefs. Russian is the default UI language.</summary>
     public static class GameSettings
@@ -25,14 +26,61 @@ namespace FieldMedic.UI
             }
         }
 
+        public static bool KZ => Language == GameLanguage.KZ;
+
         public static event System.Action<GameLanguage> LanguageChanged;
 
         /// <summary>Training option: the 3-minute pressure hold after packing runs this many times faster.</summary>
         public static float HoldTimeScale = 1f;
+
+        static bool? _hints;
         /// <summary>Show training hints (hold timer near the wound, feedback lines in the desktop HUD).</summary>
-        public static bool Hints = true;
+        public static bool Hints
+        {
+            get => _hints ??= PlayerPrefs.GetInt("fm_hints", 1) == 1;
+            set { _hints = value; PlayerPrefs.SetInt("fm_hints", value ? 1 : 0); }
+        }
+
+        static int? _gore;
+        /// <summary>Owner default: maximum naturalistic.</summary>
+        public static GoreLevel Gore
+        {
+            get => (GoreLevel)(_gore ??= PlayerPrefs.GetInt("fm_gore", (int)GoreLevel.Max));
+            set { _gore = (int)value; PlayerPrefs.SetInt("fm_gore", (int)value); }
+        }
+
+        /// <summary>Blood particle/pool multiplier for the gore level.</summary>
+        public static float GoreScale => Gore switch { GoreLevel.Low => 0.35f, GoreLevel.Medium => 0.7f, _ => 1f };
+
+        static bool? _seated;
+        public static bool Seated
+        {
+            get => _seated ??= PlayerPrefs.GetInt("fm_seated", 0) == 1;
+            set { _seated = value; PlayerPrefs.SetInt("fm_seated", value ? 1 : 0); }
+        }
+
+        static int? _hand;
+        /// <summary>0 = right-handed, 1 = left-handed (which hand the bot/ghost guides demonstrate with).</summary>
+        public static bool LeftHanded
+        {
+            get => (_hand ??= PlayerPrefs.GetInt("fm_hand", 0)) == 1;
+            set { _hand = value ? 1 : 0; PlayerPrefs.SetInt("fm_hand", value ? 1 : 0); }
+        }
+
+        static int? _snap;
+        public static float SnapTurnDegrees
+        {
+            get => _snap ??= PlayerPrefs.GetInt("fm_snap", 45);
+            set { _snap = Mathf.RoundToInt(value); PlayerPrefs.SetInt("fm_snap", Mathf.RoundToInt(value)); }
+        }
+
+        public static int BestScore(string scenarioId) => PlayerPrefs.GetInt("fm_best_" + scenarioId, -1);
+        public static void SetBestScore(string scenarioId, int score) { PlayerPrefs.SetInt("fm_best_" + scenarioId, score); PlayerPrefs.Save(); }
 
         /// <summary>Probability that the casualty speaks Kazakh for a given line (he mixes both, as in reality).</summary>
         public static float CasualtyKazakhShare => Language == GameLanguage.KZ ? 0.8f : 0.35f;
+
+        /// <summary>Pick the UI string for the current language.</summary>
+        public static string T(string ru, string kz) => KZ && !string.IsNullOrEmpty(kz) ? kz : ru;
     }
 }

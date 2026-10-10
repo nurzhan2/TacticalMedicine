@@ -35,6 +35,13 @@ namespace FieldMedic.Treatment
         public ProxyHandle TimeStrapHandle { get; private set; }
         public Transform TimeLabel { get; private set; }
         public Feedback LastFeedback { get; private set; }
+        /// <summary>S8: a locked band may be unwound (rod twisted back ≥ 270°) to convert it.</summary>
+        public bool allowConversion;
+        public bool ConversionAttempted { get; private set; }
+        public bool Retightened { get; private set; }
+        public bool Slipped { get; private set; }
+        bool _everLocked;
+        float _untwist;
         public float SlideTarget => State.limbPosition;
 
         Transform _folded, _onLimb, _rodPivot, _strapTail, _timeFlap, _timeCover;
@@ -216,7 +223,7 @@ namespace FieldMedic.Treatment
             Windlass(dt);
             TimeStrap();
             StrapHandle.gameObject.SetActive(State.stage >= TourniquetStage.Positioned && !State.Locked);
-            RodHandle.gameObject.SetActive(State.stage >= TourniquetStage.Positioned && !State.Locked);
+            RodHandle.gameObject.SetActive((State.stage >= TourniquetStage.Positioned && !State.Locked) || (State.Locked && allowConversion && !ConversionAttempted));
             TimeStrapHandle.gameObject.SetActive(State.stage == TourniquetStage.WindlassLocked);
         }
 
@@ -285,7 +292,17 @@ namespace FieldMedic.Treatment
                 }
                 else _crankValid = false;
                 float applied = Mathf.Abs(crank) > Mathf.Abs(twist) ? crank : twist;
-                if (Mathf.Abs(applied) > 0.01f)
+                if (State.Locked)
+                {
+                    // conversion: unclip and unwind a locked band
+                    if (allowConversion && !ConversionAttempted)
+                    {
+                        _untwist += applied;
+                        _rodVisual = State.windlassDegrees + _untwist;
+                        if (Mathf.Abs(_untwist) >= 270f) Convert();
+                    }
+                }
+                else if (Mathf.Abs(applied) > 0.01f)
                 {
                     State.Twist(applied);
                     Casualty.Patient.RefreshTourniquets();
@@ -318,12 +335,53 @@ namespace FieldMedic.Treatment
             Haptics.Play(hand.Input, Haptics.PressClick);
         }
 
+        void Convert()
+        {
+            ConversionAttempted = true;
+            LastFeedback = Casualty.Protocol.ConvertTourniquet(State);
+            _untwist = 0f;
+            _rodVisual = State.windlassDegrees;
+            _lastHalfTurns = State.HalfTurns;
+            if (RodHandle.Hand != null) Haptics.Play(RodHandle.Input, Haptics.PressClick);
+            Debug.Log("[FMVR] TQ conversion: " + LastFeedback.code);
+        }
+
+        /// <summary>Scenario setup: this CAT was applied before the scenario starts (S7/S8).</summary>
+        public void PreApply(CasualtyController c, Limb limb, float pos, int halfTurns, bool timeMarked, float appliedAt)
+        {
+            TakeOutOfPouch();
+            State.Pickup();
+            Wrap(c, limb, pos);
+            if (!State.OnLimb) return;
+            _slideHand = null;
+            State.PreApply(LimbMath.Id(limb), pos, halfTurns, timeMarked, appliedAt);
+            _rodVisual = State.windlassDegrees;
+            _lastHalfTurns = State.HalfTurns;
+            _everLocked = true;
+            c.Patient.AddTourniquet(State);
+            if (timeMarked && _timeText != null) _timeText.text = "T " + ScenarioClock.Format(appliedAt);
+            PlaceOnLimb();
+        }
+
+        /// <summary>S7: the band slipped during the drag — the rod is out of the clip, partly unwound.</summary>
+        public void SlipLoose()
+        {
+            if (!State.Locked) return;
+            Slipped = true;
+            State.SlipLoose(2, 2.5f);
+            _rodVisual = State.windlassDegrees;
+            _lastHalfTurns = State.HalfTurns;
+            Casualty.Patient.RefreshTourniquets();
+        }
+
         void OnLocked()
         {
             _rodVisual = State.windlassDegrees;
             if (State.HalfTurns > _lastHalfTurns) { Casualty.Pain.TourniquetTwist(State.limbId, State.HalfTurns); _lastHalfTurns = State.HalfTurns; }
             Casualty.Patient.RefreshTourniquets();
-            LastFeedback = Casualty.Protocol.TourniquetApplied(State);
+            if (_everLocked) { Retightened = true; LastFeedback = Casualty.Protocol.TourniquetRetightened(State); }
+            else LastFeedback = Casualty.Protocol.TourniquetApplied(State);
+            _everLocked = true;
             Haptics.Play(RodHandle.Input, Haptics.PressClick);
         }
 

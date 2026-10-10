@@ -24,6 +24,8 @@ namespace FieldMedic.Environment
         public bool underFire = true;
         public bool enableHits = true;
         public bool forceDroneOverhead;
+        [Tooltip("Show the run-end overlay on a hit (the scenario director shows its debrief instead).")]
+        public bool showRunEndOverlay = true;
 
         public ThreatModel Model { get; } = new ThreatModel();
         public bool HeadExposed { get; private set; }
@@ -92,7 +94,7 @@ namespace FieldMedic.Environment
                     string text = ThreatModel.Explain(Model.HitReason, kz);
                     Debug.Log("[FMVR] player hit: " + Model.HitReason + " — " + text);
                     PlayerHit?.Invoke(Model.HitReason);
-                    RunEndOverlay.Show(kz ? "ЖАРАЛАНДЫҢЫЗ" : "ВЫ РАНЕНЫ", text);
+                    if (showRunEndOverlay) RunEndOverlay.Show(kz ? "ЖАРАЛАНДЫҢЫЗ" : "ВЫ РАНЕНЫ", text);
                     break;
             }
         }
