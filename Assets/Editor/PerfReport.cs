@@ -19,6 +19,35 @@ namespace FieldMedic.EditorTools
     {
         const int TriBudget = 150000, DrawBudget = 120;
 
+        /// <summary>S6: GPU instancing on every project material whose shader supports it, then the report.
+        /// Batch: -executeMethod FieldMedic.EditorTools.PerfReport.OptimizeAndRun</summary>
+        [MenuItem("FieldMedic/Perf Optimize + Report")]
+        public static void OptimizeAndRun()
+        {
+            int changed = 0, total = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Material", new[] { "Assets" }))
+            {
+                var m = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
+                if (m == null || m.shader == null) continue;
+                total++;
+                if (!m.enableInstancing && HasInstancing(m.shader)) { m.enableInstancing = true; EditorUtility.SetDirty(m); changed++; }
+            }
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[FMVR] perf: GPU instancing enabled on {changed} of {total} materials");
+            Run();
+        }
+
+        static System.Reflection.MethodInfo _hasInstancing;
+        /// <summary>ShaderUtil.HasInstancing is internal in Unity 6 → reflection; unknown = true (the flag is ignored
+        /// by shaders without instancing variants).</summary>
+        static bool HasInstancing(Shader s)
+        {
+            if (_hasInstancing == null)
+                _hasInstancing = typeof(ShaderUtil).GetMethod("HasInstancing", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+            try { return _hasInstancing == null || (bool)_hasInstancing.Invoke(null, new object[] { s }); }
+            catch { return true; }
+        }
+
         [MenuItem("FieldMedic/Perf Report")]
         public static void Run()
         {
@@ -73,6 +102,15 @@ namespace FieldMedic.EditorTools
                 if (texLines.Count < 25) texLines.Add($"| {Path.GetFileName(path)} | {w}×{h} | {mb:F2} |");
             }
 
+            var allMats = new HashSet<Material>(renderers.SelectMany(r => r.sharedMaterials).Where(m => m != null));
+            int instanced = allMats.Count(m => m.enableInstancing);
+            int staticCount = renderers.Count(r => GameObjectUtility.AreStaticEditorFlagsSet(r.gameObject, StaticEditorFlags.BatchingStatic));
+            const string kz = "ӘҒҚҢӨҰҮҺІәғқңөұүһі";
+            var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            font.RequestCharactersInTexture(kz);
+            var missing = new string(kz.Where(c => !font.HasCharacter(c)).ToArray());
+            string kzGlyphs = missing.Length == 0 ? "all present (in editor; verify on device)" : "MISSING " + missing;
+
             var sb = new StringBuilder();
             sb.AppendLine("# Performance report — Main scene (Quest 3S budget)");
             sb.AppendLine();
@@ -93,13 +131,22 @@ namespace FieldMedic.EditorTools
                           "Flash lights (4 pooled point lights), the red headlamp (spot) and the dugout candle are unshadowed. " +
                           "Particles: dirt/smoke/debris/dust/sparks/rain systems are pooled and idle most of the time.");
             sb.AppendLine();
+            sb.AppendLine("## Quest runtime profile (`FieldMedic.Comfort.QuestPerformance`, auto-bootstrapped on device)");
+            sb.AppendLine($"- Fixed foveated rendering **{FieldMedic.Comfort.QuestPerformance.Foveation}**, dynamic FFR on (Meta XR Foveation OpenXR feature).");
+            sb.AppendLine($"- Display {FieldMedic.Comfort.QuestPerformance.RefreshRate:F0} Hz; CPU/GPU suggested level SustainedHigh.");
+            sb.AppendLine($"- Dynamic resolution (OVRManager, OpenXR) {FieldMedic.Comfort.QuestPerformance.MinResolutionScale:F1}–{FieldMedic.Comfort.QuestPerformance.MaxResolutionScale:F1} × eye buffer.");
+            sb.AppendLine("- URP Mobile: MSAA 4×, HDR off, render scale 1, Vulkan, multiview (single-pass instanced), static batching on, ASTC textures, GPU skinning.");
+            sb.AppendLine($"- Materials with GPU instancing: {instanced} / {allMats.Count} used in the scene; static-batched renderers: {staticCount} / {renderers.Length}.");
+            sb.AppendLine($"- Audio: {AudioSettings.GetConfiguration().numRealVoices} real voices; mixer groups Ambience/SFX/Voice/Tinnitus.");
+            sb.AppendLine($"- UI font (LegacyRuntime) Kazakh glyphs ӘҒҚҢӨҰҮҺІ әғқңөұүһі: {kzGlyphs}.");
+            sb.AppendLine();
             sb.AppendLine("## Largest textures");
             sb.AppendLine("| Texture | Size (import) | MB |");
             sb.AppendLine("|---|---|---|");
             foreach (var l in texLines) sb.AppendLine(l);
             Directory.CreateDirectory("docs");
             File.WriteAllText("docs/PERF.md", sb.ToString());
-            Debug.Log($"[FMVR] perf: visible tris {worstVisible}, total tris {totalTris}, draws worst {worstDraws}, shadows {shadowLights}, tex {texMB:F1} MB");
+            Debug.Log($"[FMVR] perf: visible tris {worstVisible}, total tris {totalTris}, draws worst {worstDraws}, shadows {shadowLights}, tex {texMB:F1} MB, kz glyphs: {kzGlyphs}");
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 

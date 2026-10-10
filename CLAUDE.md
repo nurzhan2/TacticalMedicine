@@ -50,3 +50,7 @@ An Android IL2CPP build leaves ~8 GB in Library\Bee (Bee\Android, Bee\artifacts\
 ## Supervisor notes
 Read docs/SUPERVISOR_NOTES.md at the start of every stage and address the items that belong to your stage.
 
+
+## Git push on slow internet (supervisor 13:16)
+Never block the stage waiting for git push. Commit often, push in the background (Start-Process git push) and continue working; at the end of a stage do one push with a 10-minute limit and move on even if it did not finish (the next stage pushes again). Save new screenshots as JPG (quality ~85, max 1600 px) instead of PNG to keep pushes small.
+
