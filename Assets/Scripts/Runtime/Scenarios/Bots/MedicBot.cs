@@ -217,6 +217,10 @@ namespace FieldMedic.Scenarios.Bots
             var rod = cat.RodHandle;
             yield return Grab(h, rod, rod.transform.position);
             yield return Twist(h, cat.transform.up, halfTurns * 180f + 8f);
+            // like a person: keep turning until the count is reached (hand pose / crank geometry differ per scene)
+            for (int k = 0; k < 12 && cat.State.HalfTurns < halfTurns; k++) yield return Twist(h, cat.transform.up, 45f);
+            float err = cat.State.LockError;
+            if (err > 20f) yield return Twist(h, cat.transform.up, 180f - (Mathf.Abs(cat.State.windlassDegrees) % 180f) + 4f); // on to the next clip position
             yield return Release(h);
 
             if (!cat.State.Locked) { lastStep = "tq: not locked"; yield break; }
@@ -323,7 +327,13 @@ namespace FieldMedic.Scenarios.Bots
             yield return Move(h, w + n * 0.05f);
             yield return Move(h, w - n * 0.015f, false, 0.3f);
             float t = 0f;
-            while (t < seconds) { SetPalm(h, w - n * 0.015f + Random.insideUnitSphere * 0.001f); t += Time.deltaTime; yield return null; }
+            while (t < seconds)
+            {
+                w = care.transform.position; n = care.Normal; // keep the hand on the wound while he moves
+                SetPalm(h, w - n * 0.015f + Random.insideUnitSphere * 0.001f);
+                t += Time.deltaTime;
+                yield return null;
+            }
             yield return Move(h, w + n * 0.1f);
         }
 
@@ -403,9 +413,10 @@ namespace FieldMedic.Scenarios.Bots
             if (holdHand.Held != null) yield return Release(holdHand);
             yield return Move(holdHand, holdHand.PalmPosition + n * 0.2f);
             lastStep = "seal: edges";
-            Vector3 up = care.transform.up, right = care.transform.right;
-            for (int s = 0; s < 6 && !seal.Proc.Complete; s++)
+            for (int s = 0; s < 12 && !seal.Proc.Complete; s++)
             {
+                w = care.transform.position; n = care.Normal; // he keeps moving
+                Vector3 up = care.transform.up, right = care.transform.right;
                 float a = s * 60f * Mathf.Deg2Rad + 0.3f;
                 Vector3 e = w + (up * Mathf.Cos(a) + right * Mathf.Sin(a)) * 0.055f;
                 yield return Move(other, e + n * 0.03f, true, 1f);

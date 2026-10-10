@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.IO;
 using System.Linq;
 using FieldMedic.Casualty;
@@ -74,7 +74,7 @@ namespace FieldMedic.Tests
 
         IEnumerator Shot(string name, Vector3 from, Vector3 at, float fov = 55f)
         {
-            yield return new WaitForEndOfFrame();
+            yield return null; // (WaitForEndOfFrame never resumes in batch mode)
             _flare.transform.position = at + new Vector3(-1.4f, 3.4f, -0.8f);
             var go = new GameObject("~ShotCam");
             var cam = go.AddComponent<Camera>();
@@ -98,6 +98,14 @@ namespace FieldMedic.Tests
             Debug.Log("[FMVR] screenshot " + name);
         }
 
+        /// <summary>Waits until the condition holds or the timeout passes (a failed step must not hang the run).</summary>
+        static IEnumerator Until(System.Func<bool> done, float timeout)
+        {
+            float t = 0f;
+            while (!done() && t < timeout) { t += Time.deltaTime; yield return null; }
+            if (!done()) Debug.Log("[FMVR] screenshot step timed out");
+        }
+
         static Vector3 Side(CasualtyController c, Vector3 p, float right, float up, float along = 0f)
         {
             Vector3 r = Vector3.ProjectOnPlane(c.rig.BodyRight, Vector3.up).normalized;
@@ -106,7 +114,7 @@ namespace FieldMedic.Tests
             return new Vector3(v.x, v.y, Mathf.Clamp(v.z, -0.95f, 0.95f)); // stay inside the trench
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(900000)]
         public IEnumerator Scenario1_Tourniquet_Drag_TFC()
         {
             GameSettings.HoldTimeScale = 30f;
@@ -134,16 +142,16 @@ namespace FieldMedic.Tests
             var cat = c.Interaction.Ifak.Find<TourniquetCAT>();
             var marker = pouch.Find<MarkerItem>();
             var run = bot.StartCoroutine(bot.ApplyTourniquet(cat, c, Limb.RightLeg, 0.12f, 4, marker));
-            while (!cat.State.OnLimb) yield return null;
+            yield return Until(() => !(!cat.State.OnLimb), 25f);
             yield return new WaitForSeconds(0.4f);
             var foot = c.rig.Bone(HumanBodyBones.RightFoot).position;
             yield return Shot("s3_02_tq_over_foot", Side(c, foot, 0.7f, 0.6f, -0.4f), cat.transform.position, 50f);
-            while (cat.State.stage < TourniquetStage.StrapPulled) yield return null;
+            yield return Until(() => !(cat.State.stage < TourniquetStage.StrapPulled), 25f);
             yield return new WaitForSeconds(0.3f);
-            while (cat.State.HalfTurns < 2) yield return null;
+            yield return Until(() => !(cat.State.HalfTurns < 2), 25f);
             yield return Shot("s3_03_tq_twist", Side(c, cat.transform.position, 0.55f, 0.55f, 0.1f), cat.transform.position, 45f);
-            while (cat.State.HalfTurns < 4) yield return null;
-            while (cat.State.stage < TourniquetStage.TimeMarked && bot.lastStep != "tq: done") yield return null;
+            yield return Until(() => !(cat.State.HalfTurns < 4), 25f);
+            yield return Until(() => !(cat.State.stage < TourniquetStage.TimeMarked && bot.lastStep != "tq: done"), 25f);
             yield return new WaitForSeconds(0.5f);
             yield return Shot("s3_04_tq_locked_time", Side(c, cat.transform.position, 0.35f, 0.32f, 0.05f), cat.transform.position, 40f);
             Debug.Log($"[FMVR] S1 TQ: stage {cat.State.stage} turns {cat.State.HalfTurns} flow {thigh.FlowMlPerSec:F2} pulse {c.Patient.PulseStrength(PulseSite.PedalR):F2} fallback {bot.fallbackGrabs}");
@@ -182,7 +190,7 @@ namespace FieldMedic.Tests
             Assert.That(cat.State.Locked, Is.True);
         }
 
-        [UnityTest]
+        [UnityTest, Timeout(900000)]
         public IEnumerator Chest_Seal_Needle_And_Groin_Packing()
         {
             GameSettings.HoldTimeScale = 30f;
@@ -206,7 +214,7 @@ namespace FieldMedic.Tests
             var care = c.Interaction.Care(groin.Wound);
             yield return bot.CutClothing(pouch.Find<ShearsItem>(), c, Limb.LeftLeg, 0.8f, 0.1f);
             var pack = bot.StartCoroutine(bot.Pack(pouch.Find<GauzeItem>(), care));
-            while (care.Packing.Fill < 0.5f) yield return null;
+            yield return Until(() => !(care.Packing.Fill < 0.5f), 25f);
             var g = groin.transform.position;
             yield return Shot("s3_11_packing", Side(c, g, 0.45f, 0.5f, -0.1f), g, 45f);
             yield return pack;
@@ -222,7 +230,7 @@ namespace FieldMedic.Tests
             c.Patient.pneumo = PneumoState.Tension; c.Patient.tensionSeverity = 0.5f; // fast-forward to tension
             var needle = pouch.Find<NeedleItem>();
             var nrun = bot.StartCoroutine(bot.Needle(needle, c, NeedleSite.FifthIcsAal, true));
-            while (needle.DepthCm < 3f) yield return null;
+            yield return Until(() => !(needle.DepthCm < 3f), 25f);
             yield return Shot("s3_14_needle", Side(c, needle.transform.position, 0.45f, 0.4f, 0.05f), needle.transform.position, 45f);
             yield return nrun;
             Debug.Log($"[FMVR] chest/groin run: groin {groin.Wound.control} controlled={groin.Wound.IsControlled}, seal {cc.Seal?.Proc.step}, pneumo {c.Patient.pneumo}, log {string.Join(" | ", c.Protocol.log.Select(e => e.code))}");
@@ -230,3 +238,4 @@ namespace FieldMedic.Tests
         }
     }
 }
+

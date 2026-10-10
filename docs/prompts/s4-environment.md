@@ -21,4 +21,4 @@ The owner wakes up around 09:30 local time and stages run ~65-70 min each, so S6
 2. Copy it to C:\Users\user\Desktop\FieldMedicVR.apk (overwrite).
 3. Write/refresh docs/MORNING_REPORT.md (Russian, short, honest): what works now, how to install (MQDH drag&drop or adb install -r), what to try first in the headset, screenshots list, what is still in progress (the night pipeline keeps running).
 4. Commit + push.
-If the local time is already past 09:00 when you start this stage, do the checkpoint FIRST (build what exists), then continue the stage.
+UPDATE 08:08: S3 ran long, so in S4 do a QUICK safety checkpoint FIRST (steps 1-2 only: build the current state and copy the APK to the Desktop, so a working APK exists no matter what), then do the environment work, and at the end do the full checkpoint again (rebuild APK with the new trench, MORNING_REPORT.md, push). If the end-of-stage rebuild would start after 09:20, skip the environment polish that is unfinished and rebuild with what works.

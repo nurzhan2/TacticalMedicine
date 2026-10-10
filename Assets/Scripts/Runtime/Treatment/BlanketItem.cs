@@ -65,6 +65,42 @@ namespace FieldMedic.Treatment
             Drape(c);
         }
 
+        static readonly (HumanBodyBones a, HumanBodyBones b, float r)[] Capsules =
+        {
+            (HumanBodyBones.Hips, HumanBodyBones.Spine, 0.16f), (HumanBodyBones.Spine, HumanBodyBones.Chest, 0.17f),
+            (HumanBodyBones.Chest, HumanBodyBones.Neck, 0.17f), (HumanBodyBones.Neck, HumanBodyBones.Head, 0.08f),
+            (HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, 0.09f), (HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, 0.09f),
+            (HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, 0.065f), (HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, 0.065f),
+            (HumanBodyBones.LeftFoot, HumanBodyBones.LeftToes, 0.06f), (HumanBodyBones.RightFoot, HumanBodyBones.RightToes, 0.06f),
+            (HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, 0.06f), (HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, 0.06f),
+            (HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, 0.05f), (HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, 0.05f),
+        };
+
+        /// <summary>Top of the body under a point, from the current bone pose (capsules around the bones).</summary>
+        static float BodyTop(CasualtyRig rig, Vector3 p)
+        {
+            float top = float.MinValue;
+            foreach (var (ba, bb, r) in Capsules)
+            {
+                var ta = rig.Bone(ba); var tb = rig.Bone(bb);
+                if (ta == null || tb == null) continue;
+                Vector2 a = new Vector2(ta.position.x, ta.position.z), b = new Vector2(tb.position.x, tb.position.z), q = new Vector2(p.x, p.z);
+                Vector2 ab = b - a;
+                float t = ab.sqrMagnitude < 1e-6f ? 0f : Mathf.Clamp01(Vector2.Dot(q - a, ab) / ab.sqrMagnitude);
+                float d = Vector2.Distance(q, a + ab * t);
+                if (d >= r) continue;
+                float y = Mathf.Lerp(ta.position.y, tb.position.y, t) + Mathf.Sqrt(r * r - d * d);
+                if (y > top) top = y;
+            }
+            var head = rig.Bone(HumanBodyBones.Head);
+            if (head != null)
+            {
+                float d = Vector2.Distance(new Vector2(p.x, p.z), new Vector2(head.position.x, head.position.z));
+                if (d < 0.12f) top = Mathf.Max(top, head.position.y + Mathf.Sqrt(0.0144f - d * d));
+            }
+            return top;
+        }
+
         /// <summary>Conform the sheet to the body: a grid dropped onto the casualty (body colliders) and ground.</summary>
         public void Drape(CasualtyController c)
         {
@@ -84,13 +120,7 @@ namespace FieldMedic.Treatment
             for (int x = 0; x <= nx; x++)
             {
                 Vector3 p = center + across * ((x / (float)nx - 0.5f) * W) + along * ((z / (float)nz - 0.5f) * L * 0.95f);
-                float y = floor + 0.01f;
-                foreach (var h in Physics.RaycastAll(new Vector3(p.x, floor + 1.2f, p.z), Vector3.down, 1.5f, ~0, QueryTriggerInteraction.Collide))
-                {
-                    bool body = h.collider.GetComponent<CasualtyBodyPart>() != null;
-                    bool ground = !h.collider.isTrigger && h.rigidbody == null;
-                    if ((body || ground) && h.point.y + (body ? 0.035f : 0.01f) > y) y = h.point.y + (body ? 0.035f : 0.01f);
-                }
+                float y = Mathf.Max(floor + 0.01f, BodyTop(rig, p) + 0.03f);
                 verts[z * (nx + 1) + x] = new Vector3(p.x, y, p.z);
                 uv[z * (nx + 1) + x] = new Vector2(x / (float)nx, z / (float)nz);
             }

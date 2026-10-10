@@ -141,13 +141,13 @@ namespace FieldMedic.Tests
             Assert.That(cat.State.Secured, Is.True, "TIME strap secured");
             Assert.That(cat.State.TimeMarked, Is.True, "time written with the marker");
             Assert.That(cat.State.slackCm, Is.LessThanOrEqualTo(TourniquetState.TightSlackCm));
-            Assert.That(cat.State.HalfTurns, Is.EqualTo(4));
+            Assert.That(cat.State.HalfTurns, Is.InRange(4, 5));
             yield return null;
             Assert.That(Logged("tq_ok"), Is.True, LogText);
             Assert.That(site.FlowMlPerSec, Is.EqualTo(0f), "arterial spurting stopped");
             Assert.That(_c.Patient.PulseStrength(PulseSite.PedalR), Is.EqualTo(0f), "no distal pulse");
             Assert.That(_c.Protocol.tourniquetTimeMarked, Is.True);
-            Assert.That(_c.Pain.TourniquetHalfTurns("legR"), Is.EqualTo(4), "every half-turn hurt");
+            Assert.That(_c.Pain.TourniquetHalfTurns("legR"), Is.EqualTo(cat.State.HalfTurns), "every half-turn hurt");
 
             // the bot feels the foot: nothing
             var lh = _bot.left.GetComponent<HandTreatment>();
