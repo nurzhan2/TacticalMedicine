@@ -180,28 +180,19 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 hr.desktop = sim;
                 go.AddComponent<HandGrabber>();
                 BuildGloveVisual(go.transform, side, glove);
-                var boh = go.AddComponent<BloodOnHands>();
-                boh.gloves = go.GetComponentsInChildren<Renderer>();
+                go.AddComponent<BloodOnHands>(); // finds the runtime glove mesh itself
                 go.AddComponent<HandTreatment>(); // sweep, pulse, pressure, nitrile gloves
             }
         }
 
-        /// <summary>Low-poly placeholder glove (palm + four fingers + thumb) until the real hand mesh lands.</summary>
+        /// <summary>Procedural skinned tactical glove (built at runtime by <see cref="GloveHand"/>; fingers follow grip/trigger).</summary>
         static void BuildGloveVisual(Transform hand, float side, Material m)
         {
             var v = new GameObject("GloveVisual").transform;
             v.SetParent(hand, false);
-            Box("Palm", v, new Vector3(0f, 0f, 0.035f), new Vector3(0.082f, 0.028f, 0.09f), m, collider: false);
-            Box("Cuff", v, new Vector3(0f, 0f, -0.035f), new Vector3(0.07f, 0.045f, 0.06f), m, collider: false);
-            for (int i = 0; i < 4; i++)
-            {
-                float x = (-0.03f + i * 0.02f) * side;
-                float len = i == 1 || i == 2 ? 0.075f : 0.062f;
-                Box("Finger", v, new Vector3(x, -0.006f, 0.08f + len * 0.5f), new Vector3(0.017f, 0.017f, len), m,
-                    Quaternion.Euler(14f, 0f, 0f), collider: false);
-            }
-            Box("Thumb", v, new Vector3(-0.05f * side, -0.008f, 0.05f), new Vector3(0.018f, 0.018f, 0.055f), m,
-                Quaternion.Euler(0f, -35f * side, 0f), collider: false);
+            var g = v.gameObject.AddComponent<GloveHand>();
+            g.side = side;
+            g.material = m;
         }
 
         // ---------------------------------------------------------------- props

@@ -25,3 +25,6 @@
 - s5_debrief.png: the 'ЕЩЁ' (retry) button has no round background - only text, unlike МЕНЮ/ДАЛЕЕ. Also the board overlaps the trench wall at the left edge (place it fully in free space).
 - s5_s5_fpv.png: scenario shots all look like the same trench + casualty; the FPV scenario should show its signature (drone wreck / rotor pieces nearby, shrapnel wounds visible, smoke) and every scenario's first frame should make the wound obvious (exposed, bleeding). Make each scenario visually distinct at a glance.
 - Disk: owner freed space, now ~37 GB free - no need to delete the Bee cache anymore; keep incremental Android builds fast.
+## 14:24 review of s7_* screenshots
+- s7_s1_drop.jpg: the thigh wound renders as a bright red diamond/rhombus OUTLINE (looks like a UI marker or an emissive decal edge), not an organic wound. Wound must read as torn fabric + dark wet blood soak spreading from an irregular hole, no emissive/outline, no geometric shape. If a highlight is needed for training mode, make it a soft pulse only in Training, never in Scenarios/Exam.
+- s7_fpv_dive.jpg: drone is a few pixels - fine for realism, but add its buzzing audio ramp + a faint red/IR LED so the player can track it. Field beyond the wire looks flat/empty: add craters, shell holes, burnt vehicle silhouette on the horizon (tank/BMP wreck), smoke columns lit by the glow.

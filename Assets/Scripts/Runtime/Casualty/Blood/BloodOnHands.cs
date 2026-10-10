@@ -20,7 +20,13 @@ namespace FieldMedic.Casualty.Blood
 
         void Awake()
         {
-            if (gloves == null || gloves.Length == 0) gloves = GetComponentsInChildren<Renderer>();
+            if (gloves == null || gloves.Length == 0)
+            {
+                // the glove mesh is generated at runtime: make sure it exists before collecting renderers
+                var gh = GetComponentInChildren<FieldMedic.Input.GloveHand>();
+                if (gh != null && gh.Renderer == null) gh.Build();
+                gloves = GetComponentsInChildren<Renderer>();
+            }
             if (gloves.Length > 0 && gloves[0].sharedMaterial != null && gloves[0].sharedMaterial.HasProperty(BaseColorId))
                 cleanColor = gloves[0].sharedMaterial.GetColor(BaseColorId);
         }
