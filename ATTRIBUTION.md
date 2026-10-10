@@ -1,5 +1,7 @@
 # Third-party assets
 
+Policy: only CC0 / CC-BY content is downloaded. Exceptions that were already in the project before S6 and are kept on purpose: Mixamo character/animations (Adobe Mixamo terms, royalty-free in projects) and the Meta XR SDK (Oculus SDK License).
+
 | Asset | Author / Source | License |
 |---|---|---|
 | Character "Swat Guy" + animations (SourceAssets/Mixamo) | Adobe Mixamo, https://www.mixamo.com | Mixamo terms: royalty-free use in projects (raw files must not be redistributed standalone) |
@@ -8,6 +10,9 @@
 | Mixamo animation FBX copies (Assets/Art/Characters/Erlan/Anims) | Adobe Mixamo | Mixamo terms |
 | Gear models, amputation stump, blood/wound textures | Procedural, made for this project (tools/blender/prepare_casualty.py, tools/make_blood_textures.py) | Project-owned |
 | Voice placeholders (Assets/Audio/Voice) | Generated with Windows TTS "Microsoft Irina" + tools/voice_post.py; to be replaced by real recordings | Project-owned placeholder |
+| Radio commander + training instructor voices (Assets/Resources/Radio) | Generated with Windows TTS "Microsoft Irina" + tools/radio_post.py (radio band-pass/squelch); to be replaced by real recordings | Project-owned placeholder |
+| Hand visuals, controller models, HandTracking_uvmap texture | Meta XR Core SDK sample assets (OVRHandPrefab / OVRControllerPrefab) | Oculus SDK License |
+| UI font LegacyRuntime.ttf | Unity built-in resource | Unity Editor license |
 | Trench textures (Assets/Art/Environment/Textures/Env_*): excavated_soil_wall, brown_mud_02, burned_ground_01, raw_plank_wall, bark_brown_02, hessian_230, green_metal_rust (1k JPG, smoothness packed by tools/textures/prep_env_textures.py) | Poly Haven, https://polyhaven.com/textures (authors listed per asset page, e.g. Rob Tuytel, Dimitrios Savva, Charlotte Baglioni) | CC0 1.0 |
 | Trench geometry, sky, net/FX textures, shaders (NightSky, EnvLit, Particle) | Procedural, made for this project (Assets/Editor/SceneBuilders/TrenchBuilder.cs, AtmosphereBuilder.cs) | Project-owned |
 
