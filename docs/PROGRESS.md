@@ -106,3 +106,12 @@
   - NPA has no dedicated bot assertion (S6 is tested via recovery position).
   - Training ghost hand is a simple blue glove box.
   - Hands are still placeholder gloves.
+
+## 10.10 13:55 — S6 build DONE
+- APK rebuilt 13:30 (incremental IL2CPP, 5.7 min) → `Builds/FieldMedicVR.apk` + `C:\Users\user\Desktop\FieldMedicVR.apk` (97.6 MB). aapt2 check: `kz.qorsa.fieldmedic` 0.1.0, min 32 / target 34, `com.oculus.intent.category.VR`, supportedDevices quest3|quest3s, HAND_TRACKING + handtracking/passthrough features (not required), arm64. BuildReport says `errors=1` — the same in every previous successful build (S4/S5); no CS/Gradle errors.
+- `Editor/QuestManifestCleanup` (IPostGenerateGradleAndroidProject, order 10000): strips RECORD_AUDIO (pulled in by Meta SDK building blocks referencing Microphone → mic prompt at first launch), USE_SCENE, USE_ANCHOR_API (spatial-data prompt); adds tools:node="remove" in the launcher manifest. Verified gone in the APK.
+- `Runtime/Comfort/QuestPerformance` (RuntimeInitializeOnLoadMethod, device only, re-applied after each scene reload): FFR High + dynamic, 72 Hz, CPU/GPU SustainedHigh, OVRManager dynamic resolution 0.7–1.2.
+- `PerfReport.OptimizeAndRun`: instancing on 6 more materials; PERF.md now lists the runtime profile and the Kazakh glyph check (LegacyRuntime has all KZ letters in the editor). Budgets OK: 86k tris visible, ~37 draws, 1 shadow light, 17.8 MB textures. Erlan LODs not needed (108k tris whole scene).
+- Tests: EditMode 63/63 (new `FieldMedic.Editor.Tests`: manifest cleanup ×2, perf profile); PlayMode 52/52 (16 min, `!Screenshots`). One protocol fallback logged (S5 buttock packing: bot could not grab the hemostatic gauze).
+- Docs: README.md rewritten in Russian; MORNING_REPORT.md updated; ATTRIBUTION.md + radio TTS, Meta hand assets, font, policy note (Mixamo/Meta SDK are the non-CC exceptions). Final shots `docs/screens/final_1..8_*.jpg` (JPG per supervisor note; picked from the s4/s5/s3 sets, not re-rendered).
+- Next (S7): device test, blood streak particles, hands, real voices, S5 bot gauze grab.
