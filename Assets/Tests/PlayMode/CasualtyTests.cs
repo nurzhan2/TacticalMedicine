@@ -111,7 +111,7 @@ namespace FieldMedic.Tests
             float along = Vector3.Dot(rel, axis) / Vector3.Distance(knee.position, femur.position);
             float radial = (rel - axis * Vector3.Dot(rel, axis)).magnitude;
             Assert.That(along, Is.InRange(0.15f, 0.65f));
-            Assert.That(radial, Is.InRange(0.03f, 0.17f));
+            Assert.That(radial, Is.InRange(0.03f, 0.13f), "on the thigh surface, not floating beside it");
             // medial side: toward the left leg
             var other = rig.Bone(HumanBodyBones.LeftUpperLeg);
             Assert.That(Vector3.Dot(site.transform.position - femur.position, other.position - femur.position), Is.GreaterThan(0f));

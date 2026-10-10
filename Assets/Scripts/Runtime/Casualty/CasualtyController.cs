@@ -106,8 +106,8 @@ namespace FieldMedic.Casualty
             switch (r)
             {
                 // inner (medial, slightly anterior) thigh: femoral artery territory
-                case BodyRegion.ThighR: return P(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, 0.38f, k => (-k.BodyRight * 0.8f + LegAnterior(k, false)).normalized);
-                case BodyRegion.ThighL: return P(HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, 0.38f, k => (k.BodyRight * 0.8f + LegAnterior(k, true)).normalized);
+                case BodyRegion.ThighR: return P(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, 0.45f, k => (-k.BodyRight * 0.8f + LegAnterior(k, false)).normalized);
+                case BodyRegion.ThighL: return P(HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, 0.45f, k => (k.BodyRight * 0.8f + LegAnterior(k, true)).normalized);
                 case BodyRegion.ShinR: return P(HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, 0.45f, k => LegAnterior(k, false));
                 case BodyRegion.ShinL: return P(HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, 0.45f, k => LegAnterior(k, true));
                 case BodyRegion.ForearmL: return P(HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, 0.5f, k => k.BodyUp);

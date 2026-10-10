@@ -51,6 +51,8 @@ namespace FieldMedic.EditorTools
 
             c.EnsurePatient();
             c.rig.Init();
+            // edit-mode rendering: make skinned meshes use the bone pose we just stepped, not a cached one
+            foreach (var sk in c.GetComponentsInChildren<SkinnedMeshRenderer>()) sk.forceMatrixRecalculationPerRender = true;
             var anim = c.animator;
             anim.Rebind();
             c.SetPose(CasualtyPose.CrouchIdle, true);
@@ -85,7 +87,10 @@ namespace FieldMedic.EditorTools
             c.simulationSpeed = 12f;
             Step(c, 5.5f, true);
             c.simulationSpeed = 1f;
-            Step(c, 1.0f, true);
+            // shock deepening: he stops writhing, legs out, fast shallow breathing
+            c.poseHold = 999f;
+            c.SetPose(CasualtyPose.LyingBreathless, true);
+            Step(c, 2.5f, true);
             Debug.Log($"[FMVR] demo: pose={c.CurrentPose} loss={c.Patient.bloodLostMl:F0}ml ({c.Patient.LossFraction:P0}) HR={c.Patient.HeartRate:F0} " +
                       $"SBP={c.Patient.SystolicBP:F0} AVPU={c.Patient.AVPU} pain={c.Pain.level:F2} jets={thigh.JetBursts} pools={c.PoolManager.Pools.Count} poolVol={c.PoolManager.TotalVolumeMl:F0}");
 
@@ -95,9 +100,25 @@ namespace FieldMedic.EditorTools
             Vector3 n = thigh.transform.forward;
             Vector3 side = Vector3.Cross(n, Vector3.up).normalized;
             // from the player's side of the trench, above and a little toward the feet
+            var fa = c.rig.Bone(HumanBodyBones.RightUpperLeg).position; var fb = c.rig.Bone(HumanBodyBones.RightLowerLeg).position;
+            var ax = (fb - fa).normalized; var rl = w - fa;
+            Debug.Log($"[FMVR] demo wound radial from femur axis = {(rl - ax * Vector3.Dot(rl, ax)).magnitude:F3} m");
             Debug.Log($"[FMVR] demo wound at {w:F2} normal {n:F2} soak r={thigh.SoakRadius:F2} flow={thigh.FlowMlPerSec:F1}ml/s sphere0={c.soak.Spheres[0]:F2}");
             var probe = BakeBodyCollider(c);
-            shots += Shot("s2_erlan_wounded", BestView(w, n, 0.7f), w, 42f, template);
+            {
+                var pm = probe.GetComponent<MeshCollider>().sharedMesh; var tr = probe.transform;
+                float md = float.MaxValue; foreach (var v in pm.vertices) md = Mathf.Min(md, Vector3.Distance(tr.TransformPoint(v), w));
+                Debug.Log($"[FMVR] demo wound distance to nearest skinned vertex = {md:F3} m");
+            }
+            // the flare drifts over: brighter for the close-up
+            flareGo.transform.position = w + new Vector3(-1.2f, 3.2f, -0.6f);
+            flare.intensity = 4.5f;
+            var cp = BestView(w, n, 0.85f);
+            shots += Shot("s2_erlan_wounded", cp, w + Vector3.down * 0.04f, 40f, template);
+            Vector3 nh = Vector3.ProjectOnPlane(n, Vector3.up).normalized;
+            shots += Shot("s2_erlan_wounded_top", InTrench(w + Vector3.up * 0.85f + nh * 0.25f), w, 45f, template);
+            flare.intensity = 3.2f;
+            flareGo.transform.position = c.transform.position + new Vector3(-2f, 5.5f, -1.5f);
             Object.DestroyImmediate(probe);
             var smr = c.rig.bodyRenderer;
             Debug.Log($"[FMVR] demo body mats: {string.Join(",", smr.sharedMaterials.Select(m => m.name + ":" + m.shader.name))} hasMPB={smr.HasPropertyBlock()}");

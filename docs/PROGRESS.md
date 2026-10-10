@@ -35,3 +35,9 @@
 - Audio: 114 Freesound clips (`tools/fetch_sounds.ps1`, attributed), 50 TTS voice lines RU/KZ (`tools/tts_voice.ps1` + `voice_post.py`: Irina pitched to ~120 Hz + strain), `docs/VOICE_SCRIPT.md`.
 - Tests: EditMode 22/22, PlayMode 16/16.
 - Workflow: `Invoke-UnityBatch -Method FieldMedic.EditorTools.CasualtyAssetBuilder.BuildAll` → `MainSceneBuilder.Build` → `CasualtyDemo.CaptureShots` (edit-mode simulation, screenshots s2_*).
+
+## 10.10 07:30 — S2 casualty DONE
+- Screenshots: `docs/screens/s2_erlan_idle.png` (crouched at the parapet), `s2_erlan_fall.png` (VOG blast, arterial spray hits the wall), `s2_erlan_wounded.png` (+ `_top`: soaked glossy trouser leg, ragged wound, pulsing jet, pool), `s2_erlan_wide.png`.
+- Gotchas found: (1) in edit-mode batch rendering skinned meshes lag the stepped bone pose → `forceMatrixRecalculationPerRender` in the demo; (2) the Swat mesh has inner layers + crossed legs → wound placement = outermost vertex rigidly skinned (≥80%) to the limb bone inside a narrow cylinder; thigh anterior from knee bend; (3) `GetComponent() ?? Add` fake-null trap.
+- Known issues / next: no face (balaclava) so pallor/cyanosis are not visible yet (shader ready via `_SkinMask`); TTS KZ lines are phonetic placeholders (see docs/VOICE_SCRIPT.md); drag handle/IFAK/CAT are rigid on bones (S3 will make CAT grabbable — CAT children are separate objects); breath loop clips are not seamless loops; lying clip transitions can pop slightly (no root motion by design).
+- S3 hooks: `CasualtyController.ApplyTourniquet/Handle/AddWound/Hit`, `CasualtyRig.SetLimbIK/Part(region)/Flinch`, `BloodOnHands` on both hands, `WoundSite.Active`.

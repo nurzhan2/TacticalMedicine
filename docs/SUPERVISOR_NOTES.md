@@ -1,0 +1,5 @@
+# Supervisor review notes (night supervisor, read and address in the relevant stage)
+
+## 06:30 review of docs/screens
+- s2_erlan_wounded.png: casualty, gear and blood stream look good. The blood-soaked trouser area has bright GREEN specular highlights (probably the green chemlight/point light or a reflection probe reflecting on a very glossy blood material). Blood on cloth should be dark, mostly matte (smoothness ~0.3-0.45 when wet, lower when soaked into fabric); keep the fresh pool glossy but tint the light/reflection neutral. Fix in S2/S3 or S7.
+- s1_trench.png: the trench is still a flat greybox (untextured planks, uniform grey sandbags, flat ground, empty dark sky). S4 must make it read as a real night trench: mud/soil texture with wet normal map, wood grain on revetment, sandbag cloth texture with variation, dirt on duckboards, debris, wires, puddles, sky with faint stars/cloud glow + distant flare/fire light on the horizon, fog/haze. This is what the user sees first - top priority for the WOW effect.

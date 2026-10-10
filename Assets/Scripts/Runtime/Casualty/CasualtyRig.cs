@@ -228,11 +228,12 @@ namespace FieldMedic.Casualty
             if (shared != null && shared.isReadable) weights = shared.boneWeights;
             if (weights != null && weights.Length != verts.Length) weights = null;
             var m = bodyRenderer.transform.localToWorldMatrix;
-            float best = float.MaxValue; int bi = -1;
+            float best = float.MinValue; int bi = -1;
             float slab = Mathf.Max(0.03f, (b - a).magnitude * 0.08f);
             for (int i = 0; i < verts.Length; i++)
             {
-                if (weights != null && !allowed.Contains(weights[i].boneIndex0)) continue;
+                // rigidly skinned to this bone only: the point then stays on the surface in every pose
+                if (weights != null && (!allowed.Contains(weights[i].boneIndex0) || weights[i].weight0 < 0.8f)) continue;
                 Vector3 w = m.MultiplyPoint3x4(verts[i]);
                 Vector3 rel = w - c;
                 float ax = Vector3.Dot(rel, axis);
@@ -240,10 +241,10 @@ namespace FieldMedic.Casualty
                 Vector3 radial = rel - axis * ax;
                 float t = Vector3.Dot(radial, dirWorld);
                 if (t <= 0f || radial.magnitude > 0.2f) continue;
-                // closest to the ray from the bone along dir, prefer the outermost layer
+                // outermost vertex inside a narrow cylinder around the ray (the model has inner layers)
                 float perp = (radial - dirWorld * t).magnitude;
-                float score = perp - 0.3f * t;
-                if (score < best) { best = score; bi = i; }
+                if (perp > 0.035f) continue;
+                if (t > best) { best = t; bi = i; }
             }
             if (bi < 0) return false;
             point = m.MultiplyPoint3x4(verts[bi]);

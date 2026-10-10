@@ -46,3 +46,7 @@ Read before any work: this file, `docs/GDD.md` (game design — the source of tr
 ## Disk guard (added by night supervisor 05:30)
 An Android IL2CPP build leaves ~8 GB in Library\Bee (Bee\Android, Bee\artifacts\Android, Bee\artifacts\objcopy_*). Before any heavy step check free space on C:. If it is below 5 GB and no Unity process is running, delete those Bee Android folders (the next build becomes a full rebuild, ~20 min). Never build more often than needed; prefer EditMode/PlayMode tests and editor screenshots for iteration.
 
+
+## Supervisor notes
+Read docs/SUPERVISOR_NOTES.md at the start of every stage and address the items that belong to your stage.
+
