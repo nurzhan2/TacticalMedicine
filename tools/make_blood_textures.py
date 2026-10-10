@@ -104,15 +104,32 @@ def wound(size, seed, hole, ring, torn, stellate=0, muscle=0.0, elong=1.0):
     in_torn = smooth(torn_e, torn_e - 0.02, d) * (1 - in_hole)
     rgb = DARK * (0.7 + 0.6 * n[..., None]) * in_ring[..., None]
     a = in_ring * 0.92
-    # torn fabric fibres: dark, frayed band around the hole
-    fray = in_torn * (0.5 + 0.5 * (np.sin(th * 60 + n * 10) > 0))
-    rgb = rgb * (1 - fray[..., None]) + np.array([0.09, 0.05, 0.03]) * fray[..., None]
+    # margin between hole and fabric edge: abraded, bruised, blood-smeared skin
+    skin = np.array([0.30, 0.10, 0.08]) * (0.7 + 0.5 * n[..., None])
+    rgb = rgb * (1 - in_torn[..., None]) + (skin * 0.55 + DARK * 0.45) * in_torn[..., None]
+    a = np.maximum(a, in_torn)
+    # torn fabric: individual soaked threads of random length/width hanging from the fabric edge into the wound
+    nb = 70
+    tr = np.random.default_rng(seed + 5)
+    u = (th + math.pi) / (2 * math.pi) * nb
+    bins = u.astype(int) % nb
+    frac = u - np.floor(u)
+    lens = tr.uniform(0.0, 1.0, nb) ** 2 * (torn_e.max() - hole * 0.6)
+    width = tr.uniform(0.12, 0.45, nb)
+    on = tr.random(nb) < 0.6
+    thread = (np.abs(frac - 0.5) < width[bins]) & on[bins]
+    reach = torn_e - lens[bins]
+    fray = (thread & (d < torn_e + 0.01) & (d > reach)).astype(np.float32) * (0.55 + 0.45 * n)
+    fray = np.maximum(fray, smooth(torn_e - 0.03, torn_e + 0.01, d) * smooth(torn_e + 0.06, torn_e + 0.015, d) * smooth(0.35, 0.6, n) * 0.8)  # broken cut edge
+    cloth = np.array([0.10, 0.045, 0.03]) * (0.8 + 0.4 * n[..., None])
+    rgb = rgb * (1 - fray[..., None]) + cloth * fray[..., None]
     a = np.maximum(a, fray)
     # hole: deep, almost black red, with muscle/fat visible on the walls
     wall = smooth(hole_e * 0.45, hole_e * 0.95, d) * in_hole
     inner = CLOT * in_hole[..., None]
     if muscle > 0:
-        mus = (MUSCLE * (0.6 + 0.6 * n[..., None])) * wall[..., None] * muscle
+        striae = 0.72 + 0.28 * np.sin(dx * 90 + dy * 25 + n * 8)
+        mus = (MUSCLE * 0.75 * (0.55 + 0.5 * n * striae)[..., None]) * wall[..., None] * muscle
         fat = FAT * (smooth(0.55, 0.75, n) * wall)[..., None] * 0.35 * muscle
         inner = inner * (1 - wall[..., None] * muscle) + mus + fat
     rgb = rgb * (1 - in_hole[..., None]) + inner

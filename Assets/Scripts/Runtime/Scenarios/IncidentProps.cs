@@ -112,22 +112,69 @@ namespace FieldMedic.Scenarios
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
-        /// <summary>Burnt, blackened patch on the floor (irregular: three overlapping flat discs).</summary>
+        /// <summary>
+        /// Burnt patch on the floor: a soft-edged soot decal (blast star — dark centre, radial soot rays, scattered
+        /// specks, transparent edge) instead of opaque discs, which read as a hole in the floor.
+        /// </summary>
         static void Scorch(Transform parent, Vector3 at, float size)
         {
-            for (int i = 0; i < 3; i++)
+            var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Object.Destroy(q.GetComponent<Collider>());
+            q.name = "Scorch";
+            q.transform.SetParent(parent, true);
+            q.transform.position = new Vector3(at.x, 0.06f, at.z);
+            q.transform.rotation = Quaternion.Euler(90f, (at.x * 37f + at.z * 11f) % 360f, 0f);
+            q.transform.localScale = Vector3.one * size * 1.8f;
+            var r = q.GetComponent<Renderer>();
+            r.sharedMaterial = ScorchMaterial();
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        static Material _scorchDecal;
+
+        public static Material ScorchMaterial()
+        {
+            if (_scorchDecal != null) return _scorchDecal;
+            var tex = ScorchTexture(128, 5);
+            var sh = Shader.Find("FieldMedic/BloodDecal");
+            if (sh == null) return _scorch;
+            _scorchDecal = new Material(sh) { name = "ScorchDecal", renderQueue = 2999 };
+            _scorchDecal.SetTexture("_BaseMap", tex);
+            _scorchDecal.SetColor("_BaseColor", Color.white);
+            _scorchDecal.SetFloat("_Gloss", 0.05f);
+            _scorchDecal.SetFloat("_Dry", 1f);
+            _scorchDecal.SetFloat("_Alpha", 1f);
+            return _scorchDecal;
+        }
+
+        /// <summary>RGBA blast-star texture: alpha falls off with radius, modulated by radial rays and noise.</summary>
+        public static Texture2D ScorchTexture(int n, int seed)
+        {
+            var tex = new Texture2D(n, n, TextureFormat.RGBA32, true) { name = "Scorch", wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[n * n];
+            var rng = new System.Random(seed);
+            float ph1 = (float)rng.NextDouble() * 6f, ph2 = (float)rng.NextDouble() * 6f;
+            var soot = new Color(0.025f, 0.022f, 0.02f);
+            var burnt = new Color(0.12f, 0.085f, 0.06f);
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
             {
-                var d = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                Object.Destroy(d.GetComponent<Collider>());
-                d.transform.SetParent(parent, true);
-                d.transform.position = new Vector3(at.x + (i - 1) * size * 0.22f, 0.05f + i * 0.002f, at.z + ((i * 7) % 3 - 1) * size * 0.15f);
-                float s = size * (1f - i * 0.2f);
-                d.transform.localScale = new Vector3(s, 0.002f, s * 0.75f);
-                d.transform.rotation = Quaternion.Euler(0f, i * 40f, 0f);
-                var r = d.GetComponent<Renderer>();
-                r.sharedMaterial = _scorch;
-                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                float u = x / (n - 1f) * 2f - 1f, v = y / (n - 1f) * 2f - 1f;
+                float r = Mathf.Sqrt(u * u + v * v);
+                float ang = Mathf.Atan2(v, u);
+                float rays = 0.5f + 0.5f * Mathf.Sin(ang * 9f + ph1) * Mathf.Sin(ang * 23f + ph2);
+                float noise = Mathf.PerlinNoise(x * 0.11f + seed, y * 0.11f);
+                float reach = 0.45f + 0.4f * rays + 0.15f * noise;
+                float a = Mathf.Clamp01((reach - r) / 0.25f);
+                if (r > 0.5f && rng.NextDouble() < 0.025 * (1.2f - r)) a = Mathf.Max(a, 0.8f); // thrown soot specks
+                a *= Mathf.Clamp01((1f - r) * 6f); // never reach the quad edge
+                var c = Color.Lerp(soot, burnt, Mathf.Clamp01(r * 1.1f + 0.3f * noise - 0.2f));
+                c.a = a * 0.92f;
+                px[y * n + x] = c;
             }
+            tex.SetPixels32(px);
+            tex.Apply(true, true);
+            return tex;
         }
 
         static void Smoke(Transform parent, Vector3 at, float amount)

@@ -23,7 +23,7 @@ namespace FieldMedic.Tests
     {
         const string Dir = "docs/screens";
 
-        static IEnumerator LoadMain()
+        internal static IEnumerator LoadMain()
         {
 #if UNITY_EDITOR
             yield return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode("Assets/Scenes/Main.unity",
@@ -38,7 +38,7 @@ namespace FieldMedic.Tests
             if (threat != null) threat.enableHits = false;
         }
 
-        static void Shot(string name, Vector3 from, Vector3 at, float fov = 60f, float fill = 0f)
+        internal static void Shot(string name, Vector3 from, Vector3 at, float fov = 60f, float fill = 0f, bool jpg = false)
         {
             Light l = null;
             if (fill > 0f)
@@ -70,7 +70,7 @@ namespace FieldMedic.Tests
             tex.Apply();
             RenderTexture.active = null;
             Directory.CreateDirectory(Dir);
-            File.WriteAllBytes(Path.Combine(Dir, name + ".png"), tex.EncodeToPNG());
+            File.WriteAllBytes(Path.Combine(Dir, name + (jpg ? ".jpg" : ".png")), jpg ? tex.EncodeToJPG(85) : tex.EncodeToPNG());
             cam.targetTexture = null;
             Object.Destroy(rt); Object.Destroy(tex); Object.Destroy(go);
             if (l != null) Object.Destroy(l.gameObject);
@@ -78,7 +78,7 @@ namespace FieldMedic.Tests
         }
 
         /// <summary>The desktop hands, belt IFAK and radio float in front of the eyes: hide them for presentation shots.</summary>
-        static void HidePlayerKit(bool hide)
+        internal static void HidePlayerKit(bool hide)
         {
             foreach (var n in new[] { "Hands", "PlayerIFAK", "Radio" })
             {
@@ -87,7 +87,7 @@ namespace FieldMedic.Tests
             }
         }
 
-        static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
+        internal static IEnumerator Frames(int n) { for (int i = 0; i < n; i++) yield return null; }
 
         static void BoardShot(MenuBoard b, string name)
         {
@@ -173,7 +173,18 @@ namespace FieldMedic.Tests
                 foreach (var cand in new[] { mid + perp * 0.9f + Vector3.up * 1.15f, mid - perp * 0.9f + Vector3.up * 1.15f, from })
                     if (!Physics.Linecast(mid + Vector3.up * 0.35f, cand)) { from = cand; break; }
             }
-            Shot($"s5_{id.ToLower()}_{Names[int.Parse(id.Substring(1))]}", from, look, 66f, 0.7f);
+            // S7: centre on the most visible wound (front, biggest flow) so the first frame shows what happened
+            var ws = FieldMedic.Casualty.Blood.WoundSite.Active.Where(w => w != null && w.Wound != null && !w.Wound.posterior)
+                .OrderByDescending(w => w.Wound.BaseRateMlPerMin).FirstOrDefault();
+            if (ws != null)
+            {
+                Vector3 wp = ws.transform.position;
+                Vector3 focus = inc != null && Vector3.Distance(wp, inc.position) < 2.2f ? Vector3.Lerp(wp, inc.position, 0.3f) : wp;
+                foreach (var cand in new[] { wp + side * 0.75f + Vector3.up * 0.95f - along * 0.25f, wp - side * 0.75f + Vector3.up * 0.95f - along * 0.25f,
+                                             wp - along * 0.9f + Vector3.up * 0.9f, wp + along * 0.9f + Vector3.up * 0.9f })
+                    if (!Physics.Linecast(wp + Vector3.up * 0.15f, cand)) { from = cand; look = focus; break; }
+            }
+            Shot($"s7_{id.ToLower()}_{Names[int.Parse(id.Substring(1))]}", from, look, 62f, 0.7f, true);
             HidePlayerKit(false);
             if (id == "S3")
             {
