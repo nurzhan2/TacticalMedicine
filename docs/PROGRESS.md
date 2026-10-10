@@ -78,3 +78,31 @@
 - Medical (pure, EditMode 60/60): airway model (obstruction progresses → hypoxic death in ~3–4 min supine; vomit aspirated even with NPA; recovery position drains), TBI unconscious flag, eardrums flag, delayed onset / vasospasm rebleed (`Wound.onsetDelaySeconds`, event "rebleed"), posterior (back) wounds found only by log roll, TQ `Loosen/SlipLoose/PreApply`, `TourniquetConversion` rules (shock, amputation, > 6 h, dressing first, arterial rebleeds → re-tighten, never again), new mistake codes + `CareProtocol.Consequence` texts, `ScenarioCatalog` (8 scenarios with RU/KZ titles, briefings, skills, variants L/R + second hit + delayed onset), `ScenarioTimeline` (Briefing → Incident → CUF → TFC → Evacuation → Debrief, complications), `DebriefBuilder`, `TrainingCatalog` (5 lessons).
 - Runtime: `ScenarioDirector` (scene reload per run via `ScenarioLaunch`; incidents per scenario; rules: TQ ≤ 60 s, airway left supine, mine path, light discipline, head over parapet, TQ re-check after the S7 drag, S8 reassessment; evacuation time ×20; debrief + best score in PlayerPrefs), `RadioSet` (vest radio, commander lines, PTT MEDEVAC 4-line), `WristWatch` (time, T+, phase, S8 time-skip "+"), `MenuBoard` (dugout board; main/scenarios/training/settings/briefing/debrief), `RoundButton` (pulsing, glowing, press-depth; poke + ray + desktop click/Enter), `BoardPointer`, `BriefingCard`, `MinePath` footprints, `TrainingDirector` (instructor voice, checklist, ghost hand + arrow, vitals monitor). `DemoScenarioStarter` removed.
 - Assumptions: S3 and S6 start in tactical field care (no direct fire after a mine / glide bomb; the danger is mines / the airway); S8 evacuation after the last milestone (dawn) is 30 min; mistake explanations in the debrief are Russian-only (UI labels are RU/KZ); radio/instructor voices are TTS placeholders (`tools/tts_radio.ps1`).
+
+## 10.10 12:25 — S5 scenarios DONE
+- Tests: EditMode 60/60. The full PlayMode suite (11:35) was 51/52; its single failure was the order-sensitive TQ marker step in `TreatmentBotTests`, now fixed: the bot re-writes a blank TIME strap. After the fix, `TreatmentBotTests` + `ScenarioBotTests` passed 25/25 (≈12:05). `ScenarioBotTests` covers all 8 scenarios through the real director:
+  - correct protocol → evacuated alive with score ≥ 85 (S1 100, S2 100, S3 100, S4 100, S5 95, S6 100, S7 100, S8 converted + 4 time-skips);
+  - wrong variant → expected mistake recorded: tq_on_joint, missed_wound, elevation, tq_junctional, missed_wound, left_supine, tq_not_rechecked, tq_not_reassessed;
+  - plus a board test (pages, card → briefing → launch, debrief texts, pointer pick).
+- Honest note: two steps in the bot tests fall back to the protocol API when the scripted hands miss (sealing the exit wound on the back in S2, packing the buttock in S5). Whether a given run used the fallback is logged as "[FMVR] … protocol fallback"; that was not checked for the final run (the log was overwritten by later screenshot runs). Both work by hand for a player.
+- Fixes found by the bots:
+  - the debrief now lists derived mistakes even when he died;
+  - a palm on the other side of the body no longer counts as pressure, and posterior wounds are untouchable while he is supine;
+  - the complication schedule follows the casualty's clock;
+  - the protocol phase is set at the incident;
+  - the thermal blanket is only blocked by life-threatening bleeds (capillary ooze no longer blocks it).
+- Visuals:
+  - Erlan now falls along the trench (FireBay yaw 90°).
+  - The debrief board comes to the player in the freest direction and is scaled to 0.68 so it fits between the trench walls.
+  - The training panel is placed in free space; the headlamp turns white in training.
+  - Incident props per scenario: scorch, fragments, FPV wreck, mortar fin, torn boot, helmet, lingering smoke.
+  - Red headlamp halved with a wider beam (supervisor note).
+  - Screenshots: `docs/screens/s5_*.png` (menu pages RU/KZ, briefing card, 8 scenarios, debrief, training, mine-path footprints).
+- APK: built 11:54 → Desktop, rebuilt with the final changes at 12:22 (97.5 MB). `docs/MORNING_REPORT.md` rewritten (RU). `README.md` added (modes, controls, desktop simulator, tests, voices).
+- Known issues / next (S6/S7):
+  - TextMesh built-in font: check Kazakh glyphs on Quest; switch to Noto/TMP if they show as boxes.
+  - Instructor/commander voices are TTS placeholders.
+  - Blood "streak" particles (supervisor 09:21) are still visible in some shots.
+  - NPA has no dedicated bot assertion (S6 is tested via recovery position).
+  - Training ghost hand is a simple blue glove box.
+  - Hands are still placeholder gloves.
