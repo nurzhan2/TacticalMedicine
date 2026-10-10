@@ -55,7 +55,7 @@ Shader "FieldMedic/Particle"
                 half4 c = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv) * i.color;
                 c.rgb *= _Boost;
                 // additive (dst = one): fade to black in fog; alpha blend: fade to fog colour
-                if (_DstBlend < 1.5) c.rgb *= ComputeFogIntensity(i.fog);
+                if (_DstBlend < 1.5) c.rgb *= c.a * ComputeFogIntensity(i.fog); // additive: alpha shapes the glow
                 else c.rgb = MixFog(c.rgb, i.fog);
                 return c;
             }

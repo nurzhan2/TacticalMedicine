@@ -56,6 +56,7 @@ namespace FieldMedic.EditorTools
             if (ctrlType == null) return null;
             var create = ctrlType.GetMethod("CreateMixerControllerAtPath", All);
             var ctrl = create.Invoke(null, new object[] { MixerPath });
+            Debug.Log("[FMVR] mixer controller created");
             var master = ctrlType.GetProperty("masterGroup", All).GetValue(ctrl);
             var newGroup = ctrlType.GetMethod("CreateNewGroup", All);
             var addChild = ctrlType.GetMethod("AddChildToParent", All);
@@ -63,14 +64,15 @@ namespace FieldMedic.EditorTools
             foreach (var name in new[] { "Ambience", "SFX", "Voice", "Tinnitus" })
             {
                 var g = newGroup.Invoke(ctrl, new object[] { name, false });
+                Debug.Log("[FMVR] mixer group " + name);
                 addChild.Invoke(ctrl, new[] { g, master });
-                addView?.Invoke(ctrl, new[] { g });
+                try { addView?.Invoke(ctrl, new[] { g }); } catch (Exception) { /* editor view list only */ }
             }
             // snapshots: rename the default to Normal, clone → Muffled with ambience/SFX lowered
             var target = ctrlType.GetProperty("TargetSnapshot", All)?.GetValue(ctrl) as UnityEngine.Object;
             if (target != null) target.name = "Normal";
             var clone = ctrlType.GetMethod("CloneNewSnapshotFromTarget", All);
-            if (clone != null)
+            if (clone != null) try
             {
                 clone.Invoke(ctrl, new object[] { false });
                 var snap = ctrlType.GetProperty("TargetSnapshot", All)?.GetValue(ctrl) as UnityEngine.Object;
@@ -88,6 +90,7 @@ namespace FieldMedic.EditorTools
                     if (target != null) ctrlType.GetProperty("TargetSnapshot", All)?.SetValue(ctrl, target);
                 }
             }
+            catch (Exception e) { Debug.LogWarning("[FMVR] mixer snapshot setup skipped: " + (e.InnerException ?? e).Message); }
             EditorUtility.SetDirty((UnityEngine.Object)ctrl);
             AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(MixerPath);

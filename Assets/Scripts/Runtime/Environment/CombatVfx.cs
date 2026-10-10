@@ -51,8 +51,8 @@ namespace FieldMedic.Environment
                 l.enabled = false;
                 _lights.Add(l);
             }
-            _dirt = MakeSystem("DirtBurst", dirtMaterial, new Color(0.18f, 0.13f, 0.09f), 0.12f, 0.35f, 1.6f, 2.2f, 9f, 1.5f, 400);
-            _smoke = MakeSystem("Smoke", smokeMaterial, new Color(0.16f, 0.15f, 0.14f, 0.55f), 1.2f, 3.2f, 5f, 9f, 1.4f, -0.04f, 120);
+            _dirt = MakeSystem("DirtBurst", dirtMaterial, new Color(0.16f, 0.12f, 0.08f), 0.2f, 0.6f, 1.6f, 2.4f, 13f, 1.4f, 500);
+            _smoke = MakeSystem("Smoke", smokeMaterial, new Color(0.2f, 0.18f, 0.16f, 0.7f), 2f, 4.5f, 5f, 9f, 2.2f, -0.04f, 120);
             _debris = MakeSystem("DebrisOnPlayer", dirtMaterial, new Color(0.14f, 0.1f, 0.07f), 0.015f, 0.05f, 1.2f, 2f, 0.3f, 1f, 600);
             _dust = MakeSystem("TrenchDust", smokeMaterial, new Color(0.35f, 0.3f, 0.25f, 0.28f), 0.6f, 1.6f, 3f, 5f, 1.2f, 0.01f, 200);
             _roofDust = MakeSystem("RoofDust", smokeMaterial, new Color(0.42f, 0.36f, 0.3f, 0.35f), 0.03f, 0.12f, 1.4f, 2.6f, 0.1f, 0.25f, 300);
@@ -148,8 +148,8 @@ namespace FieldMedic.Environment
         public void ExplosionNear(Vector3 at, float charge = 1f)
         {
             Flash(at + Vector3.up * 0.6f, 1.2f * charge, 0.22f, 30f);
-            Emit(_dirt, at, (int)(160 * charge));
-            Emit(_smoke, at + Vector3.up * 0.5f, (int)(18 * charge));
+            Emit(_dirt, at, (int)(260 * charge));
+            Emit(_smoke, at + Vector3.up * 0.5f, (int)(28 * charge));
             Emit(_sparks, at + Vector3.up * 0.3f, (int)(40 * charge));
             float d = head != null ? Vector3.Distance(head.position, at) : 99f;
             if (d < 25f) DebrisOnPlayer(Mathf.Clamp01(1.2f - d / 25f) * charge);

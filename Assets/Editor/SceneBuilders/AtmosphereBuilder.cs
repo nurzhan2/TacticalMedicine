@@ -31,6 +31,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
             // the moon in the sky matches the moon light (light points along +forward of Euler(22,-35,0))
             Vector3 moonDir = -(Quaternion.Euler(22f, -35f, 0f) * Vector3.forward);
             m.SetVector("_MoonDir", moonDir);
+            m.SetFloat("_GlowStrength", 0.55f);
+            m.SetFloat("_StarDensity", 0.3f);
+            m.SetFloat("_StarBrightness", 0.75f);
             EditorUtility.SetDirty(m);
             return m;
         }
@@ -104,6 +107,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             dir.skyMaterial = RenderSettings.skybox;
             dir.moonEuler = moon.transform.eulerAngles;
             dir.focus = new Vector3(0f, 0f, 0.5f);
+            dir.flareIntensity = 0.95f;
             var flareMat = FxMat("FX_FlareGlow", new Color(1f, 0.93f, 0.8f), true, 3f);
             var smokeMat = FxMat("FX_FlareSmoke", new Color(0.55f, 0.55f, 0.58f, 0.18f), false);
             for (int i = 0; i < 3; i++) dir.flares.Add(BuildFlare(root, i, flareMat, smokeMat));

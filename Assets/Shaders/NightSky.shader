@@ -8,12 +8,12 @@ Shader "FieldMedic/NightSky"
         _ZenithColor ("Zenith", Color) = (0.004, 0.006, 0.014, 1)
         _HorizonColor ("Horizon", Color) = (0.035, 0.045, 0.07, 1)
         _GlowColor ("Fire glow", Color) = (0.55, 0.22, 0.06, 1)
-        _GlowStrength ("Fire glow strength", Range(0, 3)) = 1
+        _GlowStrength ("Fire glow strength", Range(0, 3)) = 0.55
         _GlowAzimuths ("Glow azimuths (deg)", Vector) = (15, 70, -40, 160)
         _MoonDir ("Moon direction", Vector) = (-0.45, 0.3, 0.6, 0)
         _MoonColor ("Moon", Color) = (0.75, 0.8, 0.95, 1)
-        _StarDensity ("Star density", Range(0, 1)) = 0.55
-        _StarBrightness ("Star brightness", Range(0, 4)) = 1.4
+        _StarDensity ("Star density", Range(0, 1)) = 0.3
+        _StarBrightness ("Star brightness", Range(0, 4)) = 0.75
         _CloudStrength ("Cloud veil", Range(0, 1)) = 0.6
         _FlashColor ("Flash (set by script)", Color) = (0, 0, 0, 0)
         _FlashDir ("Flash direction", Vector) = (0, 0.1, 1, 0)
@@ -91,7 +91,7 @@ Shader "FieldMedic/NightSky"
                         + glowAt(az, _GlowAzimuths.y, 14) * 0.6 * (0.8 + 0.2 * sin(t * 1.3 + 1.0))
                         + glowAt(az, _GlowAzimuths.z, 30) * 0.45
                         + glowAt(az, _GlowAzimuths.w, 18) * 0.35;
-                float band = exp(-max(h + 0.01, 0.0) * 14.0) * step(-0.05, h);
+                float band = exp(-max(h + 0.01, 0.0) * 24.0) * step(-0.05, h);
                 col += _GlowColor.rgb * g * band * _GlowStrength;
 
                 // cloud veil: low frequency noise that hides stars and catches the glow / moon

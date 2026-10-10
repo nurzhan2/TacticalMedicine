@@ -115,9 +115,9 @@ namespace FieldMedic.Tests
             var amb = CombatAmbience.Instance;
             amb.Detonate(new Vector3(4f, TrenchBuilderConst.G, 13f), 1.3f);
             yield return Frames(4);
-            Shot("s4_05_explosion", new Vector3(-3.4f, 2.05f, 0.25f), new Vector3(2f, 2.2f, 14f), 66f);
+            Shot("s4_05_explosion", new Vector3(-3.4f, 2.55f, -0.45f), new Vector3(3f, 2.1f, 13f), 66f);
             yield return new WaitForSeconds(0.6f);
-            Shot("s4_06_explosion_after", new Vector3(-3.4f, 2.05f, 0.25f), new Vector3(2f, 2.2f, 14f), 66f);
+            Shot("s4_06_explosion_after", new Vector3(-3.4f, 2.55f, -0.45f), new Vector3(3f, 2.1f, 13f), 66f);
 
             // 5) far front: tracers + horizon flash
             f.Pose(60f); f.gameObject.SetActive(false); dir.Apply(0f);
@@ -126,7 +126,7 @@ namespace FieldMedic.Tests
                 vfx.TracerBurst(new Vector3(-90f + i * 50f, 2f, 160f + i * 20f), new Vector3(1f - i * 0.5f, 0.04f, -0.2f), 5);
             amb.Detonate(new Vector3(300f, TrenchBuilderConst.G, 1500f), 1.5f);
             yield return new WaitForSeconds(0.35f);
-            Shot("s4_07_front_tracers", new Vector3(-3.4f, 2.05f, 0.25f), new Vector3(5f, 3f, 40f), 70f);
+            Shot("s4_07_front_tracers", new Vector3(-3.4f, 2.55f, -0.45f), new Vector3(5f, 3.5f, 40f), 70f);
 
             // 6) red headlamp on the casualty (he is hit, down in the mud)
             if (c != null)

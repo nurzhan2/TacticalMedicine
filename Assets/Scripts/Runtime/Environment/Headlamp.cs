@@ -16,7 +16,7 @@ namespace FieldMedic.Environment
 
         public Color red = new Color(1f, 0.08f, 0.04f);
         public Color white = new Color(1f, 0.95f, 0.85f);
-        public float redIntensity = 2.2f;
+        public float redIntensity = 1.3f;
         public float whiteIntensity = 3.2f;
         public LightMode startMode = LightMode.Red;
 

@@ -141,13 +141,20 @@ namespace FieldMedic.EditorTools.SceneBuilders
 
         static Material SoilWall => Env("Env_SoilWall", "Env_Soil", new Color(0.62f, 0.55f, 0.48f), 0.55f, 1f, 0.35f, 0.35f, 1f, 1.2f);
         static Material MudFloor => Env("Env_MudFloor", "Env_Mud", new Color(0.55f, 0.5f, 0.45f), 0.75f, 1f, 0.55f, 0.3f, 1f, 1.1f);
-        static Material Field => Env("Env_Field", "Env_Field", new Color(0.6f, 0.55f, 0.5f), 0.25f, 0f, 0.4f, 0.4f, 1f, 1f);
-        static Material Planks => Env("Env_Planks", "Env_Planks", new Color(0.62f, 0.55f, 0.47f), 0.25f, 0f, 0.0f, 0.45f, 0f, 1f);
-        static Material PlanksWet => Env("Env_PlanksWet", "Env_Planks", new Color(0.45f, 0.4f, 0.34f), 0.35f, 0f, 0.35f, 0.45f, 0f, 1f);
+        static Material Field => Env("Env_Field", "Env_Field", new Color(0.26f, 0.21f, 0.17f), 0.25f, 0f, 0.4f, 0.4f, 1f, 1f);
+        static Material Planks => Tiled(Env("Env_Planks", "Env_Planks", new Color(0.46f, 0.43f, 0.39f), 0.25f, 0f, 0.0f, 0.45f, 0f, 1f));
+        static Material PlanksWet => Tiled(Env("Env_PlanksWet", "Env_Planks", new Color(0.34f, 0.31f, 0.27f), 0.35f, 0f, 0.35f, 0.45f, 0f, 1f));
         static Material Bark => Env("Env_Bark", "Env_Bark", new Color(0.55f, 0.5f, 0.45f), 0.2f, 0f, 0f, 0.3f, 0f, 1.2f);
         static Material BarkBurnt => Env("Env_BarkBurnt", "Env_Bark", new Color(0.16f, 0.14f, 0.13f), 0.15f, 0f, 0f, 0.4f, 0f, 1.3f);
-        static Material Crate => Env("Env_CrateOlive", "Env_Planks", new Color(0.36f, 0.4f, 0.27f), 0.3f, 0f, 0f, 0.3f, 0f, 1f);
+        static Material Crate => Tiled(Env("Env_CrateOlive", "Env_Planks", new Color(0.3f, 0.34f, 0.23f), 0.3f, 0f, 0f, 0.3f, 0f, 1f));
         static Material Rust => Env("Env_Rust", "Env_Rust", new Color(0.55f, 0.6f, 0.5f), 0.35f, 0f, 0f, 0.2f, 0f, 1f);
+        /// <summary>Unit-cube boards: one plank strip of the plank-wall texture per face, repeated along the board.</summary>
+        static Material Tiled(Material m)
+        {
+            m.SetTextureScale("_BaseMap", new Vector2(1.6f, 0.2f));
+            return m;
+        }
+
         static Material Cable => Env("Env_Cable", null, new Color(0.04f, 0.045f, 0.04f), 0.5f);
         static Material Puddle => Env("Env_Puddle", null, new Color(0.035f, 0.03f, 0.025f), 0.96f, 0f, 0f, 0.1f);
         static Material Tarp => Env("Env_Tarp", "Env_Hessian", new Color(0.3f, 0.32f, 0.22f), 0.15f, 0f, 0f, 0.2f, 0f, 1.5f);
@@ -508,7 +515,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 q.transform.SetParent(_root, false);
                 q.transform.position = c;
                 q.transform.localScale = s * 0.1f;
-                q.GetComponent<Renderer>().sharedMaterial = Env("Env_FieldFar", "Env_Field", new Color(0.35f, 0.32f, 0.3f), 0.2f, 0f, 0.2f, 0.6f);
+                q.GetComponent<Renderer>().sharedMaterial = Env("Env_FieldFar", "Env_Field", new Color(0.2f, 0.18f, 0.16f), 0.2f, 0f, 0.2f, 0.6f);
             }
         }
 
@@ -640,11 +647,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
                         Vector3 c = a + t * s;
                         float hw = pts == MainPath ? MainHalfWidth(c.x) : 0.5f;
                         if (pts == MainPath && c.x < DugoutEndX + 0.2f) continue; // dugout has its own roof
-                        float d = TopWidth(hw, true) + 0.3f + row * 0.06f;
+                        // on the lip of the cut (the wall bevel below is not solid ground), stacked with overlap
+                        float d = LipDist(hw) + 0.08f - row * 0.03f;
                         Vector3 p = c + n * side * d;
-                        float h = GroundHeight(p.x, p.z, d, hw, out _);
                         if (_rng.NextDouble() < 0.05 && row == rows - 1) continue; // gaps in the top row
-                        p.y = h + 0.05f + row * 0.13f;
+                        float baseH = GroundHeight(p.x, p.z, LipDist(hw), hw, out _);
+                        p.y = baseH + 0.03f + row * 0.115f;
                         var rot = Quaternion.LookRotation(n * side) * Quaternion.Euler(Rnd(-4f, 4f) - side * 3f, 90f + Rnd(-7f, 7f), Rnd(-5f, 5f));
                         Sandbag(root, p, rot);
                     }
@@ -763,17 +771,16 @@ namespace FieldMedic.EditorTools.SceneBuilders
                     new Vector3(0.22f + Rnd(-0.02f, 0.03f), hw + 0.55f, 0.22f), Bark);
                 log.transform.localRotation = Quaternion.Euler(90f, Rnd(-3f, 3f), 0f);
             }
-            // earth mound over the roof + sandbags on its rim
-            var mound = Prim(PrimitiveType.Sphere, "RoofMound", root, new Vector3((x0 + x1) * 0.5f, roofY + 0.18f, z), new Vector3((x1 - x0) + 1.6f, 0.75f, 2f * hw + 2.2f), SoilWall);
-            Object.DestroyImmediate(mound.GetComponent<Collider>());
-            for (int i = 0; i < 11; i++)
+            // earth cover over the log roof: heightfield (single-sided, so from inside only the logs are seen)
+            BuildDugoutMound(root, roofY + 0.24f);
+            for (int i = 0; i < 9; i++)
             {
-                float a = i / 11f * Mathf.PI * 2f;
-                var p = new Vector3((x0 + x1) * 0.5f + Mathf.Cos(a) * ((x1 - x0) * 0.5f + 0.35f), roofY + 0.42f, z + Mathf.Sin(a) * (hw + 0.6f));
-                Sandbag(root, p, Quaternion.Euler(Rnd(-6f, 6f), -a * Mathf.Rad2Deg + 90f, Rnd(-6f, 6f)));
+                float x = Mathf.Lerp(x0 + 0.1f, x1 - 0.3f, i / 8f);
+                float zz = z + (i % 2 == 0 ? -1f : 1f) * Rnd(0.9f, 1.3f);
+                Sandbag(root, new Vector3(x, MoundHeight(x, zz, roofY + 0.24f) + 0.04f, zz), Quaternion.Euler(Rnd(-6f, 6f), Rnd(-20f, 20f), Rnd(-6f, 6f)));
             }
-            for (int i = 0; i < 6; i++)
-                Sandbag(root, new Vector3(Mathf.Lerp(x0 + 0.4f, x1 - 0.2f, i / 5f), roofY + 0.62f, z + Rnd(-0.5f, 0.5f)), Quaternion.Euler(Rnd(-8f, 8f), Rnd(0f, 180f), Rnd(-8f, 8f)));
+            for (int i = 0; i < 5; i++) // bags over the door
+                Sandbag(root, new Vector3(x1 + 0.05f, roofY + 0.36f + (i / 3) * 0.11f, z - 0.75f + (i % 3) * 0.5f + (i / 3) * 0.25f), Quaternion.Euler(Rnd(-4f, 4f), 90f + Rnd(-8f, 8f), Rnd(-4f, 4f)));
             // doorway frame + tarp half pulled aside
             for (int side = -1; side <= 1; side += 2)
                 Prim(PrimitiveType.Cylinder, "DoorPost", root, new Vector3(x1 + 0.05f, roofY * 0.5f, z + side * 0.62f), new Vector3(0.14f, roofY * 0.5f, 0.14f), Bark);
@@ -805,6 +812,65 @@ namespace FieldMedic.EditorTools.SceneBuilders
             l.range = 2.6f;
             l.shadows = LightShadows.None;
             lgo.AddComponent<Environment.CandleFlicker>();
+        }
+
+        const float MoundX0 = -12.2f, MoundX1 = -6.45f, MoundZ0 = -4.4f, MoundZ1 = 1.4f;
+
+        /// <summary>Earth cover height: full over the dugout + its cut, blending to the field around.</summary>
+        static float MoundHeight(float x, float z, float top)
+        {
+            float dz = Mathf.Max(0f, Mathf.Abs(z - DugoutCentre.z) - 1.75f);
+            float dx = Mathf.Max(0f, -11.4f - x);
+            float edge = Mathf.Sqrt(dx * dx + dz * dz);
+            float w = 1f - Mathf.SmoothStep(0f, 1f, edge / 1.3f);
+            float dome = top + 0.28f * Mathf.Clamp01(1f - Mathf.Abs(z - DugoutCentre.z) / 2.2f) * Mathf.Clamp01((x - MoundX0) / 3f);
+            float ground = GroundHeight(x, z, 99f, HalfWidth, out _) - 0.05f;
+            return Mathf.Lerp(ground, dome, w) + Perlin(x * 1.3f, z * 1.3f) * 0.08f;
+        }
+
+        static void BuildDugoutMound(Transform root, float top)
+        {
+            const float Step = 0.22f;
+            int nx = Mathf.CeilToInt((MoundX1 - MoundX0) / Step) + 1, nz = Mathf.CeilToInt((MoundZ1 - MoundZ0) / Step) + 1;
+            var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var cols = new List<Color>(); var tris = new List<int>();
+            for (int iz = 0; iz < nz; iz++)
+            for (int ix = 0; ix < nx; ix++)
+            {
+                float x = Mathf.Min(MoundX0 + ix * Step, MoundX1), z = MoundZ0 + iz * Step;
+                verts.Add(new Vector3(x, MoundHeight(x, z, top), z));
+                uvs.Add(new Vector2(x * 0.5f, z * 0.5f));
+                cols.Add(new Color(1f, 0.1f, 0f, 1f));
+            }
+            for (int iz = 0; iz < nz - 1; iz++)
+                for (int ix = 0; ix < nx - 1; ix++)
+                {
+                    int a = iz * nx + ix;
+                    Quad(tris, a, a + nx, a + nx + 1, a + 1, false);
+                }
+            var mesh = SaveMesh("DugoutMound", verts, uvs, cols, tris);
+            var go = MeshObject("DugoutMound", mesh, SoilWall, false);
+            go.transform.SetParent(root, true);
+            EnsureFacing(mesh, go, verts, new Vector3(-9f, top, DugoutCentre.z), Vector3.down);
+
+            // front face above the door (east edge, x = MoundX1) down to the lintel
+            var fv = new List<Vector3>(); var fu = new List<Vector2>(); var fc = new List<Color>(); var ft = new List<int>();
+            for (int iz = 0; iz < nz; iz++)
+            {
+                float z = MoundZ0 + iz * Step;
+                fv.Add(new Vector3(MoundX1, MoundHeight(MoundX1, z, top), z));
+                fv.Add(new Vector3(MoundX1 + 0.05f, top - 0.32f, z));
+                fu.Add(new Vector2(z * 0.5f, 0.6f)); fu.Add(new Vector2(z * 0.5f, 0.2f));
+                fc.Add(new Color(0.8f, 0.1f, 0f, 1f)); fc.Add(new Color(0.6f, 0.2f, 0f, 1f));
+            }
+            for (int iz = 0; iz < nz - 1; iz++)
+            {
+                int a = iz * 2;
+                Quad(ft, a, a + 2, a + 3, a + 1, false);
+            }
+            var fmesh = SaveMesh("DugoutFront", fv, fu, fc, ft);
+            var fgo = MeshObject("DugoutFront", fmesh, SoilWall, false);
+            fgo.transform.SetParent(root, true);
+            EnsureFacing(fmesh, fgo, fv, new Vector3(MoundX1 + 0.8f, top - 0.9f, DugoutCentre.z), Vector3.left);
         }
 
         // ------------------------------------------------------------------ props
