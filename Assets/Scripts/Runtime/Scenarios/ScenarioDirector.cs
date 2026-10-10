@@ -162,34 +162,40 @@ namespace FieldMedic.Scenarios
             {
                 yield return Wait(Mathf.Min(def.incidentDelay, 2f));
                 ApplyWounds(true);
+                if (def.incident == IncidentKind.Barrage && !testMode) IncidentProps.Spawn(IncidentKind.Barrage, CasualtyPos, CasualtyPos);
                 Timeline.Incident();
                 Timeline.CasualtyDown(def.startPhase);
                 yield break;
             }
             yield return Wait(def.incidentDelay);
             Vector3 c = CasualtyPos;
+            Vector3 blast = c;
             switch (def.incident)
             {
                 case IncidentKind.DroneDrop:
                     if (amb != null) amb.StartDrone(DroneKind.Recon, 45f);
                     yield return Wait(3f);
                     if (amb != null) amb.PlayDropGrenade(new Vector3(c.x + 0.9f, 0.05f, c.z + 0.25f));
+                    blast = new Vector3(c.x + 0.9f, 0.05f, c.z + 0.25f);
                     yield return Wait(2.3f);
                     break;
                 case IncidentKind.SniperShot:
                     if (amb != null) { amb.PlaySniperCrack(); amb.BulletImpact(c + Vector3.up * 1.3f); }
                     break;
                 case IncidentKind.Mine:
-                    if (amb != null) amb.Detonate(new Vector3(c.x, 0.02f, c.z - 0.5f), 0.45f);
+                    blast = new Vector3(c.x, 0.02f, c.z - 0.5f);
+                    if (amb != null) amb.Detonate(blast, 0.45f);
                     break;
                 case IncidentKind.Mortar:
                     if (amb != null) amb.PlayIncomingShell(new Vector3(c.x + 0.6f, 1.75f, c.z + 1.0f));
+                    blast = new Vector3(c.x + 0.7f, 0.05f, c.z + 0.3f);
                     yield return Wait(2.4f);
                     break;
                 case IncidentKind.Fpv:
                     if (amb != null) amb.StartDrone(DroneKind.Fpv, 5f);
                     yield return Wait(4.5f);
-                    if (amb != null) amb.Detonate(new Vector3(c.x + 1.4f, 0.4f, c.z + 0.3f), 0.7f);
+                    blast = new Vector3(c.x + 1.4f, 0.05f, c.z + 0.1f);
+                    if (amb != null) amb.Detonate(blast + Vector3.up * 0.35f, 0.7f);
                     break;
                 case IncidentKind.GlideBomb:
                     if (amb != null) amb.Detonate(new Vector3(c.x + 14f, 1.75f, c.z + 22f), 2.5f);
@@ -199,6 +205,7 @@ namespace FieldMedic.Scenarios
             }
             ApplyWounds(false);
             casualty.Hit(def.hit);
+            if (!testMode) IncidentProps.Spawn(def.incident, blast, c);
             casualty.Protocol.phase = def.startPhase;
             Timeline.Incident();
             Timeline.CasualtyDown(def.startPhase);

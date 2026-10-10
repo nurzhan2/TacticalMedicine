@@ -161,7 +161,19 @@ namespace FieldMedic.Tests
                                          hips - along * 1.1f + Vector3.up * 1.0f, hips + along * 1.3f + Vector3.up * 1.0f })
                 if (!Physics.Linecast(hips + Vector3.up * 0.35f, cand)) { from = cand; break; }
             HidePlayerKit(true);
-            Shot($"s5_{id.ToLower()}_{Names[int.Parse(id.Substring(1))]}", from, hips + Vector3.up * 0.05f, 58f, 0.6f);
+            // frame the incident's signature (wreck, scorch, fin, helmet...) together with him
+            Vector3 look = hips + Vector3.up * 0.05f;
+            var inc = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).FirstOrDefault(x => x.name.StartsWith("Incident_"));
+            if (inc != null)
+            {
+                Vector3 mid = Vector3.Lerp(hips, inc.position, 0.5f);
+                look = mid + Vector3.up * 0.05f;
+                Vector3 span = inc.position - hips; span.y = 0f;
+                Vector3 perp = Vector3.Cross(Vector3.up, span.sqrMagnitude > 1e-4f ? span.normalized : Vector3.right);
+                foreach (var cand in new[] { mid + perp * 0.9f + Vector3.up * 1.15f, mid - perp * 0.9f + Vector3.up * 1.15f, from })
+                    if (!Physics.Linecast(mid + Vector3.up * 0.35f, cand)) { from = cand; break; }
+            }
+            Shot($"s5_{id.ToLower()}_{Names[int.Parse(id.Substring(1))]}", from, look, 66f, 0.7f);
             HidePlayerKit(false);
             if (id == "S3")
             {

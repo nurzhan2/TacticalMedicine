@@ -16,7 +16,7 @@ namespace FieldMedic.Environment
 
         public Color red = new Color(1f, 0.08f, 0.04f);
         public Color white = new Color(1f, 0.95f, 0.85f);
-        public float redIntensity = 1.3f;
+        public float redIntensity = 0.65f; // supervisor: red on red saturated the wound; half, wider beam
         public float whiteIntensity = 3.2f;
         public LightMode startMode = LightMode.Red;
 
@@ -43,7 +43,9 @@ namespace FieldMedic.Environment
             _light.enabled = m != LightMode.Off;
             _light.color = m == LightMode.White ? white : red;
             _light.intensity = m == LightMode.White ? whiteIntensity : redIntensity;
-            _light.range = m == LightMode.White ? 9f : 4.5f;
+            _light.range = m == LightMode.White ? 9f : 5.5f;
+            _light.spotAngle = m == LightMode.White ? 70f : 88f;
+            _light.innerSpotAngle = m == LightMode.White ? 30f : 20f; // soft, wide falloff
         }
 
         public void Toggle() => SetMode(Mode == LightMode.Off ? _lastOn : LightMode.Off);
