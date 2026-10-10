@@ -231,7 +231,16 @@ namespace FieldMedic.Scenarios.Bots
             yield return Move(h, h.PalmPosition + cat.transform.up * 0.05f + cat.transform.forward * 0.05f, false, 0.4f);
             yield return Release(h);
 
-            if (marker != null) yield return Write(marker, cat.TimeLabelPoint, h);
+            if (marker != null)
+            {
+                yield return Write(marker, cat.TimeLabelPoint, h);
+                // like a person: look, and write again if the strap is still blank (the strap shifts as he moves)
+                for (int k = 0; k < 2 && !cat.State.TimeMarked; k++)
+                {
+                    if (h.Held != null) yield return Release(h);
+                    yield return Write(marker, cat.TimeLabelPoint, h);
+                }
+            }
             lastStep = "tq: done";
         }
 

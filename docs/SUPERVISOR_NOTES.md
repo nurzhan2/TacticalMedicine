@@ -20,3 +20,8 @@
 ## 09:55 review of s4_* screenshots
 - s4_01_trench_flare.png: big improvement (wood grain, starry sky, sandbags, mud). Remaining: left wall is almost black while right wall is lit - add a weak cool moon fill so both walls read; sandbags look like smooth pillows - add cloth normal/sag and colour variation.
 - s4_08_headlamp_casualty.png: red headlamp saturates the casualty to pure orange-red, wound and blood become unreadable (red on red). Reduce red headlamp intensity ~50%, widen falloff, add a white-light mode (toggle) for treatment under cover - TCCC allows white light in cover; red/IR only under fire.
+## 11:32 review of s5_* screenshots
+- s5_menu_main.png: good (round buttons, RU/KZ, readable). Keep.
+- s5_debrief.png: the 'ЕЩЁ' (retry) button has no round background - only text, unlike МЕНЮ/ДАЛЕЕ. Also the board overlaps the trench wall at the left edge (place it fully in free space).
+- s5_s5_fpv.png: scenario shots all look like the same trench + casualty; the FPV scenario should show its signature (drone wreck / rotor pieces nearby, shrapnel wounds visible, smoke) and every scenario's first frame should make the wound obvious (exposed, bleeding). Make each scenario visually distinct at a glance.
+- Disk: owner freed space, now ~37 GB free - no need to delete the Bee cache anymore; keep incremental Android builds fast.
