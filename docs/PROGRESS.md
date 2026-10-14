@@ -203,3 +203,35 @@
   - The 8x8 APC asset was skipped (Blender hang).
   - The small barbed-wire fence lost its wire (its curve modifiers are disabled in the source file); `barbed_wire_metal_fence` is the real one.
 - **Git push**: still "Repository not found" (same as w0). All work is committed locally.
+
+## 15.10 01:50 — w1 assets DONE
+- **48 real models**, each with a prefab: 42 BlenderKit + 6 Poly Haven. Full list in `docs/ASSETS_V2.md`; credits in ATTRIBUTION.md.
+  - Ruins: 13
+  - Cover: 8
+  - Vehicles: 4
+  - Aircraft and drones: 5
+  - Soldier: 1 (Humanoid avatar valid)
+  - Props: 11 (including the KZ flag)
+  - Rocks, grass and tyre: 6
+- **Environment**: overcast HDRI (2k) + 5 steppe ground textures (CC0, committed).
+- **Gallery** renders: `docs/screens/v2_w1_gallery_*.jpg` and `v2_w1_lineup.jpg`.
+- **Review fixes**:
+  - Flour sacks → olive tint.
+  - White F-16 → grey.
+  - Red civilian helicopter → olive tint.
+  - Ambulance gurney → olive tint.
+  - Rebar dropped (it read as a primitive).
+  - `brick_block_wall` is a one-sided scan: check the `~back` shots before placing.
+  - `unfinished_building` wall infill is flat salmon colour (baked procedural): retexture or cover with debris in w2.
+- **Meshy prompts** are in `docs/MESHY_PROMPTS_V2.md`: sandbags, BMP-2, BTR-80, T-72, Su-25, Mi-24, Mi-8, crater, burnt car, KZ and enemy soldiers, casings, litter, marker, card.
+- **Tests**:
+  - EditMode: 72/72 (+6 MeshyImporter tests: FBX, GLB via Blender, unknown names, swap, fallback, sizes).
+  - PlayMode TreatmentBot: 8/8.
+  - PlayMode Grab + LaunchSmoke: 7/7.
+  - Order flake: running all three classes together failed 3 bot tests. A/B in isolation with and without the Meshy hook: 8/8 both ways, so it is not caused by this stage.
+- **APK**: 01:46 (21.5 min, 97.7 MB, manifest audit OK) → `Builds/` + Desktop.
+- **Next (w2)**:
+  - Use the prefabs from `Assets/_Licensed`/`ThirdParty`.
+  - Layer/tag "Cover" now exists.
+  - On a fresh clone, run `python tools/bk_batch.py tools/bk_batch_w1.txt` first. It needs `%USERPROFILE%\.bk_api_key`.
+- **Git push**: still blocked ("Repository not found").
