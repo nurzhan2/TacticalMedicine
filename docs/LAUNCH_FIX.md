@@ -88,4 +88,15 @@ So there was **no single hard blocker** in the manifest. The problems found are 
 
 ## 5. Results of this stage
 
-See the end of this file (filled after the build).
+- **APK** built 14.10 22:49 (29.6 min) at `Builds/FieldMedicVR.apk`, copied to `C:\Users\user\Desktop\FieldMedicVR.apk` (97.7 MB). Build scenes: Boot, Main.
+- **Manifest audit:** RESULT OK (`logs/manifest_check.txt`). Cross-checked in the APK with `aapt2 dump xmltree`:
+  - MAIN + LAUNCHER + `com.oculus.intent.category.VR` on `UnityPlayerGameActivity`;
+  - supportedDevices `quest2|questpro|quest3|quest3s`;
+  - no `uses-horizonos-supplement`;
+  - the only required features are head tracking and Vulkan;
+  - native code is arm64-v8a only.
+- **Tests:**
+  - EditMode 66/66, including 3 new manifest tests.
+  - New PlayMode tests all pass: `HandRig_Switches_To_Headset_When_XR_Starts_After_Awake`, `LaunchSmokeTests` (Main on the headset path, no error logs) and `BootSceneTests` (Boot shows the title and Main is active after 4.0 s; async load 3.7 s in the editor, versus 16 s for the old blocking start).
+- **quest_check:** `NO DEVICE` (no headset connected during the night). The on-device PASS is still open: run `tools\quest_check.ps1` with the headset plugged in.
+- **Not verifiable without a headset:** the actual frame in the headset and on-device load time. If quest_check reports FAIL, the logcat file names the cause (OpenXR / AndroidRuntime / crash lines).
