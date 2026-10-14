@@ -389,9 +389,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
         }
 
         // ---------------------------------------------------------------- helpers
-        static void SetBuildScenes()
+        /// <summary>Build scenes: Boot (tiny, renders at once, loads Main async) first, then Main.</summary>
+        public static void SetBuildScenes()
         {
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            EditorBuildSettings.scenes = File.Exists(BootSceneBuilder.ScenePath)
+                ? new[] { new EditorBuildSettingsScene(BootSceneBuilder.ScenePath, true), new EditorBuildSettingsScene(ScenePath, true) }
+                : new[] { new EditorBuildSettingsScene(ScenePath, true) };
         }
 
         static Transform FindDeep(Transform t, string name)

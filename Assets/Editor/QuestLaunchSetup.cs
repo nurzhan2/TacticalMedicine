@@ -68,12 +68,11 @@ namespace FieldMedic.EditorTools
             Set("Android TV", PlayerSettings.Android.androidTVCompatibility, false, v => PlayerSettings.Android.androidTVCompatibility = v);
 
             // first scene
-            var scenes = EditorBuildSettings.scenes;
-            if (scenes.Length == 0 || scenes[0].path != "Assets/Scenes/Main.unity" || !scenes[0].enabled)
-            {
-                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
-                changes.Add("build scenes -> [Main.unity]");
-            }
+            // first scene: Boot (renders immediately, loads Main async), then Main
+            var before = string.Join(",", EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path));
+            SceneBuilders.MainSceneBuilder.SetBuildScenes();
+            var after = string.Join(",", EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path));
+            if (before != after) changes.Add($"build scenes: [{before}] -> [{after}]");
 
             // OpenXR features
             var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);

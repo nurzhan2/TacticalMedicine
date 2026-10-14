@@ -18,8 +18,6 @@ namespace FieldMedic.EditorTools
         [MenuItem("FieldMedic/Build/Android APK (Quest)")]
         public static void BuildAndroid()
         {
-            var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
-            if (scenes.Length == 0) scenes = new[] { "Assets/Scenes/Main.unity" };
             Directory.CreateDirectory(Path.GetDirectoryName(ApkPath));
 
             if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
@@ -27,8 +25,11 @@ namespace FieldMedic.EditorTools
             EditorUserBuildSettings.buildAppBundle = false;
             EditorUserBuildSettings.development = false;
             EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
+            if (!File.Exists(SceneBuilders.BootSceneBuilder.ScenePath)) SceneBuilders.BootSceneBuilder.Build();
             QuestLaunchSetup.Apply();
             AssetDatabase.SaveAssets();
+            var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+            if (scenes.Length == 0) scenes = new[] { "Assets/Scenes/Main.unity" };
 
             var opts = new BuildPlayerOptions
             {
