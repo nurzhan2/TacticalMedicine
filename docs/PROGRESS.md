@@ -235,3 +235,4 @@
   - Layer/tag "Cover" now exists.
   - On a fresh clone, run `python tools/bk_batch.py tools/bk_batch_w1.txt` first. It needs `%USERPROFILE%\.bk_api_key`.
 - **Git push**: still blocked ("Repository not found").
+- quest_check.ps1 after the w1 build hung (killed after 10 min, no output; probably adb waiting with no headset attached). Not a build problem; the next stage should run it with a timeout.
