@@ -178,7 +178,6 @@ BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where not
 | ruins/derelict_concrete_building | Derelict Concrete Building | Fridqeir Haynura | https://www.blenderkit.com/get-blenderkit/e381565d-0afc-4125-acfd-abde83625e8e/ | BlenderKit Royalty Free |
 | ruins/junk_slab_pile | Pile of Junk (rubbish, debris) Photoscan | Tedd Šámal | https://www.blenderkit.com/get-blenderkit/029d6806-b86b-47ef-8a87-16b868219c7e/ | BlenderKit Royalty Free |
 | ruins/pillar_bullet_holes | Pillar scan | REAL SCANS | https://www.blenderkit.com/get-blenderkit/21d82a38-02f6-43d7-b145-ca9309c13d4b/ | BlenderKit Royalty Free |
-| ruins/rebar | Reinforcing Bar | Waldemar Dad | https://www.blenderkit.com/get-blenderkit/0fb9fc5e-9f53-450a-a513-8efdcf7810ba/ | BlenderKit Royalty Free |
 | ruins/rubble_pile | Rubble Pile | Guinter Ramos | https://www.blenderkit.com/get-blenderkit/68d9a4ac-5bc0-46f1-8175-42ac843c37b8/ | BlenderKit Royalty Free |
 | ruins/ruined_masonry_wall | Ruined Masonry Wall | REAL SCANS | https://www.blenderkit.com/get-blenderkit/858d9662-d036-4d93-80c1-d0e1e06143ab/ | BlenderKit Royalty Free |
 | ruins/unfinished_building | Unfinished Building | AIR3D | https://www.blenderkit.com/get-blenderkit/694baa4b-b62c-459b-b5d3-6429c8ceff76/ | BlenderKit Royalty Free |
