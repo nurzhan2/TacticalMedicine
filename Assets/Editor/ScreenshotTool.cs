@@ -44,6 +44,8 @@ namespace FieldMedic.EditorTools
 
         /// <summary>&gt; 0 → screenshots are written as JPG with this quality (V2: keep pushes small).</summary>
         public static int JpgQuality;
+        /// <summary>Renders per shot whose per-pixel median is saved (1 = single render).</summary>
+        public static int MedianOf = 1;
 
         public static int CaptureScene(string scenePath, string[] only, int width, int height, Action prepare = null)
         {
@@ -92,23 +94,38 @@ namespace FieldMedic.EditorTools
             try
             {
                 var req = new RenderPipeline.StandardRequest { destination = rt };
-                if (RenderPipeline.SupportsRenderRequest(cam, req))
+                bool srp = RenderPipeline.SupportsRenderRequest(cam, req);
+                // first frame of a new camera can read uninitialised shadow/SSAO buffers → warm-up render; then
+                // MedianOf renders, per-pixel median (removes the random speckle the Iris Xe editor GPU adds, w2)
+                if (srp) RenderPipeline.SubmitRenderRequest(cam, req);
+                int n = Mathf.Max(1, MedianOf);
+                var frames = new Color32[n][];
+                Texture2D tex = null;
+                for (int f = 0; f < n; f++)
                 {
-                    RenderPipeline.SubmitRenderRequest(cam, req);
+                    if (srp) RenderPipeline.SubmitRenderRequest(cam, req);
+                    else { cam.targetTexture = rt; cam.Render(); cam.targetTexture = null; }
+                    var prev = RenderTexture.active;
+                    RenderTexture.active = rt;
+                    if (tex == null) tex = new Texture2D(width, height, TextureFormat.RGB24, false);
+                    tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                    tex.Apply();
+                    RenderTexture.active = prev;
+                    frames[f] = tex.GetPixels32();
                 }
-                else
+                if (n > 1)
                 {
-                    cam.targetTexture = rt;
-                    cam.Render();
-                    cam.targetTexture = null;
+                    var outPx = new Color32[frames[0].Length];
+                    var r = new byte[n]; var g = new byte[n]; var b = new byte[n];
+                    for (int i = 0; i < outPx.Length; i++)
+                    {
+                        for (int f = 0; f < n; f++) { r[f] = frames[f][i].r; g[f] = frames[f][i].g; b[f] = frames[f][i].b; }
+                        System.Array.Sort(r); System.Array.Sort(g); System.Array.Sort(b);
+                        outPx[i] = new Color32(r[n / 2], g[n / 2], b[n / 2], 255);
+                    }
+                    tex.SetPixels32(outPx);
+                    tex.Apply();
                 }
-
-                var prev = RenderTexture.active;
-                RenderTexture.active = rt;
-                var tex = new Texture2D(width, height, TextureFormat.RGB24, false);
-                tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                tex.Apply();
-                RenderTexture.active = prev;
                 File.WriteAllBytes(path, path.EndsWith(".jpg") ? tex.EncodeToJPG(JpgQuality > 0 ? JpgQuality : 85) : tex.EncodeToPNG());
                 Object.DestroyImmediate(tex);
             }

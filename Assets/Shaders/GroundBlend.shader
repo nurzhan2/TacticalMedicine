@@ -118,12 +118,13 @@ Shader "FieldMedic/GroundBlend"
                 float2 uvD = float2(w.x * 0.8 - w.y * 0.6, w.x * 0.6 + w.y * 0.8) / _Tile.y;
                 float2 uvB = float2(w.y, -w.x) / _Tile.z;
 
-                half n1 = vnoise(w * 0.35);
-                half n2 = vnoise(w * 1.7 + 13.1);
-                half breakup = (n1 * 0.7 + n2 * 0.3) - 0.5;
+                // soft, large-scale breakup of the blend edges (a few metres), only a touch of fine detail
+                half n1 = vnoise(w * 0.22);
+                half n2 = vnoise(w * 0.9 + 13.1);
+                half breakup = (n1 * 0.8 + n2 * 0.2) - 0.5;
 
-                half dirtW = saturate((i.color.r - 0.5 + breakup * 0.9) * 3.0 + 0.5);
-                half burnW = saturate((i.color.g - 0.5 + breakup * 0.7) * 3.0 + 0.5);
+                half dirtW = smoothstep(0.0, 1.0, saturate((i.color.r - 0.5 + breakup * 0.6) * 1.8 + 0.5));
+                half burnW = smoothstep(0.0, 1.0, saturate((i.color.g - 0.5 + breakup * 0.5) * 1.8 + 0.5));
 
                 half3 grass = SAMPLE_TEXTURE2D(_GrassMap, sampler_GrassMap, uvG).rgb * _GrassTint.rgb;
                 half3 dirt = SAMPLE_TEXTURE2D(_DirtMap, sampler_GrassMap, uvD).rgb * _DirtTint.rgb;

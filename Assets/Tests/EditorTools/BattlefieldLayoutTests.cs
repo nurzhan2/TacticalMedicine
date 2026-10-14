@@ -64,8 +64,14 @@ namespace FieldMedic.Tests
         [Test]
         public void Tracks_Are_Dirt_And_The_Steppe_Is_Mostly_Grass()
         {
+            // across the track: worn band on the axis, deep wheel ruts ±0.95 m either side
             var t = BattlefieldTerrain.Track[3];
-            Assert.Greater(BattlefieldTerrain.DirtAt(t.x, t.z, out _, out _), 0.4f);
+            var dir = (BattlefieldTerrain.Track[4] - t).normalized;
+            var side = Vector3.Cross(Vector3.up, dir);
+            float best = 0f;
+            for (float o = -1.5f; o <= 1.5f; o += 0.05f) { var p = t + side * o; best = Mathf.Max(best, BattlefieldTerrain.DirtAt(p.x, p.z, out _, out _)); }
+            Assert.Greater(best, 0.7f, "ruts");
+            Assert.Greater(BattlefieldTerrain.DirtAt(t.x, t.z, out _, out _), 0.25f, "worn axis");
             int grass = 0, n = 0;
             for (float x = -150f; x <= 150f; x += 15f)
             for (float z = 60f; z <= 180f; z += 15f) { n++; if (BattlefieldTerrain.DirtAt(x, z, out _, out _) < 0.35f) grass++; }

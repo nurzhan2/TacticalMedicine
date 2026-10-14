@@ -14,6 +14,38 @@ namespace FieldMedic.Tests
     /// </summary>
     public class LaunchSmokeTests
     {
+        /// <summary>w2: the Battlefield is the V2 main flow (Boot loads it) — same headset-path checks.</summary>
+        [UnityTest]
+        public IEnumerator Battlefield_Starts_On_Headset_Path_Without_Errors()
+        {
+            DesktopSimulator.XRActiveOverride = true;
+            try
+            {
+                float t0 = Time.realtimeSinceStartup;
+#if UNITY_EDITOR
+                yield return UnityEditor.SceneManagement.EditorSceneManager.LoadSceneAsyncInPlayMode(FieldMedic.Environment.BattlefieldLayout.ScenePath,
+                    new UnityEngine.SceneManagement.LoadSceneParameters(UnityEngine.SceneManagement.LoadSceneMode.Single));
+#endif
+                yield return null;
+                float load = Time.realtimeSinceStartup - t0;
+                AudioListener.volume = 0f;
+                Debug.Log($"[FMVR] launch smoke: Battlefield loaded in {load:F1} s (editor)");
+                for (float t = 0f; t < 4f; t += Time.unscaledDeltaTime) yield return null;
+                var rigs = Object.FindObjectsByType<HandRig>(FindObjectsSortMode.None);
+                Assert.IsNotEmpty(rigs, "no HandRig in the Battlefield");
+                foreach (var r in rigs.Where(r => r.mode == HandRig.Mode.Auto && r.ovrAnchor != null))
+                    Assert.AreEqual(HandRig.Mode.OVR, r.ActiveMode, r.name + " must use the headset input");
+                var ts = GameObject.Find("TrackingSpace");
+                Assert.IsNotNull(ts, "OVRCameraRig/TrackingSpace missing");
+                Assert.AreEqual(0f, ts.transform.localPosition.y, 1e-3f, "tracking space must stay at floor level on the headset");
+                Assert.Less(load, 25f, "Battlefield load too slow");
+            }
+            finally
+            {
+                DesktopSimulator.XRActiveOverride = null;
+            }
+        }
+
         [UnityTest]
         public IEnumerator MainScene_Starts_On_Headset_Path_Without_Errors()
         {

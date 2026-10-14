@@ -172,7 +172,7 @@ namespace FieldMedic.Tests
             var loco = Object.FindAnyObjectByType<Locomotion>();
             var c = BattlefieldLayout.Craters[3];
             loco.transform.position = new Vector3(c.x, 0f, c.y);
-            for (int i = 0; i < 60; i++) yield return null;
+            for (float t = 0f; t < 1.5f; t += Time.deltaTime) yield return null; // batch frames are tiny: wait real time
             Assert.Less(BattlefieldLayout.GroundHeight(c.x, c.y), -0.3f, "crater floor should be lower");
             var hp = loco.head.position;
             Assert.IsTrue(Physics.Raycast(new Vector3(hp.x, 3f, hp.z), Vector3.down, out var hit, 10f, loco.groundMask), "ground mesh under the head");

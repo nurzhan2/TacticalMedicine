@@ -15,8 +15,8 @@ namespace FieldMedic.EditorTools
     /// (100° FOV, 420 m far clip) it counts, per view: triangles of the LOD level each LODGroup would actually
     /// show at that distance (+ non-LOD renderers), frustum-culled by bounds, and a draw-call estimate (static
     /// batching merges static renderers sharing a material; dynamic renderers × sub-meshes; particles/lines 1
-    /// each). It also renders each worst view once and reads the editor's frame stats (UnityStats: tris, batches,
-    /// SetPass) as the "profiler capture". Batch (with graphics): -executeMethod FieldMedic.EditorTools.PerfReportV2.Run
+    /// each). The measured profiler capture (render counters in play mode) is appended by the PlayMode test
+    /// BattlefieldScreenshots.Profile_Render_Stats_From_Player_Spots. Batch (with graphics): -executeMethod FieldMedic.EditorTools.PerfReportV2.Run
     /// </summary>
     public static class PerfReportV2
     {
@@ -80,20 +80,6 @@ namespace FieldMedic.EditorTools
                 worstDraws = Mathf.Max(worstDraws, spotDraws);
             }
 
-            // "profiler capture": render the worst view and read the editor frame stats
-            string measured = "n/a (no graphics device)";
-            if (SystemInfo.graphicsDeviceType != GraphicsDeviceType.Null)
-            {
-                cam.transform.SetPositionAndRotation(worstPos, Quaternion.Euler(8f, worstYaw, 0f));
-                var rt = new RenderTexture(1024, 1024, 24) { antiAliasing = 4 };
-                cam.targetTexture = rt;
-                cam.Render();
-                cam.Render();
-                measured = $"{UnityStats.triangles:N0} tris, {UnityStats.batches} batches, {UnityStats.setPassCalls} SetPass, {UnityStats.drawCalls} draw calls (editor render, no static batching applied in edit mode)";
-                cam.targetTexture = null;
-                rt.Release();
-                Object.DestroyImmediate(rt);
-            }
             Object.DestroyImmediate(cam.gameObject);
 
             var lights = Object.FindObjectsByType<Light>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -120,7 +106,6 @@ namespace FieldMedic.EditorTools
             sb.AppendLine($"| Draw calls estimate, worst view (static batching per material) | {worstDraws} | {DrawBudget} | {(worstDraws <= DrawBudget ? "OK" : "OVER")} |");
             sb.AppendLine($"| Shadow-casting lights | {shadowLights} | 1 main | {(shadowLights <= 1 ? "OK" : "OVER")} |");
             sb.AppendLine($"| Max texture size | {maxTex} | 2048 | {(maxTex <= 2048 ? "OK" : "OVER")} |");
-            sb.AppendLine($"| Editor frame capture of the worst view | {measured} | — | info |");
             sb.AppendLine($"| Triangles in scene (all LODs) | {total:N0} | — | info |");
             sb.AppendLine($"| Renderers / static-batched / LODGroups / particle systems | {renderers.Length} / {staticR} / {lodGroups} / {particles} | — | info |");
             sb.AppendLine($"| Renderers casting shadows (into the one directional map) | {casters} | — | info |");
@@ -136,15 +121,12 @@ namespace FieldMedic.EditorTools
                           "combined into 12 static meshes, small debris switches LODs early and culls when tiny.");
             Directory.CreateDirectory("docs");
             File.WriteAllText("docs/PERF_V2.md", sb.ToString());
-            Debug.Log($"[FMVR] perfV2: worst view {worstTris} tris ({worstName}), draws {worstDraws}, measured: {measured}, shadows {shadowLights}, total {total}");
+            Debug.Log($"[FMVR] perfV2: worst view {worstTris} tris ({worstName}), draws {worstDraws}, shadows {shadowLights}, total {total}, occlusion data {occl}");
         }
 
-        static bool HasOcclusionData()
-        {
-            var t = typeof(StaticOcclusionCulling);
-            var p = t.GetProperty("umbraDataSize", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic);
-            try { return p != null && (int)p.GetValue(null) > 0; } catch { return false; }
-        }
+        /// <summary>Baked occlusion = the scene references an OcclusionCullingData asset next to it.</summary>
+        static bool HasOcclusionData() =>
+            File.Exists(Path.Combine(Path.GetDirectoryName(BattlefieldLayout.ScenePath), BattlefieldLayout.SceneName, "OcclusionCullingData.asset"));
 
         /// <summary>LOD level a group shows from this camera (Unity's screen-relative height rule); lods.Length = culled.</summary>
         public static int ActiveLod(LODGroup g, Camera cam)

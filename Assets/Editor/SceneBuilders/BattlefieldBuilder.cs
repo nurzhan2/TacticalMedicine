@@ -51,13 +51,15 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 Build();
                 BootSceneBuilder.Build();
                 ScreenshotTool.JpgQuality = 85;
-                // Quest look: Mobile URP asset, HDR on for the capture only (LDR speckles on this editor GPU)
-                QualitySettings.SetQualityLevel(0, true);
-                var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-                if (rp != null) rp.supportsHDR = true;
+                ScreenshotTool.MedianOf = 5;
+                // edit-mode capture with the editor's PC pipeline (HDR): on this laptop's Iris Xe (D3D11, no ASTC)
+                // the LDR/Mobile and play-mode paths show colour speckle on the licensed materials — see PROGRESS w2
+                int q = QualitySettings.GetQualityLevel();
+                QualitySettings.SetQualityLevel(1, true); // "PC" (editor default) — see the note above
                 int n = ScreenshotTool.CaptureScene(BattlefieldLayout.ScenePath, null, 1600, 900, PrepareShots);
-                if (rp != null) { rp.supportsHDR = false; EditorUtility.SetDirty(rp); AssetDatabase.SaveAssets(); }
+                QualitySettings.SetQualityLevel(q, true);
                 Debug.Log($"[FMVR] battlefield screenshots: {n}");
+                PerfReportV2.Report();
 
                 ok = n > 0;
             }
@@ -69,8 +71,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         /// play mode (T-pose), so hide him (w4 shows him in the scenario shots).</summary>
         public static void PrepareShots()
         {
-            var erlan = GameObject.Find("Erlan");
-            if (erlan != null) erlan.SetActive(false);
+            foreach (var c in Object.FindObjectsByType<FieldMedic.Casualty.CasualtyController>(FindObjectsSortMode.None)) c.gameObject.SetActive(false);
             foreach (var ps in Object.FindObjectsByType<ParticleSystem>(FindObjectsSortMode.None))
             {
                 if (ps.transform.parent != null && ps.transform.parent.GetComponent<ParticleSystem>() != null) continue;
@@ -102,24 +103,26 @@ namespace FieldMedic.EditorTools.SceneBuilders
         public static void DiagnoseOnly()
         {
             ScreenshotTool.CaptureScene(BattlefieldLayout.ScenePath, new[] { "none" }, 16, 16, PrepareShots);
-            QualitySettings.SetQualityLevel(0, true);
             var sun = RenderSettings.sun;
-            var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
             var add = sun.GetComponent<UniversalAdditionalLightData>() ?? sun.gameObject.AddComponent<UniversalAdditionalLightData>();
-            var b = GameObject.Find("v2_w2_flag").transform;
-            void Shot(string n) { ScreenshotTool.Render(b, 62f, null, 640, 360, "Logs/diag_" + n + ".jpg"); ScreenshotTool.Render(b, 62f, null, 640, 360, "Logs/diag_" + n + ".jpg"); }
-            sun.shadows = LightShadows.Hard;
-            var mob = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/Mobile_RPAsset.asset");
-            var pc = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/PC_RPAsset.asset");
-            Debug.Log($"[FMVR] diag device={SystemInfo.graphicsDeviceType} {SystemInfo.graphicsDeviceName} astc={SystemInfo.SupportsTextureFormat(TextureFormat.ASTC_6x6)}");
-            QualitySettings.SetQualityLevel(0, true);
-            var so = new SerializedObject(mob);
-            void Set(string prop, int v) { so.FindProperty(prop).intValue = v; so.ApplyModifiedPropertiesWithoutUndo(); }
-            Set("m_SupportsHDR", 1); Shot("mob_hdr");
-            Set("m_SupportsHDR", 0); Set("m_UseFastSRGBLinearConversion", 0); Shot("mob_nofastsrgb");
-            Set("m_UseFastSRGBLinearConversion", 1); Set("m_RequireDepthTexture", 1); Shot("mob_depth");
-            Set("m_RequireDepthTexture", 0); Set("m_MainLightShadowmapResolution", 2048); Shot("mob_sm2048");
-            Set("m_MainLightShadowmapResolution", 1024);
+            var b = GameObject.Find("v2_w2_cover_view").transform;
+            foreach (int q in new[] { 1, 0 })
+            {
+                QualitySettings.SetQualityLevel(q, true);
+                var rp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+                bool hdr = rp.supportsHDR;
+                foreach (var mode in new[] { "none", "hard", "hardbias", "hdr_hard" })
+                {
+                    sun.shadows = mode == "none" ? LightShadows.None : LightShadows.Hard;
+                    add.usePipelineSettings = mode != "hardbias";
+                    if (mode == "hardbias") { sun.shadowBias = 3f; sun.shadowNormalBias = 3f; }
+                    rp.supportsHDR = mode == "hdr_hard" || hdr;
+                    ScreenshotTool.Render(b, 75f, null, 1600, 900, $"Logs/diag_full_q{q}_{mode}.jpg");
+                    rp.supportsHDR = hdr;
+                }
+                add.usePipelineSettings = true;
+            }
+            QualitySettings.SetQualityLevel(1, true);
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
@@ -178,8 +181,11 @@ namespace FieldMedic.EditorTools.SceneBuilders
             BuildLocomotion(rig);
             BuildBookmarks();
             TuneLods();
+            LimitShadowCasters();
+            CombineSmallStatics();
 
             RenderSettings.sun = sun;
+            EditorSceneManager.SaveScene(scene, BattlefieldLayout.ScenePath); // occlusion data needs a saved scene
             BakeOcclusion();
             EditorSceneManager.SaveScene(scene, BattlefieldLayout.ScenePath);
             MainSceneBuilder.SetBuildScenes();
@@ -251,8 +257,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
             m.SetTexture("_DirtMap", Tex("dry_ground_01/dry_ground_01_diff.jpg"));
             m.SetTexture("_DirtNormal", Tex("dry_ground_01/dry_ground_01_nor_gl.jpg"));
             m.SetTexture("_BurnMap", Tex("burned_ground_01/burned_ground_01_diff.jpg"));
-            m.SetColor("_GrassTint", new Color(0.74f, 0.75f, 0.62f));   // autumn steppe: khaki-olive, not desert sand
-            m.SetColor("_DirtTint", new Color(0.66f, 0.6f, 0.54f));
+            m.SetColor("_GrassTint", new Color(0.84f, 0.83f, 0.7f));    // autumn steppe: khaki-olive, not desert sand
+            m.SetColor("_DirtTint", new Color(0.76f, 0.7f, 0.62f));
             m.SetColor("_BurnTint", new Color(0.8f, 0.78f, 0.76f));
             m.SetVector("_Tile", new Vector4(3.2f, 2.6f, 3f, 60f));
             m.SetFloat("_Smoothness", 0.1f);
@@ -451,7 +457,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Prop(Place("rubble_pile", houseA, new Vector3(-2.0f, 0.04f, -1.3f), 75f, 1.3f));
             Cover(Place("bricks_debris_pile", houseA, new Vector3(-7.4f, 0f, -3.0f), 20f, 0.95f, sink: 0.1f));
             Prop(Place("ruined_masonry_wall", houseA, new Vector3(-3.6f, 0f, -3.3f), 170f, 0.9f, sink: 0.1f));
-            ScatterDebris(houseA, new Vector3(-2f, 0f, 1f), 7.5f, 26, 101);
+            ScatterDebris(houseA, new Vector3(-2f, 0f, 1f), 7.5f, 14, 101);
 
             // house C: a two-storey brick house reduced to an L of walls
             var houseC = new GameObject("HouseC").transform; houseC.SetParent(g, false);
@@ -480,7 +486,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Prop(Place("junk_slab_pile", houseC, new Vector3(-16.5f, 0.04f, 8f), 20f, 1.0f));
             Prop(Place("rubble_pile", houseC, new Vector3(-13.8f, 0.04f, 10.2f), 60f, 1.4f));
             Cover(Place("pillar_bullet_holes", houseC, new Vector3(-13f, 0f, 4.2f), 15f));
-            ScatterDebris(houseC, new Vector3(-17f, 0f, 7f), 7f, 16, 202);
+            ScatterDebris(houseC, new Vector3(-17f, 0f, 7f), 7f, 8, 202);
 
             // house B: behind-left, burnt out - three walls with window holes, the roof slab fallen inside
             var houseB = new GameObject("HouseB").transform; houseB.SetParent(g, false);
@@ -510,7 +516,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Prop(Place("rubble_pile", houseB, new Vector3(-14.2f, 0.04f, -11f), 20f, 1.5f));
             Cover(Place("bricks_debris_pile", houseB, new Vector3(-21.6f, 0f, -15.4f), 70f, 0.9f, sink: 0.1f));
             Prop(Place("bricks_debris_pile", houseB, new Vector3(-12.2f, 0f, -15.2f), 160f, 0.75f, sink: 0.1f));
-            ScatterDebris(houseB, new Vector3(-17f, 0f, -13f), 6f, 12, 303);
+            ScatterDebris(houseB, new Vector3(-17f, 0f, -13f), 6f, 6, 303);
 
             // gutted concrete frame on the right flank (the infill retinted to sooty brick, the timber charred)
             var f = Cover(Place("unfinished_building", g, new Vector3(25f, 0f, -14f), -24f, 0.9f));
@@ -523,7 +529,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         static void ScatterDebris(Transform parent, Vector3 centre, float radius, int count, int seed)
         {
             var rng = new System.Random(seed);
-            string[] pieces = { "brick_ruins_a", "brick_ruins_b", "brick_ruins_b", "brick_ruins_c", "concrete_chunk", "concrete_chunk", "rock_07" };
+            string[] pieces = { "brick_ruins_a", "brick_ruins_b", "brick_ruins_b", "concrete_chunk", "concrete_chunk" };
             for (int i = 0; i < count; i++)
             {
                 float a = (float)rng.NextDouble() * Mathf.PI * 2f, r = Mathf.Sqrt((float)rng.NextDouble()) * radius;
@@ -646,7 +652,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         {
             var g = Group("FarField");
             var rng = new System.Random(77);
-            for (int i = 0; i < 26; i++)
+            for (int i = 0; i < 16; i++)
             {
                 float a = (float)rng.NextDouble() * Mathf.PI * 2f, r = 34f + (float)rng.NextDouble() * 110f;
                 var p = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
@@ -855,6 +861,103 @@ namespace FieldMedic.EditorTools.SceneBuilders
             stance.rigRoot = rig.transform;
             stance.groundMask = 1 << 0;
             ComfortSettings.TeleportEnabled = false; // V1 left-stick step teleport off: the left stick moves smoothly
+        }
+
+        public const string CombinedDir = "Assets/_Licensed/_Combined"; // merged licensed geometry stays git-ignored
+
+        /// <summary>Draw-call budget (GDD_V2 §7 ≤ 150): sandbags, scattered debris, far rocks, wire pickets and
+        /// concertina coils are many small renderers sharing few materials → merged per material into a handful of
+        /// static meshes (LOD1 geometry for the small licensed pieces). Original renderers are disabled; their
+        /// colliders stay (sandbags are cover).</summary>
+        static void CombineSmallStatics()
+        {
+            Directory.CreateDirectory(CombinedDir);
+            foreach (var dir in new[] { CombinedDir, MeshDir })
+                foreach (var f in Directory.GetFiles(dir, "Combined_*.asset")) AssetDatabase.DeleteAsset(f.Replace('\\', '/'));
+            int before = 0, after = 0;
+            void Merge(string name, IEnumerable<GameObject> roots, int lod, bool licensed, bool castShadows)
+            {
+                var byMat = new Dictionary<Material, List<CombineInstance>>();
+                foreach (var go in roots)
+                {
+                    if (go == null) continue;
+                    foreach (var lg in go.GetComponentsInChildren<LODGroup>(true)) { lg.enabled = false; }
+                    var mrs = go.GetComponentsInChildren<MeshRenderer>(true);
+                    int maxLod = 0;
+                    foreach (var r in mrs) for (int l = 1; l <= 3; l++) if (r.name.EndsWith("_LOD" + l)) maxLod = Mathf.Max(maxLod, l);
+                    int want = Mathf.Min(lod, maxLod);
+                    foreach (var r in mrs)
+                    {
+                        if (!r.enabled) continue;
+                        string n = r.name;
+                        bool isLod = n.Contains("_LOD");
+                        bool take = !isLod || n.EndsWith("_LOD" + want);
+                        r.enabled = false;
+                        before++;
+                        if (!take) continue;
+                        var mf = r.GetComponent<MeshFilter>();
+                        if (mf == null || mf.sharedMesh == null) continue;
+                        var mats = r.sharedMaterials;
+                        for (int sm = 0; sm < mf.sharedMesh.subMeshCount && sm < mats.Length; sm++)
+                        {
+                            if (mats[sm] == null) continue;
+                            if (!byMat.TryGetValue(mats[sm], out var list)) byMat[mats[sm]] = list = new List<CombineInstance>();
+                            list.Add(new CombineInstance { mesh = mf.sharedMesh, subMeshIndex = sm, transform = r.transform.localToWorldMatrix });
+                        }
+                    }
+                }
+                var parent = new GameObject("Combined_" + name).transform;
+                parent.SetParent(_root, false);
+                int i = 0;
+                foreach (var kv in byMat)
+                {
+                    var m = new Mesh { name = $"Combined_{name}_{i}", indexFormat = IndexFormat.UInt32 };
+                    m.CombineMeshes(kv.Value.ToArray(), true, true);
+                    m.RecalculateBounds();
+                    string dir = licensed ? CombinedDir : MeshDir;
+                    string path = $"{dir}/{m.name}.asset";
+                    AssetDatabase.DeleteAsset(path);
+                    AssetDatabase.CreateAsset(m, path);
+                    var g = new GameObject(m.name);
+                    g.transform.SetParent(parent, false);
+                    g.AddComponent<MeshFilter>().sharedMesh = m;
+                    var mr = g.AddComponent<MeshRenderer>();
+                    mr.sharedMaterial = kv.Key;
+                    mr.shadowCastingMode = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                    GameObjectUtility.SetStaticEditorFlags(g, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccludeeStatic);
+                    i++; after++;
+                }
+            }
+            GameObject[] Named(string prefix) => _root.GetComponentsInChildren<Transform>(true).Where(t => t.name == prefix || t.name.StartsWith(prefix + " ")).Select(t => t.gameObject).ToArray();
+            Merge("Sandbags", Named("burlap_sacks"), 1, true, false);
+            Merge("Debris", new[] { "brick_ruins_a", "brick_ruins_b", "concrete_chunk" }.SelectMany(Named), 1, true, false);
+            Merge("Rocks", new[] { "namaqualand_boulder_02", "sand_rocks_small_01" }.SelectMany(Named), 2, true, false);
+            Merge("WireFrames", Named("barbed_wire_fence"), 0, true, false);
+            Merge("Concertina", _root.GetComponentsInChildren<Transform>(true).Where(t => t.name.StartsWith("Concertina_")).Select(t => t.gameObject), 0, false, false);
+            // (LOD-managed props/rubble/hedgehogs stay separate: merging them dropped their LOD/culling and cost ~+120k tris)
+            Debug.Log($"[FMVR] combined small statics: {before} renderers -> {after} meshes");
+        }
+
+        /// <summary>Quest budget: only big silhouettes (walls, vehicles, buildings, barrier lines, pipe, pillar, debris
+        /// mounds, the flag) cast into the single shadow map; sacks, small debris, props, rocks, wire and grass don't.</summary>
+        static void LimitShadowCasters()
+        {
+            string[] big = { "HouseA_", "HouseB_", "HouseC_", "arx_apc", "car_wreck", "pinzgauer", "m1a2", "unfinished_building", "derelict_concrete",
+                             "concrete_blockade", "concrete_barriers_lowpoly", "concrete_pipe", "pillar_bullet_holes", "bricks_debris_pile", "Pole", "Cloth", "czech_hedgehog" };
+            int on = 0, off = 0;
+            foreach (var r in _root.GetComponentsInChildren<Renderer>(true))
+            {
+                if (r is ParticleSystemRenderer) continue;
+                bool cast = false;
+                for (var t = r.transform; t != null && !cast; t = t.parent)
+                    foreach (var b in big) if (t.name.StartsWith(b)) { cast = true; break; }
+                if (r.GetComponentInParent<CoverPoint>() != null) cast = false;
+                // sacks are children of the barriers: never cast
+                for (var t = r.transform; t != null; t = t.parent) if (t.name.StartsWith("burlap_sacks")) { cast = false; break; }
+                r.shadowCastingMode = cast ? ShadowCastingMode.On : ShadowCastingMode.Off;
+                if (cast) on++; else off++;
+            }
+            Debug.Log($"[FMVR] shadow casters: {on} on, {off} off");
         }
 
         // ================================================================== LODs, occlusion, bookmarks
