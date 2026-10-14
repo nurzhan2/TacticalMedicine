@@ -142,3 +142,23 @@
   - flare-lit shot of the new wrecks;
   - real RU/KZ voices;
   - on-device check of glove alignment vs controller.
+
+## 14.10 22:20 — w0 launch fix (in progress)
+- Audit (details: docs/LAUNCH_FIX.md). Meta's OVRProjectSetup validator: all Required rules pass. The V1 merged manifest had MAIN+LAUNCHER+VR on UnityPlayerGameActivity (GameActivity is REQUIRED by Meta SDK v207, kept). The APK is v2-signed, arm64, with the OpenXR loader. QuestManifestCleanup only stripped 3 permissions (innocent).
+- Fixes:
+  - **Boot scene**: title + async load of Main, so there is no black wait. Main took 16 s to load in the editor.
+  - **Device-safe XRActive**: HandRig used to pick desktop input on the headset because the XR display starts after the first scene's Awake.
+  - **Desktop simulator** disabled in the Quest player.
+  - **Platform SDK supplement**: the `horizonos:uses-horizonos-supplement` entry is stripped.
+  - **supportedDevices** is now quest2|questpro|quest3|quest3s.
+  - Unity SpaceWarp and MetaXR Subsampled Layout are off.
+- Guards:
+  - `QuestLaunchSetup` runs before every build.
+  - `QuestManifestAudit` checks the merged manifest after every build and writes `logs/manifest_check.txt`. The build exits with code 2 on a problem.
+  - The APK is copied to the Desktop.
+  - New script `tools/quest_check.ps1`.
+- Tests:
+  - EditMode 66/66 (+3 manifest tests).
+  - New PlayMode tests: HandRig late-XR switch (pass) and LaunchSmokeTests (pass). BootSceneTests is pending.
+- Note: one Unity batch run hung ~3 h at editor startup (Package Manager IPC) before running the method. Always use the unity.ps1 timeout.
+- **Git push blocked**: `git push` and `git ls-remote` return "Repository not found" for github.com/Hevilim/TacticalMedicine. origin/main is still 37ebbe9, so the owner's 4f8d39e is not on GitHub either. The repo may have been renamed, deleted, or made private, or the stored token lost access. All w0 work is committed locally; push it after the remote or credentials are fixed.
