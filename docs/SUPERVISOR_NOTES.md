@@ -37,3 +37,19 @@
   a screenshot is a failure - fix it or replace it before closing a stage.
 - Every stage that changes runtime code ends with a quick APK build so a working APK always exists.
 - Keep V1 features working (CAT steps, packing, drag, RU/KZ, debrief); V1 tests may be updated, not deleted.
+
+
+## 15.10 03:55 - supervisor review of w2 screenshots (MUST be fixed in w3/w4, before w6)
+1. GROUND IS BROKEN: v2_w2_overview / cover_view show a black-and-tan pixel noise ("straw grass" alpha dither / clip
+   artifact) over the whole steppe. It reads as a rendering bug. Replace with a clean Poly Haven dry-ground/dirt PBR
+   (proper tiling + detail blend, no dither) and only sparse, soft grass clumps (cross-quad with proper alpha-to-coverage
+   or cutout without dither noise). Check the screenshot at 1600 px - no pixel noise anywhere.
+2. RUINS TOO SMALL / HOME-MADE: the three ruins are knee-to-chest high shoebox walls; "procedural house B" (grey frame
+   with roof on the right) looks fake. Owner rule: real models only. Use the real BlenderKit ruins (Brick Ruins,
+   Ruined Farmhouse, Rocks & Ruins etc.) as the main buildings, scaled to real 2-storey house size (walls 3-6 m),
+   remove the procedural house or hide it under real assets. Ruins must give standing AND crouching cover.
+3. SANDBAGS look like cement bags with "50KG" print. Military sandbags: plain olive/khaki burlap/polypropylene, no
+   print, stacked in a staggered wall. Retint/re-texture (remove print) now; a Meshy prompt "military_sandbag_wall"
+   must exist in MESHY_PROMPTS_V2.md.
+4. A grey floating box building on the horizon (center) - remove or ground it into the haze properly.
+5. Overall look target: grey overcast war zone, burnt and muddy, craters, debris, scorched ground near wrecks.

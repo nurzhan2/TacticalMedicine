@@ -1,3 +1,5 @@
+﻿# SUPERVISOR FIRST: before anything else in this stage, fix every item of the 15.10 03:55 section in docs/SUPERVISOR_NOTES.md (ground pixel noise, real-size real ruins instead of procedural house, military sandbags, floating horizon box) and re-shoot docs/screens/v2_w4_battlefield_*.jpg to prove it.
+
 # Stage w4 - Training / Combat / Exam modes, white hint panel, TCCC flow in the open
 
 Context: docs/GDD_V2.md sections 1 and 3. Reuse V1 casualty physiology, treatments, CAT steps, drag, debrief.
@@ -27,3 +29,4 @@ Tasks
 Done: all three modes playable end-to-end in the desktop simulator, the hint panel appears/advances correctly
 (PlayMode tests for proximity, advance, wrong-action), bot medic completes Training and Combat runs,
 screenshots docs/screens/v2_w4_*.jpg of the hint panel reviewed, committed.
+

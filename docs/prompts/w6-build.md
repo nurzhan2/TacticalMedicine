@@ -1,4 +1,4 @@
-# Stage w6 - performance, build, device check, report
+﻿# Stage w6 - performance, build, device check, report
 
 Tasks
 1. Performance pass for Quest 3S at 72 Hz (GDD_V2 section 7): LODs, impostors, texture sizes/ASTC,
@@ -13,3 +13,7 @@ Tasks
    known issues. Push (background push rule from CLAUDE.md; never block on push).
 
 Done: APK on Desktop, tests green, report written, committed and push started.
+
+
+SUPERVISOR CHECK: re-verify all items in docs/SUPERVISOR_NOTES.md (15.10 sections) are fixed in the final screenshots; fix any that are not before building.
+
