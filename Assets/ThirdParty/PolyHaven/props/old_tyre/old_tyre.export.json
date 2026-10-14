@@ -1,0 +1,17 @@
+{
+ "name": "old_tyre",
+ "source": "old_tyre_1k.gltf",
+ "warnings": [],
+ "tris_source": 2880,
+ "tris": 1999,
+ "size_m": [
+  0.6,
+  0.165,
+  0.6
+ ],
+ "lods": 2,
+ "tris_lod1": 698,
+ "materials": 1,
+ "armature_bones": 0,
+ "bones": []
+}

@@ -70,6 +70,7 @@ For soldiers: enable Meshy auto-rigging (humanoid), A-pose or T-pose, export FBX
 | sol_kz_soldier | Kazakh soldier, rigged | sniper_soldier / Erlan (Mixamo) |
 | sol_enemy_soldier | enemy soldier, neutral uniform, rigged | sniper_soldier recoloured |
 | prop_spent_casings | scatter of spent 7.62x39 casings | ammo_556 |
+| prop_litter | folding military litter (stretcher) | stretcher (ambulance gurney, tinted) |
 | marker | black permanent marker (if marker_card is one mesh) | procedural |
 | casualty_card | TCCC casualty card alone | procedural |
 
@@ -102,3 +103,5 @@ prop_spent_casings: Small scatter of about 20 spent brass rifle casings 7.62x39,
 marker: Black permanent marker with cap, realistic, PBR textures, real-world scale 14 cm, game-ready
 
 casualty_card: TCCC casualty card DD Form 1380, tan waterproof card with printed body diagram and fields, with grommet and string, realistic, PBR textures, real-world scale 14x9 cm, game-ready
+
+prop_litter: Folding military field litter stretcher, olive drab canvas bed stretched between two aluminium poles with rubber grip ends, four short metal stirrup legs, folding spreader bars, worn and dusty with dried blood stains, realistic, PBR textures, real-world scale 2.2 m long, game-ready

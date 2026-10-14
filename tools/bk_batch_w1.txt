@@ -1,4 +1,5 @@
 # id category slug max_faces [extra args]
+80cd0314 ruins brick_ruins_a 8000
 694baa4b ruins unfinished_building 20000
 e5d3e731 ruins broken_wall 12000
 818e29a3 ruins brick_block_wall 15000
@@ -8,7 +9,7 @@ e8841ea4 ruins debris_bricks_wall 15000
 858d9662 ruins ruined_masonry_wall 12000
 e381565d ruins derelict_concrete_building 6000
 21d82a38 ruins pillar_bullet_holes 8000
-0fb9fc5e ruins rebar 2000
+# 0fb9fc5e ruins rebar 2000  (dropped: plain white 20 cm bar, reads as a primitive)
 029d6806 ruins junk_slab_pile 12000
 288214cb ruins concrete_chunk 4000
 f0a80792 ruins brick_ruins_b 8000
@@ -22,7 +23,7 @@ b4e9bc00 cover barbed_wire_fence 2000
 f15f9631 cover barbed_wire_metal_fence 10000
 4636c678 cover burlap_sacks 6000
 ce96377d vehicles car_wreck_beetle 15000
-7bb68c5d vehicles apc_8x8 30000
+# 7bb68c5d vehicles apc_8x8 30000  (skipped: Blender hangs >20 min evaluating its modifiers)
 082cab8b vehicles arx_apc 30000
 6ff87b83 vehicles m1a2_tank 35000
 f71a3c39 vehicles pinzgauer_truck 20000
@@ -31,7 +32,7 @@ a08202f6 aircraft ch47_helicopter 15000
 2b0e1d40 aircraft f16_jet 25000
 1efbef44 aircraft fpv_drone_bomb 8000
 bcbafb5a aircraft recon_drone_mavic 8000
-bab061a6 soldiers sniper_soldier 22000 --rigged --pivot keep
+bab061a6 soldiers sniper_soldier 22000 --rigged --pivot keep --size H=1.8
 08c7dadc props kz_flag_stand 8000
 204a699e props ammo_box 3000
 617d6057 props artillery_shells 8000

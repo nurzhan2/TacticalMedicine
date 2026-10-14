@@ -136,3 +136,72 @@ Policy: only CC0 / CC-BY content is downloaded. Exceptions that were already in 
 | rain_trench/96729_light_rain.mp3 | Light rain.wav | Ryding | https://freesound.org/s/96729/ | CC0 1.0 |
 | rain_trench/691544_rain_light_traffic_07.mp3 | rain_light_traffic_07.wav | ania635 | https://freesound.org/s/691544/ | CC0 1.0 |
 <!-- SFX-END -->
+
+<!-- V2-ASSETS-BEGIN -->
+## V2 models (stage w1)
+
+BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where noted). They are NOT in the public repo (`Assets/_Licensed/` is git-ignored); `python tools/bk_fetch.py get ...` re-creates them (commands in tools/bk_assets.json).
+
+| Asset (slug) | Title | Author | Source | License |
+|---|---|---|---|---|
+| aircraft/ch47_helicopter | Chinhook CH-47 military helicopter | 3DAssets Kit | https://www.blenderkit.com/get-blenderkit/a08202f6-dadb-4e8c-95ca-107225bfa575/ | BlenderKit Royalty Free |
+| aircraft/f16_jet | F-16 fighter jet | Joe Naaman | https://www.blenderkit.com/get-blenderkit/2b0e1d40-8487-4b92-8594-6141f2ec6162/ | BlenderKit Royalty Free |
+| aircraft/fpv_drone_bomb | FPV Drone with a bomb | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/1efbef44-2746-41f3-95c4-e37fcd7e14cc/ | BlenderKit Royalty Free |
+| aircraft/recon_drone_mavic | DJI Mavic 3 Classic Drone | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/bcbafb5a-a09f-4218-a05e-7b784476929d/ | BlenderKit Royalty Free |
+| aircraft/utility_helicopter | ALH Dhruv Helicopter | Ankur Chauhan | https://www.blenderkit.com/get-blenderkit/6a48a9a9-fc54-4255-b45d-1cbc6f08b4a5/ | BlenderKit Royalty Free |
+| cover/barbed_wire_fence | Barbed wire fence | Zoltán Péter Fáth | https://www.blenderkit.com/get-blenderkit/b4e9bc00-6747-4454-83ca-aecd68d3bc29/ | CC0 1.0 |
+| cover/barbed_wire_metal_fence | Barb Wire Metal Fence | Texture Maker | https://www.blenderkit.com/get-blenderkit/f15f9631-254d-461f-a84f-507358605040/ | BlenderKit Royalty Free |
+| cover/burlap_sacks | 50kg burlap sacks of grain | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/4636c678-151c-444a-86ac-a1d21f477456/ | BlenderKit Royalty Free |
+| cover/concrete_barriers_lowpoly | Lowpoly concrete barriers | SPLEEN.VISION Adam | https://www.blenderkit.com/get-blenderkit/909bf29c-d645-46c0-a5bb-dade7d1a9e44/ | CC0 1.0 |
+| cover/concrete_blockade | Concrete Blockade | Jan Hecl | https://www.blenderkit.com/get-blenderkit/87212614-0aa3-44a8-bf79-8e6d2ca6e52f/ | BlenderKit Royalty Free |
+| cover/concrete_pipe | Concrete Pipe | REAL SCANS | https://www.blenderkit.com/get-blenderkit/580268f0-505b-4c20-a414-2c3074a3215c/ | BlenderKit Royalty Free |
+| cover/concrete_road_barrier | Concrete Road Barrier | Poly Haven | https://www.blenderkit.com/get-blenderkit/1da29004-f3c0-4bc7-a675-fd6e500c2aa7/ | CC0 1.0 |
+| cover/czech_hedgehog | Anti-Tank Barrier | Giorgi Samukashvili | https://www.blenderkit.com/get-blenderkit/483c7ea3-dcd8-4b65-8e41-e88b15b6b06c/ | BlenderKit Royalty Free |
+| props/ammo_556 | Ammunition caliber 5.56x45mm | BlenderBot | https://www.blenderkit.com/get-blenderkit/e5b19cec-b676-46de-a1c6-b7dc44e23ac8/ | BlenderKit Royalty Free |
+| props/ammo_box | Ammo Box | Poly Haven | https://www.blenderkit.com/get-blenderkit/204a699e-273b-494a-a567-4f340491a451/ | CC0 1.0 |
+| props/artillery_shells | Artillery shells | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/617d6057-c252-4312-8d06-715d81012e1f/ | BlenderKit Royalty Free |
+| props/fuel_drums | WW2 Italian Military Fuel-Drum Stack | Mad Lobster Workshop Dolzall | https://www.blenderkit.com/get-blenderkit/1d7fcb2c-f4fa-46c3-a6a1-865dab5a737b/ | BlenderKit Royalty Free |
+| props/jerrycan_green | Metal Jerrycan Green | Poly Haven | https://www.blenderkit.com/get-blenderkit/c3b66b2c-07d3-4818-ba03-e068d6a9db59/ | CC0 1.0 |
+| props/kz_flag_stand | Kazakhstan Ceremonial flag on stand | Demycs | https://www.blenderkit.com/get-blenderkit/08c7dadc-99a3-48ca-b5e0-501c6bd5faaf/ | BlenderKit Royalty Free |
+| props/military_crate | Wooden Military Crate | Poly Haven | https://www.blenderkit.com/get-blenderkit/ffae7880-9e4f-42e0-a61e-d0a5e1a1c766/ | CC0 1.0 |
+| props/military_tent | Military Tent (2-Man) | Harrison Costa | https://www.blenderkit.com/get-blenderkit/e8ae0437-a080-4601-b734-75032d209008/ | BlenderKit Royalty Free |
+| props/radio_r311 | Military Radio R311 Omega | Demycs | https://www.blenderkit.com/get-blenderkit/06155894-2673-4a98-b56f-e648793f7924/ | BlenderKit Royalty Free |
+| props/stretcher | Ambulance strechers | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/0e53d37b-e72e-46d7-8670-121925c19563/ | BlenderKit Royalty Free |
+| ruins/brick_block_wall | Brick and Concrete Block Wall | GL3D Gabriela Linhares | https://www.blenderkit.com/get-blenderkit/818e29a3-d812-402d-a10c-5ee71d85f2fc/ | BlenderKit Royalty Free |
+| ruins/brick_ruins_a | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/80cd0314-d86c-4c92-8186-4151a07e9522/ | CC0 1.0 |
+| ruins/brick_ruins_b | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/f0a80792-ff43-4dce-a369-b2db68360937/ | CC0 1.0 |
+| ruins/brick_ruins_c | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/33363fe7-cfc1-482c-a8d5-c2a51fdedd92/ | CC0 1.0 |
+| ruins/bricks_debris_pile | Bricks Derbis Pile | REAL SCANS | https://www.blenderkit.com/get-blenderkit/463dbfc1-8826-4615-ba79-92b89d4e3520/ | BlenderKit Royalty Free |
+| ruins/broken_wall | Broken Wall | PBRPX | https://www.blenderkit.com/get-blenderkit/e5d3e731-00a3-4987-9dff-a787026218ed/ | CC0 1.0 |
+| ruins/concrete_chunk | A piece of concrete | Matvey Sheyanov | https://www.blenderkit.com/get-blenderkit/288214cb-6fa2-443b-a6e3-71dbe88dd886/ | BlenderKit Royalty Free |
+| ruins/debris_bricks_wall | Debris of bricks and a wall | Matvey Sheyanov | https://www.blenderkit.com/get-blenderkit/e8841ea4-a9b9-49fe-8403-0bf80e807183/ | BlenderKit Royalty Free |
+| ruins/derelict_concrete_building | Derelict Concrete Building | Fridqeir Haynura | https://www.blenderkit.com/get-blenderkit/e381565d-0afc-4125-acfd-abde83625e8e/ | BlenderKit Royalty Free |
+| ruins/junk_slab_pile | Pile of Junk (rubbish, debris) Photoscan | Tedd Šámal | https://www.blenderkit.com/get-blenderkit/029d6806-b86b-47ef-8a87-16b868219c7e/ | BlenderKit Royalty Free |
+| ruins/pillar_bullet_holes | Pillar scan | REAL SCANS | https://www.blenderkit.com/get-blenderkit/21d82a38-02f6-43d7-b145-ca9309c13d4b/ | BlenderKit Royalty Free |
+| ruins/rebar | Reinforcing Bar | Waldemar Dad | https://www.blenderkit.com/get-blenderkit/0fb9fc5e-9f53-450a-a513-8efdcf7810ba/ | BlenderKit Royalty Free |
+| ruins/rubble_pile | Rubble Pile | Guinter Ramos | https://www.blenderkit.com/get-blenderkit/68d9a4ac-5bc0-46f1-8175-42ac843c37b8/ | BlenderKit Royalty Free |
+| ruins/ruined_masonry_wall | Ruined Masonry Wall | REAL SCANS | https://www.blenderkit.com/get-blenderkit/858d9662-d036-4d93-80c1-d0e1e06143ab/ | BlenderKit Royalty Free |
+| ruins/unfinished_building | Unfinished Building | AIR3D | https://www.blenderkit.com/get-blenderkit/694baa4b-b62c-459b-b5d3-6429c8ceff76/ | BlenderKit Royalty Free |
+| soldiers/sniper_soldier | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
+| vehicles/arx_apc | Arx apc | Ermia J | https://www.blenderkit.com/get-blenderkit/082cab8b-8354-4c46-9e6c-ad652f7c075e/ | BlenderKit Royalty Free |
+| vehicles/car_wreck_beetle | VW Beetle wreck | Adam Krhanek | https://www.blenderkit.com/get-blenderkit/ce96377d-5da3-4899-bb25-c94b84bb0de7/ | BlenderKit Royalty Free |
+| vehicles/m1a2_tank | M1A2 Abrams US Tank | AIR3D | https://www.blenderkit.com/get-blenderkit/6ff87b83-2b1b-43fb-a5a8-0d87b55741c6/ | BlenderKit Royalty Free |
+| vehicles/pinzgauer_truck | Pinzgauer | Ermia J | https://www.blenderkit.com/get-blenderkit/f71a3c39-7279-4206-ae19-d5b861318f48/ | BlenderKit Royalty Free |
+
+Poly Haven (CC0 1.0, committed in Assets/ThirdParty/PolyHaven):
+
+| type | asset | authors | url | license |
+|---|---|---|---|---|
+| HDRI 2k | Overcast Soil (Pure Sky) (overcast_soil_puresky) | Jarod Guest, Sergej Majboroda | https://polyhaven.com/a/overcast_soil_puresky | CC0 1.0 |
+| texture 1k | Withered Grass (withered_grass) | Charlotte Baglioni | https://polyhaven.com/a/withered_grass | CC0 1.0 |
+| texture 1k | Sparse Grass (sparse_grass) | Amal Kumar | https://polyhaven.com/a/sparse_grass | CC0 1.0 |
+| texture 1k | Dry Ground 01 (dry_ground_01) | Rob Tuytel | https://polyhaven.com/a/dry_ground_01 | CC0 1.0 |
+| texture 1k | Dry Ground Rocks (dry_ground_rocks) | Rob Tuytel | https://polyhaven.com/a/dry_ground_rocks | CC0 1.0 |
+| texture 1k | Brown Mud Dry (brown_mud_dry) | Rob Tuytel | https://polyhaven.com/a/brown_mud_dry | CC0 1.0 |
+| model (rocks) | Rock 07 (rock_07) | Jenelle van Heerden | https://polyhaven.com/a/rock_07 | CC0 1.0 |
+| model (rocks) | Rock 09 (rock_09) | Jenelle van Heerden | https://polyhaven.com/a/rock_09 | CC0 1.0 |
+| model (rocks) | Namaqualand Boulder 02 (namaqualand_boulder_02) | Greg Zaal, Rico Cilliers | https://polyhaven.com/a/namaqualand_boulder_02 | CC0 1.0 |
+| model (rocks) | Sand Rocks Small 01 (sand_rocks_small_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/sand_rocks_small_01 | CC0 1.0 |
+| model (vegetation) | Grass Medium 01 (grass_medium_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/grass_medium_01 | CC0 1.0 |
+| model (props) | Old Tyre (old_tyre) | MP | https://polyhaven.com/a/old_tyre | CC0 1.0 |
+<!-- V2-ASSETS-END -->

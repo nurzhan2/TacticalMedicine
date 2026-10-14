@@ -20,7 +20,7 @@
   "assetBaseId": "694baa4b-b62c-459b-b5d3-6429c8ceff76",
   "author": "AIR3D",
   "license": "royalty_free",
-  "tris": 20013,
+  "tris": 20038,
   "size_m": [
    15.0,
    11.054,
@@ -148,21 +148,6 @@
   ],
   "path": "Assets/_Licensed/BlenderKit/ruins/pillar_bullet_holes",
   "cmd": "python tools/bk_fetch.py get 21d82a38-02f6-43d7-b145-ca9309c13d4b --category ruins --slug pillar_bullet_holes --max-faces 8000 --tex 1024"
- },
- "rebar": {
-  "category": "ruins",
-  "name": "Reinforcing Bar",
-  "assetBaseId": "0fb9fc5e-9f53-450a-a513-8efdcf7810ba",
-  "author": "Waldemar Dad",
-  "license": "royalty_free",
-  "tris": 516,
-  "size_m": [
-   0.01,
-   0.196,
-   0.01
-  ],
-  "path": "Assets/_Licensed/BlenderKit/ruins/rebar",
-  "cmd": "python tools/bk_fetch.py get 0fb9fc5e-9f53-450a-a513-8efdcf7810ba --category ruins --slug rebar --max-faces 2000 --tex 1024"
  },
  "junk_slab_pile": {
   "category": "ruins",
@@ -358,5 +343,290 @@
   ],
   "path": "Assets/_Licensed/BlenderKit/vehicles/car_wreck_beetle",
   "cmd": "python tools/bk_fetch.py get ce96377d-5da3-4899-bb25-c94b84bb0de7 --category vehicles --slug car_wreck_beetle --max-faces 15000 --tex 1024"
+ },
+ "arx_apc": {
+  "category": "vehicles",
+  "name": "Arx apc",
+  "assetBaseId": "082cab8b-8354-4c46-9e6c-ad652f7c075e",
+  "author": "Ermia J",
+  "license": "royalty_free",
+  "tris": 29937,
+  "size_m": [
+   3.113,
+   7.623,
+   3.463
+  ],
+  "path": "Assets/_Licensed/BlenderKit/vehicles/arx_apc",
+  "cmd": "python tools/bk_fetch.py get 082cab8b-8354-4c46-9e6c-ad652f7c075e --category vehicles --slug arx_apc --max-faces 30000 --tex 1024"
+ },
+ "m1a2_tank": {
+  "category": "vehicles",
+  "name": "M1A2 Abrams US Tank",
+  "assetBaseId": "6ff87b83-2b1b-43fb-a5a8-0d87b55741c6",
+  "author": "AIR3D",
+  "license": "royalty_free",
+  "tris": 34975,
+  "size_m": [
+   3.929,
+   9.391,
+   3.745
+  ],
+  "path": "Assets/_Licensed/BlenderKit/vehicles/m1a2_tank",
+  "cmd": "python tools/bk_fetch.py get 6ff87b83-2b1b-43fb-a5a8-0d87b55741c6 --category vehicles --slug m1a2_tank --max-faces 35000 --tex 1024"
+ },
+ "pinzgauer_truck": {
+  "category": "vehicles",
+  "name": "Pinzgauer",
+  "assetBaseId": "f71a3c39-7279-4206-ae19-d5b861318f48",
+  "author": "Ermia J",
+  "license": "royalty_free",
+  "tris": 20013,
+  "size_m": [
+   2.159,
+   5.122,
+   2.269
+  ],
+  "path": "Assets/_Licensed/BlenderKit/vehicles/pinzgauer_truck",
+  "cmd": "python tools/bk_fetch.py get f71a3c39-7279-4206-ae19-d5b861318f48 --category vehicles --slug pinzgauer_truck --max-faces 20000 --tex 1024"
+ },
+ "ch47_helicopter": {
+  "category": "aircraft",
+  "name": "Chinhook CH-47 military helicopter",
+  "assetBaseId": "a08202f6-dadb-4e8c-95ca-107225bfa575",
+  "author": "3DAssets Kit",
+  "license": "royalty_free",
+  "tris": 14999,
+  "size_m": [
+   13.002,
+   20.708,
+   4.515
+  ],
+  "path": "Assets/_Licensed/BlenderKit/aircraft/ch47_helicopter",
+  "cmd": "python tools/bk_fetch.py get a08202f6-dadb-4e8c-95ca-107225bfa575 --category aircraft --slug ch47_helicopter --max-faces 15000 --tex 1024"
+ },
+ "sniper_soldier": {
+  "category": "soldiers",
+  "name": "Special Sniper Soldier-Rigged-Game Ready",
+  "assetBaseId": "bab061a6-ed60-4c1d-9465-d501700264b7",
+  "author": "Silent Wolf",
+  "license": "royalty_free",
+  "tris": 21985,
+  "size_m": [
+   1.688,
+   0.354,
+   1.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/soldiers/sniper_soldier",
+  "cmd": "python tools/bk_fetch.py get bab061a6-ed60-4c1d-9465-d501700264b7 --category soldiers --slug sniper_soldier --max-faces 22000 --tex 1024 --rigged --size H=1.8 --pivot keep"
+ },
+ "kz_flag_stand": {
+  "category": "props",
+  "name": "Kazakhstan Ceremonial flag on stand",
+  "assetBaseId": "08c7dadc-99a3-48ca-b5e0-501c6bd5faaf",
+  "author": "Demycs",
+  "license": "royalty_free",
+  "tris": 7999,
+  "size_m": [
+   0.41,
+   0.428,
+   2.407
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/kz_flag_stand",
+  "cmd": "python tools/bk_fetch.py get 08c7dadc-99a3-48ca-b5e0-501c6bd5faaf --category props --slug kz_flag_stand --max-faces 8000 --tex 1024"
+ },
+ "ammo_box": {
+  "category": "props",
+  "name": "Ammo Box",
+  "assetBaseId": "204a699e-273b-494a-a567-4f340491a451",
+  "author": "Poly Haven",
+  "license": "cc_zero",
+  "tris": 2992,
+  "size_m": [
+   0.087,
+   0.258,
+   0.177
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/ammo_box",
+  "cmd": "python tools/bk_fetch.py get 204a699e-273b-494a-a567-4f340491a451 --category props --slug ammo_box --max-faces 3000 --tex 1024"
+ },
+ "artillery_shells": {
+  "category": "props",
+  "name": "Artillery shells",
+  "assetBaseId": "617d6057-c252-4312-8d06-715d81012e1f",
+  "author": "Dovydas Alytas",
+  "license": "royalty_free",
+  "tris": 7996,
+  "size_m": [
+   0.74,
+   0.387,
+   0.977
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/artillery_shells",
+  "cmd": "python tools/bk_fetch.py get 617d6057-c252-4312-8d06-715d81012e1f --category props --slug artillery_shells --max-faces 8000 --tex 1024"
+ },
+ "jerrycan_green": {
+  "category": "props",
+  "name": "Metal Jerrycan Green",
+  "assetBaseId": "c3b66b2c-07d3-4818-ba03-e068d6a9db59",
+  "author": "Poly Haven",
+  "license": "cc_zero",
+  "tris": 3996,
+  "size_m": [
+   0.36,
+   0.171,
+   0.5
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/jerrycan_green",
+  "cmd": "python tools/bk_fetch.py get c3b66b2c-07d3-4818-ba03-e068d6a9db59 --category props --slug jerrycan_green --max-faces 4000 --tex 1024"
+ },
+ "radio_r311": {
+  "category": "props",
+  "name": "Military Radio R311 Omega",
+  "assetBaseId": "06155894-2673-4a98-b56f-e648793f7924",
+  "author": "Demycs",
+  "license": "royalty_free",
+  "tris": 6000,
+  "size_m": [
+   0.445,
+   0.236,
+   0.336
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/radio_r311",
+  "cmd": "python tools/bk_fetch.py get 06155894-2673-4a98-b56f-e648793f7924 --category props --slug radio_r311 --max-faces 6000 --tex 1024"
+ },
+ "military_crate": {
+  "category": "props",
+  "name": "Wooden Military Crate",
+  "assetBaseId": "ffae7880-9e4f-42e0-a61e-d0a5e1a1c766",
+  "author": "Poly Haven",
+  "license": "cc_zero",
+  "tris": 5996,
+  "size_m": [
+   1.242,
+   0.52,
+   0.465
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/military_crate",
+  "cmd": "python tools/bk_fetch.py get ffae7880-9e4f-42e0-a61e-d0a5e1a1c766 --category props --slug military_crate --max-faces 6000 --tex 1024"
+ },
+ "stretcher": {
+  "category": "props",
+  "name": "Ambulance strechers",
+  "assetBaseId": "0e53d37b-e72e-46d7-8670-121925c19563",
+  "author": "Dovydas Alytas",
+  "license": "royalty_free",
+  "tris": 11984,
+  "size_m": [
+   0.677,
+   1.899,
+   1.014
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/stretcher",
+  "cmd": "python tools/bk_fetch.py get 0e53d37b-e72e-46d7-8670-121925c19563 --category props --slug stretcher --max-faces 12000 --tex 1024"
+ },
+ "ammo_556": {
+  "category": "props",
+  "name": "Ammunition caliber 5.56x45mm",
+  "assetBaseId": "e5b19cec-b676-46de-a1c6-b7dc44e23ac8",
+  "author": "BlenderBot",
+  "license": "royalty_free",
+  "tris": 3000,
+  "size_m": [
+   0.007,
+   0.007,
+   0.045
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/ammo_556",
+  "cmd": "python tools/bk_fetch.py get e5b19cec-b676-46de-a1c6-b7dc44e23ac8 --category props --slug ammo_556 --max-faces 3000 --tex 1024"
+ },
+ "fuel_drums": {
+  "category": "props",
+  "name": "WW2 Italian Military Fuel-Drum Stack",
+  "assetBaseId": "1d7fcb2c-f4fa-46c3-a6a1-865dab5a737b",
+  "author": "Mad Lobster Workshop Dolzall",
+  "license": "royalty_free",
+  "tris": 11986,
+  "size_m": [
+   2.523,
+   1.282,
+   1.709
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/fuel_drums",
+  "cmd": "python tools/bk_fetch.py get 1d7fcb2c-f4fa-46c3-a6a1-865dab5a737b --category props --slug fuel_drums --max-faces 12000 --tex 1024"
+ },
+ "military_tent": {
+  "category": "props",
+  "name": "Military Tent (2-Man)",
+  "assetBaseId": "e8ae0437-a080-4601-b734-75032d209008",
+  "author": "Harrison Costa",
+  "license": "royalty_free",
+  "tris": 9998,
+  "size_m": [
+   3.001,
+   1.923,
+   1.259
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/military_tent",
+  "cmd": "python tools/bk_fetch.py get e8ae0437-a080-4601-b734-75032d209008 --category props --slug military_tent --max-faces 10000 --tex 1024"
+ },
+ "utility_helicopter": {
+  "category": "aircraft",
+  "name": "ALH Dhruv Helicopter",
+  "assetBaseId": "6a48a9a9-fc54-4255-b45d-1cbc6f08b4a5",
+  "author": "Ankur Chauhan",
+  "license": "royalty_free",
+  "tris": 25036,
+  "size_m": [
+   11.18,
+   15.604,
+   5.51
+  ],
+  "path": "Assets/_Licensed/BlenderKit/aircraft/utility_helicopter",
+  "cmd": "python tools/bk_fetch.py get 6a48a9a9-fc54-4255-b45d-1cbc6f08b4a5 --category aircraft --slug utility_helicopter --max-faces 25000 --tex 1024"
+ },
+ "f16_jet": {
+  "category": "aircraft",
+  "name": "F-16 fighter jet",
+  "assetBaseId": "2b0e1d40-8487-4b92-8594-6141f2ec6162",
+  "author": "Joe Naaman",
+  "license": "royalty_free",
+  "tris": 25028,
+  "size_m": [
+   10.717,
+   15.802,
+   4.644
+  ],
+  "path": "Assets/_Licensed/BlenderKit/aircraft/f16_jet",
+  "cmd": "python tools/bk_fetch.py get 2b0e1d40-8487-4b92-8594-6141f2ec6162 --category aircraft --slug f16_jet --max-faces 25000 --tex 1024"
+ },
+ "fpv_drone_bomb": {
+  "category": "aircraft",
+  "name": "FPV Drone with a bomb",
+  "assetBaseId": "1efbef44-2746-41f3-95c4-e37fcd7e14cc",
+  "author": "Dovydas Alytas",
+  "license": "royalty_free",
+  "tris": 8358,
+  "size_m": [
+   0.365,
+   0.447,
+   0.196
+  ],
+  "path": "Assets/_Licensed/BlenderKit/aircraft/fpv_drone_bomb",
+  "cmd": "python tools/bk_fetch.py get 1efbef44-2746-41f3-95c4-e37fcd7e14cc --category aircraft --slug fpv_drone_bomb --max-faces 8000 --tex 1024"
+ },
+ "recon_drone_mavic": {
+  "category": "aircraft",
+  "name": "DJI Mavic 3 Classic Drone",
+  "assetBaseId": "bcbafb5a-a09f-4218-a05e-7b784476929d",
+  "author": "Dovydas Alytas",
+  "license": "royalty_free",
+  "tris": 11648,
+  "size_m": [
+   0.9,
+   0.437,
+   0.107
+  ],
+  "path": "Assets/_Licensed/BlenderKit/aircraft/recon_drone_mavic",
+  "cmd": "python tools/bk_fetch.py get bcbafb5a-a09f-4218-a05e-7b784476929d --category aircraft --slug recon_drone_mavic --max-faces 8000 --tex 1024"
  }
 }

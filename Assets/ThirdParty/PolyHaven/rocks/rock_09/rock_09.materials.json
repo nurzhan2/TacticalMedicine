@@ -10,9 +10,9 @@
   "smoothness": 1.0,
   "cutout": false,
   "transparent": false,
-  "albedo": "Textures/rock_09_albedo.png",
+  "albedo": "Textures/rock_09_albedo.jpg",
   "ms": "Textures/rock_09_ms.png",
-  "normal": "Textures/rock_09_normal.png",
+  "normal": "Textures/rock_09_normal.jpg",
   "normalScale": 1.0
  }
 }

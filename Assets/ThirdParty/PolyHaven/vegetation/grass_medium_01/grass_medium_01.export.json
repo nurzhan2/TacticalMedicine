@@ -1,0 +1,17 @@
+{
+ "name": "grass_medium_01",
+ "source": "grass_medium_01_1k.gltf",
+ "warnings": [],
+ "tris_source": 24730,
+ "tris": 3188,
+ "size_m": [
+  5.605,
+  0.327,
+  0.343
+ ],
+ "lods": 2,
+ "tris_lod1": 1115,
+ "materials": 1,
+ "armature_bones": 0,
+ "bones": []
+}

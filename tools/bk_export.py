@@ -98,14 +98,8 @@ for o in list(scene.objects):
         ok = False
     if ok:
         keep.append(o)
-for o in list(scene.objects):
-    if o not in keep and o.type != "EMPTY":
-        bpy.data.objects.remove(o, do_unlink=True)
-for o in list(scene.objects):
-    if o.type == "EMPTY" and not o.children_recursive:
-        bpy.data.objects.remove(o, do_unlink=True)
 
-meshes = [o for o in scene.objects if o.type in ("MESH", "CURVE", "SURFACE", "META", "FONT")]
+meshes = [o for o in keep if o.type in ("MESH", "CURVE", "SURFACE", "META", "FONT")]
 arms = [o for o in scene.objects if o.type == "ARMATURE"]
 if not meshes:
     raise SystemExit("no visible meshes")
@@ -127,6 +121,10 @@ for o in meshes:
         for m in list(o.modifiers):
             if m.type == "ARMATURE":
                 continue
+            if m.type in ("SUBSURF", "MULTIRES"):
+                stats["warnings"].append("dropped %s on %s" % (m.type, o.name))
+                o.modifiers.remove(m)  # game art: never bake subdivision, the decimator would only throw it away
+                continue
             try:
                 if not m.show_viewport:
                     o.modifiers.remove(m)
@@ -137,6 +135,14 @@ for o in meshes:
                 try: o.modifiers.remove(m)
                 except Exception: pass
     o.select_set(False)
+# delete everything else only now: hidden curves / empties may be modifier targets (Curve, Array offsets)
+kept_names = {o.name for o in meshes} | {o.name for o in arms}
+for o in list(scene.objects):
+    if o.name not in kept_names and o.type != "EMPTY":
+        bpy.data.objects.remove(o, do_unlink=True)
+for o in list(scene.objects):
+    if o.type == "EMPTY" and not o.children_recursive:
+        bpy.data.objects.remove(o, do_unlink=True)
 meshes = [o for o in scene.objects if o.type == "MESH"]
 # shape keys block decimation; this is game art, drop them
 for o in meshes:
@@ -229,11 +235,16 @@ def img_array(img, size):
     return a.reshape(nh, nw, 4)
 
 def save_png(arr, path):
+    """PNG when the alpha channel matters (path ends .png), else JPEG q90 (opaque albedo / normal maps)."""
     h, w = arr.shape[:2]
     im = bpy.data.images.new("tmp_save", w, h, alpha=True)
     im.pixels.foreach_set(np.ascontiguousarray(arr, dtype=np.float32).ravel())
     im.filepath_raw = path
-    im.file_format = "PNG"
+    if path.endswith(".jpg"):
+        im.file_format = "JPEG"
+        scene.render.image_settings.quality = 90
+    else:
+        im.file_format = "PNG"
     im.save()
     bpy.data.images.remove(im)
 
@@ -422,9 +433,10 @@ for mat in all_mats:
         albedo[..., 3] = resize_to(alpha_arr, albedo.shape[:2])
         d["cutout"] = True
     if albedo is not None:
-        p = os.path.join(TEX, name + "_albedo.png")
+        ext_a = ".png" if d["cutout"] else ".jpg"
+        p = os.path.join(TEX, name + "_albedo" + ext_a)
         save_png(albedo, p)
-        d["albedo"] = "Textures/" + name + "_albedo.png"
+        d["albedo"] = "Textures/" + name + "_albedo" + ext_a
     # metallic + roughness -> MS map (R metal, A smoothness)
     met = rough = None
     for sock, key in ((sm, "m"), (sr, "r")):
@@ -465,10 +477,10 @@ for mat in all_mats:
             strength = 1.0
             stats["warnings"].append("baked normal " + mat.name)
         if a is not None:
-            p = os.path.join(TEX, name + "_normal.png")
+            p = os.path.join(TEX, name + "_normal.jpg")
             a[..., 3] = 1.0
             save_png(a, p)
-            d["normal"] = "Textures/" + name + "_normal.png"
+            d["normal"] = "Textures/" + name + "_normal.jpg"
             d["normalScale"] = max(0.2, min(2.0, strength))
     # emission
     if se is not None:
@@ -578,6 +590,89 @@ if not args.rigged and len(meshes) == 1 and stats["tris"] > 1500 and not args.no
         stats["lods"] = lvl + 1
         stats["tris_lod%d" % lvl] = tri_count([o])
 
+# rigged: keep only deform bones (control rigs such as Auto-Rig Pro have hundreds of helper bones that break
+# Unity's Humanoid auto-mapping). Children of removed bones are re-parented to the nearest kept ancestor.
+if args.rigged:
+    for arm in arms:
+        for pb in arm.pose.bones:
+            for c in list(pb.constraints):
+                pb.constraints.remove(c)
+        if arm.animation_data:
+            for d in list(arm.animation_data.drivers):
+                arm.animation_data.drivers.remove(d)
+            arm.animation_data_clear()
+        deform = {b.name for b in arm.data.bones if b.use_deform}
+        used = set()
+        for o in meshes:
+            used |= {vg.name for vg in o.vertex_groups}
+        keepb = deform & used if (deform & used) else deform
+        bpy.ops.object.select_all(action="DESELECT")
+        arm.hide_set(False)
+        vl.objects.active = arm
+        arm.select_set(True)
+        bpy.ops.object.mode_set(mode="EDIT")
+        eb = arm.data.edit_bones
+        def kept_parent(b):
+            p = b.parent
+            while p is not None and p.name not in keepb:
+                p = p.parent
+            return p
+        for b in eb:
+            if b.name in keepb:
+                b.parent = kept_parent(b)
+        for b in list(eb):
+            if b.name not in keepb:
+                eb.remove(b)
+        # orphans (their chain went through control bones only): attach to the nearest kept bone tail
+        orphans = [b for b in eb if b.parent is None]
+        if len(orphans) > 1:
+            def score(b):
+                n = b.name.lower()
+                return (0 if any(k in n for k in ("root", "hips", "pelvis")) else 1, -len(b.children_recursive), b.head.z)
+            main = sorted(orphans, key=score)[0]
+            for b in orphans:
+                if b is main:
+                    continue
+                desc = set(c.name for c in b.children_recursive) | {b.name}
+                cand = [c for c in eb if c.name not in desc]
+                best = min(cand, key=lambda c: (c.tail - b.head).length)
+                b.parent = best
+        # Auto-Rig Pro: the deform skeleton is only connected through control bones -> use its known layout
+        if "root.x" in eb and "thigh_stretch.l" in eb:
+            fixed = {"spine_01.x": "root.x", "spine_02.x": "spine_01.x", "spine_03.x": "spine_02.x",
+                     "spine_04.x": "spine_03.x", "spine_05.x": "spine_04.x", "neck.x": "spine_05.x",
+                     "subneck_twist_1.x": "neck.x", "head.x": "neck.x"}
+            for sd in ("l", "r"):
+                top = "spine_05.x" if "spine_05.x" in eb else ("spine_03.x" if "spine_03.x" in eb else "spine_02.x")
+                fixed.update({"shoulder." + sd: top, "arm_stretch." + sd: "shoulder." + sd,
+                              "arm_twist_2." + sd: "arm_stretch." + sd, "c_arm_twist_offset." + sd: "shoulder." + sd,
+                              "forearm_stretch." + sd: "arm_stretch." + sd, "forearm_twist." + sd: "forearm_stretch." + sd,
+                              "forearm_twist_2." + sd: "forearm_stretch." + sd, "hand." + sd: "forearm_stretch." + sd,
+                              "thigh_stretch." + sd: "root.x", "thigh_twist." + sd: "thigh_stretch." + sd,
+                              "thigh_twist_2." + sd: "thigh_stretch." + sd, "leg_stretch." + sd: "thigh_stretch." + sd,
+                              "leg_twist." + sd: "leg_stretch." + sd, "leg_twist_2." + sd: "leg_stretch." + sd,
+                              "foot." + sd: "leg_stretch." + sd, "toes_01." + sd: "foot." + sd,
+                              "thumb1." + sd: "hand." + sd, "c_thumb2." + sd: "thumb1." + sd, "c_thumb3." + sd: "c_thumb2." + sd})
+                for f in ("index", "middle", "ring", "pinky"):
+                    fixed.update({"c_%s1_base.%s" % (f, sd): "hand." + sd, "%s1.%s" % (f, sd): "c_%s1_base.%s" % (f, sd),
+                                  "c_%s2.%s" % (f, sd): "%s1.%s" % (f, sd), "c_%s3.%s" % (f, sd): "c_%s2.%s" % (f, sd)})
+            for child, par in fixed.items():
+                if child in eb and par in eb:
+                    eb[child].parent = eb[par]
+            if "root.x" in eb:
+                eb["root.x"].parent = None
+        bpy.ops.object.mode_set(mode="OBJECT")
+        roots_b = [b.name for b in arm.data.bones if b.parent is None]
+        log("deform bones", len(arm.data.bones), "roots", roots_b)
+        stats["bones"] = [b.name for b in arm.data.bones]
+        stats["bone_parents"] = {b.name: (b.parent.name if b.parent else None) for b in arm.data.bones}
+    # vertex groups of removed bones are useless now
+    for o in meshes:
+        names = {b.name for a in arms for b in a.data.bones}
+        for vg in list(o.vertex_groups):
+            if vg.name not in names:
+                o.vertex_groups.remove(vg)
+
 # ------------------------------------------------------------------ export
 fbx = os.path.join(OUT, args.name + ".fbx")
 bpy.ops.object.select_all(action="SELECT")
@@ -589,7 +684,7 @@ bpy.ops.export_scene.fbx(
     bake_anim=False, path_mode="STRIP", embed_textures=False)
 stats["materials"] = len(mats_out)
 stats["armature_bones"] = sum(len(a.data.bones) for a in arms) if arms else 0
-stats["bones"] = [b.name for a in arms for b in a.data.bones][:80]
+stats.setdefault("bones", [b.name for a in arms for b in a.data.bones][:120])
 with open(os.path.join(OUT, args.name + ".materials.json"), "w") as f:
     json.dump(mats_out, f, indent=1)
 with open(os.path.join(OUT, args.name + ".export.json"), "w") as f:

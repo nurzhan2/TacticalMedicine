@@ -245,7 +245,7 @@ def run_blender(src, out, a):
         cmd += ["--keep-collection", a.keep_collection]
     logp = os.path.join(WORK, "blender_%s.log" % a.slug)
     with open(logp, "w", encoding="utf-8", errors="replace") as lf:
-        p = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT, timeout=1800)
+        p = subprocess.run(cmd, stdout=lf, stderr=subprocess.STDOUT, timeout=900)
     with open(logp, encoding="utf-8", errors="replace") as lf:
         lines = [l.rstrip() for l in lf if "[bk_export]" in l or "Error" in l or "Traceback" in l]
     for l in lines[-25:]:
@@ -317,6 +317,35 @@ def cmd_get(a):
         print("  warnings:", "; ".join(stats["warnings"][:8]))
 
 
+def cmd_credits(a):
+    """Rewrite the BlenderKit + Poly Haven block of ATTRIBUTION.md from tools/bk_assets.json and Poly Haven CREDITS.md."""
+    man = json.load(open(os.path.join(ROOT, "tools", "bk_assets.json"), encoding="utf-8"))
+    lines = ["<!-- V2-ASSETS-BEGIN -->", "## V2 models (stage w1)", "",
+             "BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where noted). They are NOT in the public "
+             "repo (`Assets/_Licensed/` is git-ignored); `python tools/bk_fetch.py get ...` re-creates them (commands in "
+             "tools/bk_assets.json).", "",
+             "| Asset (slug) | Title | Author | Source | License |", "|---|---|---|---|---|"]
+    for slug, m in sorted(man.items(), key=lambda kv: (kv[1]["category"], kv[0])):
+        lic = {"royalty_free": "BlenderKit Royalty Free", "cc_zero": "CC0 1.0"}.get(m["license"], m["license"])
+        lines.append("| %s/%s | %s | %s | https://www.blenderkit.com/get-blenderkit/%s/ | %s |" % (
+            m["category"], slug, m["name"], m["author"], m["assetBaseId"], lic))
+    ph = os.path.join(ROOT, "Assets", "ThirdParty", "PolyHaven", "CREDITS.md")
+    if os.path.exists(ph):
+        lines += ["", "Poly Haven (CC0 1.0, committed in Assets/ThirdParty/PolyHaven):", ""]
+        lines += [l.rstrip() for l in open(ph, encoding="utf-8") if l.startswith("|")]
+    lines.append("<!-- V2-ASSETS-END -->")
+    p = os.path.join(ROOT, "ATTRIBUTION.md")
+    text = open(p, encoding="utf-8").read()
+    block = "\n".join(lines) + "\n"
+    if "<!-- V2-ASSETS-BEGIN -->" in text:
+        i, j = text.index("<!-- V2-ASSETS-BEGIN -->"), text.index("<!-- V2-ASSETS-END -->") + len("<!-- V2-ASSETS-END -->")
+        text = text[:i] + block.rstrip("\n") + text[j:]
+    else:
+        text = text.rstrip("\n") + "\n\n" + block
+    open(p, "w", encoding="utf-8").write(text)
+    print("ATTRIBUTION.md: %d BlenderKit rows" % len(man))
+
+
 def cmd_list(a):
     if os.path.exists(TABLE):
         print(open(TABLE, encoding="utf-8").read())
@@ -347,8 +376,9 @@ def main():
     g.add_argument("--drop", default="")
     g.add_argument("--keep-collection", default="")
     sp.add_parser("list")
+    sp.add_parser("credits")
     a = ap.parse_args()
-    {"search": cmd_search, "get": cmd_get, "list": cmd_list}[a.cmd](a)
+    {"search": cmd_search, "get": cmd_get, "list": cmd_list, "credits": cmd_credits}[a.cmd](a)
 
 
 if __name__ == "__main__":

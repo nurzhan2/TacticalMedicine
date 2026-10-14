@@ -1,0 +1,18 @@
+{
+ "name": "sand_rocks_small_01",
+ "source": "sand_rocks_small_01_1k.gltf",
+ "warnings": [],
+ "tris_source": 739469,
+ "tris": 14788,
+ "size_m": [
+  4.629,
+  3.881,
+  0.537
+ ],
+ "lods": 3,
+ "tris_lod1": 5175,
+ "tris_lod2": 1774,
+ "materials": 1,
+ "armature_bones": 0,
+ "bones": []
+}

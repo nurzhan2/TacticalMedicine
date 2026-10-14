@@ -24,6 +24,18 @@ namespace FieldMedic.EditorTools
 
         static readonly string[] Roots = { LicensedRoot, ThirdPartyRoot, MeshyRoot };
 
+        /// <summary>
+        /// Per-model colour multipliers that make civilian stand-ins read military (sRGB): flour sacks -> faded olive
+        /// sandbags, white untextured F-16 -> air-superiority grey, red/white civil helicopter -> olive drab.
+        /// </summary>
+        public static readonly Dictionary<string, Color> Tints = new Dictionary<string, Color>
+        {
+            { "burlap_sacks", new Color(0.62f, 0.6f, 0.44f) },
+            { "f16_jet", new Color(0.48f, 0.5f, 0.5f) },
+            { "utility_helicopter", new Color(0.42f, 0.46f, 0.3f) },
+            { "stretcher", new Color(0.5f, 0.55f, 0.38f) },
+        };
+
         public static bool IsManaged(string path)
         {
             path = path.Replace('\\', '/');
@@ -145,9 +157,11 @@ namespace FieldMedic.EditorTools
             if (!AssetDatabase.IsValidFolder(matDir)) AssetDatabase.CreateFolder(dir, "Materials");
             bool changed = false;
             var existing = mi.GetExternalObjectMap();
+            Tints.TryGetValue(slug, out var tint);
             foreach (var kv in descs)
             {
                 var mat = BuildMaterial(matDir, dir, kv.Key, kv.Value);
+                if (tint.a > 0f) mat.SetColor("_BaseColor", mat.GetColor("_BaseColor") * new Color(tint.r, tint.g, tint.b, 1f));
                 var id = new AssetImporter.SourceAssetIdentifier(typeof(Material), kv.Key);
                 if (!existing.TryGetValue(id, out var cur) || cur != mat)
                 {

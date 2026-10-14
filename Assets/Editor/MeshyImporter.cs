@@ -52,6 +52,7 @@ namespace FieldMedic.EditorTools
                 { "sol_kz_soldier", ("soldiers", "H=1.78", true) },
                 { "sol_enemy_soldier", ("soldiers", "H=1.78", true) },
                 { "prop_spent_casings", ("props", "L=0.25", false) },
+                { "prop_litter", ("props", "L=2.2", false) },
             };
 
         static IEnumerable<string> AllNames()

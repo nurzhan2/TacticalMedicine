@@ -10,9 +10,9 @@
   "smoothness": 1.0,
   "cutout": false,
   "transparent": false,
-  "albedo": "Textures/boulder_02_albedo.png",
+  "albedo": "Textures/boulder_02_albedo.jpg",
   "ms": "Textures/boulder_02_ms.png",
-  "normal": "Textures/boulder_02_normal.png",
+  "normal": "Textures/boulder_02_normal.jpg",
   "normalScale": 1.0
  }
 }
