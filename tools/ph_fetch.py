@@ -17,7 +17,10 @@ API = "https://api.polyhaven.com/"
 
 WANT = {
     "hdris": {"overcast_soil_puresky": "2k"},
-    "textures": ["withered_grass", "sparse_grass", "dry_ground_01", "dry_ground_rocks", "brown_mud_dry"],
+    "textures": ["withered_grass", "sparse_grass", "dry_ground_01", "dry_ground_rocks", "brown_mud_dry",
+                 # w2 battlefield: ruined walls, floors, scorch
+                 "rough_plaster_brick_04", "broken_brick_wall", "red_bricks_04", "concrete_floor_damaged_01",
+                 "burned_ground_01", "concrete_debris"],
     # id: (category folder, max faces)
     "models": {
         "rock_07": ("rocks", 3000), "rock_09": ("rocks", 3000), "namaqualand_boulder_02": ("rocks", 4000),

@@ -84,7 +84,15 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return m;
         }
 
-        public static void Build(GameObject rig, Light moon)
+        public static void Build(GameObject rig, Light moon) => Build(rig, moon, true, TrenchBuilder.G + 0.1f);
+
+        /// <summary>
+        /// <paramref name="night"/> = V1 trench (para-flares steering the moon light, red headlamp, crickets/rain beds).
+        /// Day (V2 battlefield): no flares/headlamp, wind bed; <paramref name="parapetHeight"/> = eye height above which
+        /// the V1 threat model counts the head as exposed (the battlefield passes a huge value: w3 replaces it with
+        /// ray-cast line of fire against the Cover layer).
+        /// </summary>
+        public static void Build(GameObject rig, Light moon, bool night, float parapetHeight)
         {
             Directory.CreateDirectory(FxDir);
             var eye = Find(rig.transform, "CenterEyeAnchor");
@@ -101,6 +109,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
             vfx.head = eye;
 
             // ---- lighting director + flares
+            if (night)
+            {
             var dir = new GameObject("NightLighting").AddComponent<NightLightingDirector>();
             dir.transform.SetParent(root, false);
             dir.mainLight = moon;
@@ -111,13 +121,14 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var flareMat = FxMat("FX_FlareGlow", new Color(1f, 0.93f, 0.8f), true, 3f);
             var smokeMat = FxMat("FX_FlareSmoke", new Color(0.55f, 0.55f, 0.58f, 0.18f), false);
             for (int i = 0; i < 3; i++) dir.flares.Add(BuildFlare(root, i, flareMat, smokeMat));
+            }
 
             // ---- audio
             var amb = new GameObject("CombatAmbience").AddComponent<CombatAmbience>();
             amb.transform.SetParent(root, false);
             amb.listener = eye;
-            amb.nightBed = Clips("crickets_night");
-            amb.rainBed = Clips("rain_trench");
+            amb.nightBed = night ? Clips("crickets_night") : Clips("wind_night");
+            amb.rainBed = night ? Clips("rain_trench") : new AudioClip[0];
             amb.artilleryOut = Clips("artillery_outgoing");
             amb.explosionFar = Clips("explosion_far");
             amb.explosionNear = Clips("explosion_near", "explosion_near2");
@@ -146,11 +157,13 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var threat = new GameObject("ThreatSystem").AddComponent<ThreatSystem>();
             threat.transform.SetParent(root, false);
             threat.head = eye;
-            threat.parapetHeight = TrenchBuilder.G + 0.1f;
+            threat.parapetHeight = parapetHeight;
             threat.underFire = true;
             root.gameObject.AddComponent<RunEndTemplate>().fadeMaterial = FxMat("FX_Fade", Color.black, false);
 
             // ---- player: red headlamp (spot, no shadows) on the helmet
+            if (night)
+            {
             var lampGo = new GameObject("Headlamp");
             lampGo.transform.SetParent(eye, false);
             lampGo.transform.localPosition = new Vector3(0f, 0.09f, 0.06f);
@@ -161,6 +174,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             lamp.innerSpotAngle = 28f;
             lamp.shadows = LightShadows.None;
             lampGo.AddComponent<Headlamp>();
+            }
 
             // ---- comfort
             rig.AddComponent<CameraShake>();

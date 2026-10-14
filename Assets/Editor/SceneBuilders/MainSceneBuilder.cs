@@ -93,7 +93,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         }
 
         // ---------------------------------------------------------------- rig + hands
-        static GameObject BuildRig(out DesktopSimulator sim)
+        public static GameObject BuildRig(out DesktopSimulator sim)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(RigPrefab);
             GameObject rig;
@@ -139,7 +139,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return rig;
         }
 
-        static void BuildHands(GameObject rig, DesktopSimulator sim)
+        public static void BuildHands(GameObject rig, DesktopSimulator sim)
         {
             var hands = new GameObject("Hands").transform;
             var glove = Mat("Glove", new Color(0.12f, 0.12f, 0.1f), 0.2f);
@@ -379,7 +379,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Bookmark(root, "s2_erlan_idle", ErlanPosition + new Vector3(-1.5f, 1.3f, -0.6f), ErlanPosition + new Vector3(0f, 0.65f, 0f), 50f);
         }
 
-        static void Bookmark(Transform root, string name, Vector3 pos, Vector3 lookAt, float fov)
+        public static void Bookmark(Transform root, string name, Vector3 pos, Vector3 lookAt, float fov)
         {
             var b = new GameObject(name);
             b.transform.SetParent(root, false);
@@ -389,15 +389,18 @@ namespace FieldMedic.EditorTools.SceneBuilders
         }
 
         // ---------------------------------------------------------------- helpers
-        /// <summary>Build scenes: Boot (tiny, renders at once, loads Main async) first, then Main.</summary>
+        /// <summary>Build scenes: Boot (tiny, renders at once, loads the Battlefield async), Battlefield (V2 main flow),
+        /// Main (V1 trench, legacy — still built so its tests and the scene reload by index keep working).</summary>
         public static void SetBuildScenes()
         {
-            EditorBuildSettings.scenes = File.Exists(BootSceneBuilder.ScenePath)
-                ? new[] { new EditorBuildSettingsScene(BootSceneBuilder.ScenePath, true), new EditorBuildSettingsScene(ScenePath, true) }
-                : new[] { new EditorBuildSettingsScene(ScenePath, true) };
+            var list = new List<EditorBuildSettingsScene>();
+            if (File.Exists(BootSceneBuilder.ScenePath)) list.Add(new EditorBuildSettingsScene(BootSceneBuilder.ScenePath, true));
+            if (File.Exists(BattlefieldLayout.ScenePath)) list.Add(new EditorBuildSettingsScene(BattlefieldLayout.ScenePath, true));
+            list.Add(new EditorBuildSettingsScene(ScenePath, true)); // V1 night trench: legacy, not in the main flow
+            EditorBuildSettings.scenes = list.ToArray();
         }
 
-        static Transform FindDeep(Transform t, string name)
+        public static Transform FindDeep(Transform t, string name)
         {
             if (t.name == name) return t;
             foreach (Transform c in t)

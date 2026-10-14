@@ -8,6 +8,12 @@
 | texture 1k | Dry Ground 01 (dry_ground_01) | Rob Tuytel | https://polyhaven.com/a/dry_ground_01 | CC0 1.0 |
 | texture 1k | Dry Ground Rocks (dry_ground_rocks) | Rob Tuytel | https://polyhaven.com/a/dry_ground_rocks | CC0 1.0 |
 | texture 1k | Brown Mud Dry (brown_mud_dry) | Rob Tuytel | https://polyhaven.com/a/brown_mud_dry | CC0 1.0 |
+| texture 1k | Rough Plaster Brick 04 (rough_plaster_brick_04) | Rob Tuytel | https://polyhaven.com/a/rough_plaster_brick_04 | CC0 1.0 |
+| texture 1k | Broken Brick Wall (broken_brick_wall) | Amal Kumar | https://polyhaven.com/a/broken_brick_wall | CC0 1.0 |
+| texture 1k | Red Bricks 04 (red_bricks_04) | Rob Tuytel | https://polyhaven.com/a/red_bricks_04 | CC0 1.0 |
+| texture 1k | Concrete Floor Damaged 01 (concrete_floor_damaged_01) | Rob Tuytel | https://polyhaven.com/a/concrete_floor_damaged_01 | CC0 1.0 |
+| texture 1k | Burned Ground 01 (burned_ground_01) | Rob Tuytel | https://polyhaven.com/a/burned_ground_01 | CC0 1.0 |
+| texture 1k | Concrete Debris (concrete_debris) | Amal Kumar | https://polyhaven.com/a/concrete_debris | CC0 1.0 |
 | model (rocks) | Rock 07 (rock_07) | Jenelle van Heerden | https://polyhaven.com/a/rock_07 | CC0 1.0 |
 | model (rocks) | Rock 09 (rock_09) | Jenelle van Heerden | https://polyhaven.com/a/rock_09 | CC0 1.0 |
 | model (rocks) | Namaqualand Boulder 02 (namaqualand_boulder_02) | Greg Zaal, Rico Cilliers | https://polyhaven.com/a/namaqualand_boulder_02 | CC0 1.0 |

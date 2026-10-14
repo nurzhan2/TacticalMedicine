@@ -27,6 +27,7 @@ namespace FieldMedic.EditorTools
             string shots = Arg("-fmShots");
             int w = int.TryParse(Arg("-fmWidth"), out var pw) ? pw : 1600;
             int h = int.TryParse(Arg("-fmHeight"), out var ph) ? ph : 900;
+            JpgQuality = int.TryParse(Arg("-fmJpg"), out var q) ? q : 0;
             try
             {
                 int n = CaptureScene(scenePath, shots?.Split(','), w, h);
@@ -41,9 +42,13 @@ namespace FieldMedic.EditorTools
             }
         }
 
-        public static int CaptureScene(string scenePath, string[] only, int width, int height)
+        /// <summary>&gt; 0 → screenshots are written as JPG with this quality (V2: keep pushes small).</summary>
+        public static int JpgQuality;
+
+        public static int CaptureScene(string scenePath, string[] only, int width, int height, Action prepare = null)
         {
             EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            prepare?.Invoke();
             DynamicGI.UpdateEnvironment();
             Directory.CreateDirectory(OutDir);
 
@@ -58,7 +63,7 @@ namespace FieldMedic.EditorTools
             int count = 0;
             foreach (var b in marks)
             {
-                var path = Path.Combine(OutDir, b.name + ".png");
+                var path = Path.Combine(OutDir, b.name + (JpgQuality > 0 ? ".jpg" : ".png"));
                 Render(b.transform, b.fieldOfView, template, width, height, path);
                 Debug.Log("[FMVR] screenshot " + path);
                 count++;
@@ -104,7 +109,7 @@ namespace FieldMedic.EditorTools
                 tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 tex.Apply();
                 RenderTexture.active = prev;
-                File.WriteAllBytes(path, tex.EncodeToPNG());
+                File.WriteAllBytes(path, path.EndsWith(".jpg") ? tex.EncodeToJPG(JpgQuality > 0 ? JpgQuality : 85) : tex.EncodeToPNG());
                 Object.DestroyImmediate(tex);
             }
             finally

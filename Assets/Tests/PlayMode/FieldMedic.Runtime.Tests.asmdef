@@ -5,6 +5,8 @@
         "FieldMedic.Runtime",
         "FieldMedic.Medical",
         "Oculus.VR",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

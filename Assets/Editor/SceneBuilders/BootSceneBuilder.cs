@@ -8,7 +8,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
 {
     /// <summary>
     /// Generates Assets/Scenes/Boot.unity — the first scene of the APK: OVRCameraRig (floor origin), black
-    /// background, title "БАУЫР" + loading line, <see cref="BootLoader"/> that loads Main asynchronously.
+    /// background, title "БАУЫР" + loading line, <see cref="BootLoader"/> that loads the Battlefield asynchronously.
     /// Batch: -executeMethod FieldMedic.EditorTools.SceneBuilders.BootSceneBuilder.BuildBatch
     /// </summary>
     public static class BootSceneBuilder
@@ -65,7 +65,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             boot.head = head;
             boot.panel = panel;
             boot.status = status;
-            boot.nextScene = "Main";
+            boot.nextScene = FieldMedic.Environment.BattlefieldLayout.SceneName; // V2: the open battlefield (Main = V1 trench, legacy)
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             MainSceneBuilder.SetBuildScenes();
