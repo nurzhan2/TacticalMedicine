@@ -628,5 +628,65 @@
   ],
   "path": "Assets/_Licensed/BlenderKit/aircraft/recon_drone_mavic",
   "cmd": "python tools/bk_fetch.py get bcbafb5a-a09f-4218-a05e-7b784476929d --category aircraft --slug recon_drone_mavic --max-faces 8000 --tex 1024"
+ },
+ "soldier_agent": {
+  "category": "soldiers",
+  "name": "Special Sniper Soldier-Rigged-Game Ready",
+  "assetBaseId": "bab061a6-ed60-4c1d-9465-d501700264b7",
+  "author": "Silent Wolf",
+  "license": "royalty_free",
+  "tris": 5182,
+  "size_m": [
+   1.688,
+   0.354,
+   1.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/soldiers/soldier_agent",
+  "cmd": "python tools/bk_fetch.py get bab061a6-ed60-4c1d-9465-d501700264b7 --category soldiers --slug soldier_agent --max-faces 5000 --tex 512 --rigged --size H=1.8 --pivot keep"
+ },
+ "soldier_crowd": {
+  "category": "soldiers",
+  "name": "Special Sniper Soldier-Rigged-Game Ready",
+  "assetBaseId": "bab061a6-ed60-4c1d-9465-d501700264b7",
+  "author": "Silent Wolf",
+  "license": "royalty_free",
+  "tris": 1282,
+  "size_m": [
+   1.691,
+   0.352,
+   1.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/soldiers/soldier_crowd",
+  "cmd": "python tools/bk_fetch.py get bab061a6-ed60-4c1d-9465-d501700264b7 --category soldiers --slug soldier_crowd --max-faces 1000 --tex 256 --rigged --size H=1.8 --pivot keep"
+ },
+ "soldier_far": {
+  "category": "soldiers",
+  "name": "Special Sniper Soldier-Rigged-Game Ready",
+  "assetBaseId": "bab061a6-ed60-4c1d-9465-d501700264b7",
+  "author": "Silent Wolf",
+  "license": "royalty_free",
+  "tris": 1082,
+  "size_m": [
+   1.691,
+   0.353,
+   1.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/soldiers/soldier_far",
+  "cmd": "python tools/bk_fetch.py get bab061a6-ed60-4c1d-9465-d501700264b7 --category soldiers --slug soldier_far --max-faces 500 --tex 256 --rigged --size H=1.8 --pivot keep"
+ },
+ "smoke_grenade": {
+  "category": "props",
+  "name": "Flashbang",
+  "assetBaseId": "718de840-4cab-4663-9bc7-99e778b77039",
+  "author": "Blaž Mraz",
+  "license": "royalty_free",
+  "tris": 2995,
+  "size_m": [
+   0.06,
+   0.065,
+   0.135
+  ],
+  "path": "Assets/_Licensed/BlenderKit/props/smoke_grenade",
+  "cmd": "python tools/bk_fetch.py get 718de840-4cab-4663-9bc7-99e778b77039 --category props --slug smoke_grenade --max-faces 3000 --tex 512 --size H=0.135"
  }
 }

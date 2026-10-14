@@ -195,11 +195,20 @@ namespace FieldMedic.Audio
             Detonate(p, 0.6f);
         }
 
-        /// <summary>A random FPV hunting in the field: you hear (and may see) it dive, then the hit 30–70 m out.</summary>
-        IEnumerator AmbientFpv(float life)
+        /// <summary>Battle director: an FPV dives on a target in the field (you hear the whine rise, then the hit).</summary>
+        public bool PlayFpvDive(Vector3 target)
         {
-            var target = ListenerPos + Polar(Random.Range(-60f, 60f), Random.Range(30f, 70f));
-            target.y = 1.75f;
+            if (!isActiveAndEnabled) return false;
+            StartCoroutine(AmbientFpv(Random.Range(5f, 7f), target));
+            return true;
+        }
+
+        /// <summary>A random FPV hunting in the field: you hear (and may see) it dive, then the hit 30–70 m out.</summary>
+        IEnumerator AmbientFpv(float life) => AmbientFpv(life, ListenerPos + Polar(Random.Range(-60f, 60f), Random.Range(30f, 70f)));
+
+        IEnumerator AmbientFpv(float life, Vector3 target)
+        {
+            target.y = Mathf.Max(target.y, 1.75f);
             var d = StartDrone(DroneKind.Fpv, life);
             if (d == null) yield break;
             d.DiveAt(target);
@@ -274,7 +283,7 @@ namespace FieldMedic.Audio
             if (k <= 0.05f) return;
             LastNearBlastTime = Time.time;
             _muffleAmount = Mathf.Max(_muffleAmount, k);
-            _muffleUntil = Mathf.Max(_muffleUntil, Time.time + 3f + 2f * k);
+            _muffleUntil = Mathf.Max(_muffleUntil, Time.time + FieldMedic.Battle.BattleMath.MuffleSeconds(distance, charge)); // 3–6 s
             if (tinnitus != null && tinnitus.Length > 0)
             {
                 _tinnitus.clip = Pick(tinnitus);

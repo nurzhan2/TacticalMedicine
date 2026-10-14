@@ -72,6 +72,20 @@ namespace FieldMedic.Environment
             return _covers;
         }
 
+        /// <summary>Hit decided by another system (ray-cast enemy fire): same flow as a risk-model hit.</summary>
+        public void ExternalHit(string reason)
+        {
+            if (Model.IsHit) return;
+            if (!enableHits) return;
+            Model.ForceHit(reason);
+            LastCue = ThreatCue.Hit;
+            bool kz = GameSettings.Language == GameLanguage.KZ;
+            string text = ThreatModel.Explain(reason, kz);
+            Debug.Log("[FMVR] player hit: " + reason + " — " + text);
+            PlayerHit?.Invoke(reason);
+            if (showRunEndOverlay) RunEndOverlay.Show(kz ? "ЖАРАЛАНДЫҢЫЗ" : "ВЫ РАНЕНЫ", text);
+        }
+
         public void Tick(float dt)
         {
             if (Model.IsHit) return;

@@ -178,8 +178,10 @@ namespace FieldMedic.EditorTools.SceneBuilders
             MainSceneBuilder.BuildHands(rig, sim);
             BuildGameplay(rig);
             AtmosphereBuilder.Build(rig, sun, night: false, parapetHeight: 99f);
+            BattleBuilder.Build(rig, eye.transform); // w3: the continuous battle
             BuildLocomotion(rig);
             BuildBookmarks();
+            BattleBuilder.Bookmarks();
             TuneLods();
             LimitShadowCasters();
             CombineSmallStatics();

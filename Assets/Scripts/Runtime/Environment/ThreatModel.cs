@@ -59,6 +59,16 @@ namespace FieldMedic.Environment
             Exposures.Clear(); _whizDone = _impactDone = false; _open = -1;
         }
 
+        /// <summary>A hit decided outside the risk model (e.g. ray-cast enemy fire, w3).</summary>
+        public void ForceHit(string reason)
+        {
+            if (IsHit) return;
+            Risk = 1f;
+            IsHit = true;
+            HitReason = reason;
+            CloseExposure();
+        }
+
         /// <summary>Advances the model; returns the cue to play this tick (at most one).</summary>
         public ThreatCue Tick(Situation s, float dt)
         {
@@ -141,6 +151,10 @@ namespace FieldMedic.Environment
                     return kazakh
                         ? "Дрон үстінде тік тұрдыңыз — ВОГ тасталды. «Әуе!» — окоп түбіне."
                         : "Стояли в полный рост под разведдроном — сброс ВОГ. «Воздух!» — все на дно окопа.";
+                case "enemy_fire":
+                    return kazakh
+                        ? "Сіз жау отының астында тым ұзақ ашық тұрдыңыз (10 с ішінде 4 с-тан артық). Оқ астында — бір панадан екіншісіне жүгіріп өтіңіз, пана артында тізерлеп не жатып жұмыс істеңіз; түтін гранатасын пайдаланыңыз."
+                        : "Вы слишком долго были открыты для огня противника (больше 4 с за 10 с). Под огнём — перебежки от укрытия к укрытию, работа на коленях или лёжа за укрытием; ставьте дымовую завесу.";
                 case "white_light":
                     return kazakh ? "Ақ жарық алыстан көрінеді — позиция ашылды." : "Белый свет виден издалека — позиция демаскирована.";
                 default:

@@ -254,7 +254,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return f;
         }
 
-        static AudioClip[] Clips(params string[] folders)
+        public static AudioClip[] Clips(params string[] folders)
         {
             var list = new List<AudioClip>();
             foreach (var f in folders)

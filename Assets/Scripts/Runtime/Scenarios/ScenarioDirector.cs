@@ -87,6 +87,7 @@ namespace FieldMedic.Scenarios
         public void EnterMenu(DebriefReport last = null)
         {
             InMenu = true;
+            FieldMedic.Battle.BattleDirector.PlayerArmed = false; // nobody shoots at the player in the menu
             SetQuiet(0.35f);
             if (menuPlayerSpot != null) PlacePlayer(menuPlayerSpot);
             if (board != null) { if (last != null) board.ShowDebrief(last); else board.ShowMain(); }
@@ -104,6 +105,8 @@ namespace FieldMedic.Scenarios
         {
             InMenu = false;
             Exam = exam;
+            FieldMedic.Battle.BattleDirector.Mode = exam ? FieldMedic.Battle.BattleMode.Exam : FieldMedic.Battle.BattleMode.Combat;
+            FieldMedic.Battle.BattleDirector.PlayerArmed = !testMode;
             Run = ScenarioCatalog.Resolve(def, variant);
             Timeline = new ScenarioTimeline(Run);
             Timeline.StateChanged += OnState;
@@ -466,6 +469,7 @@ namespace FieldMedic.Scenarios
 
         void Finish()
         {
+            FieldMedic.Battle.BattleDirector.PlayerArmed = false;
             var proto = casualty.Protocol;
             var p = casualty.Patient;
             if (_slipDone && _preTq != null && !_preTq.Retightened && !_preTq.State.FullOcclusion) proto.ScenarioMistake("tq_not_rechecked");

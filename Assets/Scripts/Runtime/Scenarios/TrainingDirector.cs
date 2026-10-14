@@ -46,6 +46,8 @@ namespace FieldMedic.Scenarios
 
         public void Begin(string lessonId)
         {
+            FieldMedic.Battle.BattleDirector.Mode = FieldMedic.Battle.BattleMode.Training; // battle far away, nobody targets the player
+            FieldMedic.Battle.BattleDirector.PlayerArmed = false;
             var l = TrainingCatalog.Get(lessonId) ?? TrainingCatalog.All[0];
             Progress = new LessonProgress(l);
             Progress.Advanced += OnAdvanced;
