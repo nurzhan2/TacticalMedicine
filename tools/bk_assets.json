@@ -1,0 +1,362 @@
+{
+ "brick_ruins_a": {
+  "category": "ruins",
+  "name": "Brick Ruins",
+  "assetBaseId": "80cd0314-d86c-4c92-8186-4151a07e9522",
+  "author": "PBRPX",
+  "license": "cc_zero",
+  "tris": 8000,
+  "size_m": [
+   0.897,
+   0.141,
+   0.257
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/brick_ruins_a",
+  "cmd": "python tools/bk_fetch.py get 80cd0314-d86c-4c92-8186-4151a07e9522 --category ruins --slug brick_ruins_a --max-faces 8000 --tex 1024"
+ },
+ "unfinished_building": {
+  "category": "ruins",
+  "name": "Unfinished Building",
+  "assetBaseId": "694baa4b-b62c-459b-b5d3-6429c8ceff76",
+  "author": "AIR3D",
+  "license": "royalty_free",
+  "tris": 20013,
+  "size_m": [
+   15.0,
+   11.054,
+   15.129
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/unfinished_building",
+  "cmd": "python tools/bk_fetch.py get 694baa4b-b62c-459b-b5d3-6429c8ceff76 --category ruins --slug unfinished_building --max-faces 20000 --tex 1024"
+ },
+ "broken_wall": {
+  "category": "ruins",
+  "name": "Broken Wall",
+  "assetBaseId": "e5d3e731-00a3-4987-9dff-a787026218ed",
+  "author": "PBRPX",
+  "license": "cc_zero",
+  "tris": 11998,
+  "size_m": [
+   0.331,
+   0.552,
+   1.874
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/broken_wall",
+  "cmd": "python tools/bk_fetch.py get e5d3e731-00a3-4987-9dff-a787026218ed --category ruins --slug broken_wall --max-faces 12000 --tex 1024"
+ },
+ "brick_block_wall": {
+  "category": "ruins",
+  "name": "Brick and Concrete Block Wall",
+  "assetBaseId": "818e29a3-d812-402d-a10c-5ee71d85f2fc",
+  "author": "GL3D Gabriela Linhares",
+  "license": "royalty_free",
+  "tris": 14999,
+  "size_m": [
+   1.989,
+   0.273,
+   1.785
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/brick_block_wall",
+  "cmd": "python tools/bk_fetch.py get 818e29a3-d812-402d-a10c-5ee71d85f2fc --category ruins --slug brick_block_wall --max-faces 15000 --tex 1024"
+ },
+ "debris_bricks_wall": {
+  "category": "ruins",
+  "name": "Debris of bricks and a wall",
+  "assetBaseId": "e8841ea4-a9b9-49fe-8403-0bf80e807183",
+  "author": "Matvey Sheyanov",
+  "license": "royalty_free",
+  "tris": 15000,
+  "size_m": [
+   1.993,
+   0.576,
+   1.395
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/debris_bricks_wall",
+  "cmd": "python tools/bk_fetch.py get e8841ea4-a9b9-49fe-8403-0bf80e807183 --category ruins --slug debris_bricks_wall --max-faces 15000 --tex 1024"
+ },
+ "bricks_debris_pile": {
+  "category": "ruins",
+  "name": "Bricks Derbis Pile",
+  "assetBaseId": "463dbfc1-8826-4615-ba79-92b89d4e3520",
+  "author": "REAL SCANS",
+  "license": "royalty_free",
+  "tris": 12000,
+  "size_m": [
+   4.956,
+   4.446,
+   1.763
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/bricks_debris_pile",
+  "cmd": "python tools/bk_fetch.py get 463dbfc1-8826-4615-ba79-92b89d4e3520 --category ruins --slug bricks_debris_pile --max-faces 12000 --tex 1024"
+ },
+ "rubble_pile": {
+  "category": "ruins",
+  "name": "Rubble Pile",
+  "assetBaseId": "68d9a4ac-5bc0-46f1-8175-42ac843c37b8",
+  "author": "Guinter Ramos",
+  "license": "royalty_free",
+  "tris": 8000,
+  "size_m": [
+   0.973,
+   1.054,
+   0.316
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/rubble_pile",
+  "cmd": "python tools/bk_fetch.py get 68d9a4ac-5bc0-46f1-8175-42ac843c37b8 --category ruins --slug rubble_pile --max-faces 8000 --tex 1024"
+ },
+ "ruined_masonry_wall": {
+  "category": "ruins",
+  "name": "Ruined Masonry Wall",
+  "assetBaseId": "858d9662-d036-4d93-80c1-d0e1e06143ab",
+  "author": "REAL SCANS",
+  "license": "royalty_free",
+  "tris": 12000,
+  "size_m": [
+   2.561,
+   2.496,
+   0.913
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/ruined_masonry_wall",
+  "cmd": "python tools/bk_fetch.py get 858d9662-d036-4d93-80c1-d0e1e06143ab --category ruins --slug ruined_masonry_wall --max-faces 12000 --tex 1024"
+ },
+ "derelict_concrete_building": {
+  "category": "ruins",
+  "name": "Derelict Concrete Building",
+  "assetBaseId": "e381565d-0afc-4125-acfd-abde83625e8e",
+  "author": "Fridqeir Haynura",
+  "license": "royalty_free",
+  "tris": 2920,
+  "size_m": [
+   9.197,
+   9.197,
+   6.091
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/derelict_concrete_building",
+  "cmd": "python tools/bk_fetch.py get e381565d-0afc-4125-acfd-abde83625e8e --category ruins --slug derelict_concrete_building --max-faces 6000 --tex 1024"
+ },
+ "pillar_bullet_holes": {
+  "category": "ruins",
+  "name": "Pillar scan",
+  "assetBaseId": "21d82a38-02f6-43d7-b145-ca9309c13d4b",
+  "author": "REAL SCANS",
+  "license": "royalty_free",
+  "tris": 7999,
+  "size_m": [
+   1.144,
+   1.195,
+   1.642
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/pillar_bullet_holes",
+  "cmd": "python tools/bk_fetch.py get 21d82a38-02f6-43d7-b145-ca9309c13d4b --category ruins --slug pillar_bullet_holes --max-faces 8000 --tex 1024"
+ },
+ "rebar": {
+  "category": "ruins",
+  "name": "Reinforcing Bar",
+  "assetBaseId": "0fb9fc5e-9f53-450a-a513-8efdcf7810ba",
+  "author": "Waldemar Dad",
+  "license": "royalty_free",
+  "tris": 516,
+  "size_m": [
+   0.01,
+   0.196,
+   0.01
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/rebar",
+  "cmd": "python tools/bk_fetch.py get 0fb9fc5e-9f53-450a-a513-8efdcf7810ba --category ruins --slug rebar --max-faces 2000 --tex 1024"
+ },
+ "junk_slab_pile": {
+  "category": "ruins",
+  "name": "Pile of Junk (rubbish, debris) Photoscan",
+  "assetBaseId": "029d6806-b86b-47ef-8a87-16b868219c7e",
+  "author": "Tedd Šámal",
+  "license": "royalty_free",
+  "tris": 11999,
+  "size_m": [
+   3.711,
+   2.766,
+   0.613
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/junk_slab_pile",
+  "cmd": "python tools/bk_fetch.py get 029d6806-b86b-47ef-8a87-16b868219c7e --category ruins --slug junk_slab_pile --max-faces 12000 --tex 1024"
+ },
+ "concrete_chunk": {
+  "category": "ruins",
+  "name": "A piece of concrete",
+  "assetBaseId": "288214cb-6fa2-443b-a6e3-71dbe88dd886",
+  "author": "Matvey Sheyanov",
+  "license": "royalty_free",
+  "tris": 4000,
+  "size_m": [
+   0.327,
+   0.33,
+   0.06
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/concrete_chunk",
+  "cmd": "python tools/bk_fetch.py get 288214cb-6fa2-443b-a6e3-71dbe88dd886 --category ruins --slug concrete_chunk --max-faces 4000 --tex 1024"
+ },
+ "brick_ruins_b": {
+  "category": "ruins",
+  "name": "Brick Ruins",
+  "assetBaseId": "f0a80792-ff43-4dce-a369-b2db68360937",
+  "author": "PBRPX",
+  "license": "cc_zero",
+  "tris": 8000,
+  "size_m": [
+   0.269,
+   0.227,
+   0.209
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/brick_ruins_b",
+  "cmd": "python tools/bk_fetch.py get f0a80792-ff43-4dce-a369-b2db68360937 --category ruins --slug brick_ruins_b --max-faces 8000 --tex 1024"
+ },
+ "brick_ruins_c": {
+  "category": "ruins",
+  "name": "Brick Ruins",
+  "assetBaseId": "33363fe7-cfc1-482c-a8d5-c2a51fdedd92",
+  "author": "PBRPX",
+  "license": "cc_zero",
+  "tris": 7998,
+  "size_m": [
+   0.16,
+   0.115,
+   0.068
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/brick_ruins_c",
+  "cmd": "python tools/bk_fetch.py get 33363fe7-cfc1-482c-a8d5-c2a51fdedd92 --category ruins --slug brick_ruins_c --max-faces 8000 --tex 1024"
+ },
+ "czech_hedgehog": {
+  "category": "cover",
+  "name": "Anti-Tank Barrier",
+  "assetBaseId": "483c7ea3-dcd8-4b65-8e41-e88b15b6b06c",
+  "author": "Giorgi Samukashvili",
+  "license": "royalty_free",
+  "tris": 5999,
+  "size_m": [
+   2.112,
+   2.047,
+   1.635
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/czech_hedgehog",
+  "cmd": "python tools/bk_fetch.py get 483c7ea3-dcd8-4b65-8e41-e88b15b6b06c --category cover --slug czech_hedgehog --max-faces 6000 --tex 1024"
+ },
+ "concrete_barriers_lowpoly": {
+  "category": "cover",
+  "name": "Lowpoly concrete barriers",
+  "assetBaseId": "909bf29c-d645-46c0-a5bb-dade7d1a9e44",
+  "author": "SPLEEN.VISION Adam",
+  "license": "cc_zero",
+  "tris": 2680,
+  "size_m": [
+   1.614,
+   3.356,
+   0.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/concrete_barriers_lowpoly",
+  "cmd": "python tools/bk_fetch.py get 909bf29c-d645-46c0-a5bb-dade7d1a9e44 --category cover --slug concrete_barriers_lowpoly --max-faces 4000 --tex 1024"
+ },
+ "concrete_road_barrier": {
+  "category": "cover",
+  "name": "Concrete Road Barrier",
+  "assetBaseId": "1da29004-f3c0-4bc7-a675-fd6e500c2aa7",
+  "author": "Poly Haven",
+  "license": "cc_zero",
+  "tris": 6000,
+  "size_m": [
+   1.544,
+   0.638,
+   0.832
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/concrete_road_barrier",
+  "cmd": "python tools/bk_fetch.py get 1da29004-f3c0-4bc7-a675-fd6e500c2aa7 --category cover --slug concrete_road_barrier --max-faces 6000 --tex 1024"
+ },
+ "concrete_blockade": {
+  "category": "cover",
+  "name": "Concrete Blockade",
+  "assetBaseId": "87212614-0aa3-44a8-bf79-8e6d2ca6e52f",
+  "author": "Jan Hecl",
+  "license": "royalty_free",
+  "tris": 1630,
+  "size_m": [
+   2.88,
+   0.49,
+   0.8
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/concrete_blockade",
+  "cmd": "python tools/bk_fetch.py get 87212614-0aa3-44a8-bf79-8e6d2ca6e52f --category cover --slug concrete_blockade --max-faces 4000 --tex 1024"
+ },
+ "concrete_pipe": {
+  "category": "cover",
+  "name": "Concrete Pipe",
+  "assetBaseId": "580268f0-505b-4c20-a414-2c3074a3215c",
+  "author": "REAL SCANS",
+  "license": "royalty_free",
+  "tris": 7999,
+  "size_m": [
+   2.314,
+   5.66,
+   1.93
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/concrete_pipe",
+  "cmd": "python tools/bk_fetch.py get 580268f0-505b-4c20-a414-2c3074a3215c --category cover --slug concrete_pipe --max-faces 8000 --tex 1024"
+ },
+ "barbed_wire_fence": {
+  "category": "cover",
+  "name": "Barbed wire fence",
+  "assetBaseId": "b4e9bc00-6747-4454-83ca-aecd68d3bc29",
+  "author": "Zoltán Péter Fáth",
+  "license": "cc_zero",
+  "tris": 1084,
+  "size_m": [
+   0.926,
+   2.215,
+   1.962
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/barbed_wire_fence",
+  "cmd": "python tools/bk_fetch.py get b4e9bc00-6747-4454-83ca-aecd68d3bc29 --category cover --slug barbed_wire_fence --max-faces 2000 --tex 1024"
+ },
+ "barbed_wire_metal_fence": {
+  "category": "cover",
+  "name": "Barb Wire Metal Fence",
+  "assetBaseId": "f15f9631-254d-461f-a84f-507358605040",
+  "author": "Texture Maker",
+  "license": "royalty_free",
+  "tris": 9996,
+  "size_m": [
+   5.381,
+   0.688,
+   3.79
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/barbed_wire_metal_fence",
+  "cmd": "python tools/bk_fetch.py get f15f9631-254d-461f-a84f-507358605040 --category cover --slug barbed_wire_metal_fence --max-faces 10000 --tex 1024"
+ },
+ "burlap_sacks": {
+  "category": "cover",
+  "name": "50kg burlap sacks of grain",
+  "assetBaseId": "4636c678-151c-444a-86ac-a1d21f477456",
+  "author": "Dovydas Alytas",
+  "license": "royalty_free",
+  "tris": 6000,
+  "size_m": [
+   0.873,
+   0.562,
+   0.345
+  ],
+  "path": "Assets/_Licensed/BlenderKit/cover/burlap_sacks",
+  "cmd": "python tools/bk_fetch.py get 4636c678-151c-444a-86ac-a1d21f477456 --category cover --slug burlap_sacks --max-faces 6000 --tex 1024"
+ },
+ "car_wreck_beetle": {
+  "category": "vehicles",
+  "name": "VW Beetle wreck",
+  "assetBaseId": "ce96377d-5da3-4899-bb25-c94b84bb0de7",
+  "author": "Adam Krhanek",
+  "license": "royalty_free",
+  "tris": 14999,
+  "size_m": [
+   2.14,
+   4.564,
+   1.667
+  ],
+  "path": "Assets/_Licensed/BlenderKit/vehicles/car_wreck_beetle",
+  "cmd": "python tools/bk_fetch.py get ce96377d-5da3-4899-bb25-c94b84bb0de7 --category vehicles --slug car_wreck_beetle --max-faces 15000 --tex 1024"
+ }
+}

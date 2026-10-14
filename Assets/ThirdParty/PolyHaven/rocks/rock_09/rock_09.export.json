@@ -1,0 +1,17 @@
+{
+ "name": "rock_09",
+ "source": "rock_09_1k.gltf",
+ "warnings": [],
+ "tris_source": 12416,
+ "tris": 2999,
+ "size_m": [
+  0.074,
+  0.145,
+  0.033
+ ],
+ "lods": 2,
+ "tris_lod1": 1048,
+ "materials": 1,
+ "armature_bones": 0,
+ "bones": []
+}

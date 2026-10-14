@@ -120,3 +120,8 @@ InitTestScene*.unity*
 
 # raw Poly Haven downloads (prepared copies live in Assets/Art/Environment/Textures)
 /SourceAssets/PolyHaven/
+
+# BlenderKit Royalty-Free models: not redistributable in the public repo (re-fetch with tools/bk_fetch.py)
+/Assets/_Licensed/
+/Assets/_Licensed.meta
+/textures/

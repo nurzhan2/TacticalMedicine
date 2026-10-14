@@ -35,7 +35,7 @@ namespace FieldMedic.Treatment
         {
             base.Awake();
             priority = 2;
-            if (!_built) { _built = true; BuildVisual(); FitCollider(); }
+            if (!_built) { _built = true; BuildVisual(); MeshyModels.Apply(this); FitCollider(); }
         }
 
         /// <summary>Item look from primitives. Base: lubricant packet.</summary>

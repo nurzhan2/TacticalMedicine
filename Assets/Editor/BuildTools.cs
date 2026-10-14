@@ -27,6 +27,7 @@ namespace FieldMedic.EditorTools
             EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
             if (!File.Exists(SceneBuilders.BootSceneBuilder.ScenePath)) SceneBuilders.BootSceneBuilder.Build();
             QuestLaunchSetup.Apply();
+            MeshyImporter.ImportAll(); // owner's Meshy IFAK files dropped since the last import
             AssetDatabase.SaveAssets();
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             if (scenes.Length == 0) scenes = new[] { "Assets/Scenes/Main.unity" };

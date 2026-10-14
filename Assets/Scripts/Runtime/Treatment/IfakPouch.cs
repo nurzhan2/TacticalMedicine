@@ -93,6 +93,7 @@ namespace FieldMedic.Treatment
             for (int i = 0; i < 2; i++)
                 Kit.Part(v, PrimitiveType.Cube, "Elastic", new Vector3(0f, 0.012f, 0.045f - i * rowSpacing), new Vector3(0.41f, 0.003f, 0.012f), dark);
             Kit.Merge(v);
+            MeshyModels.ApplyPouch(transform);
         }
 
         void LateUpdate()

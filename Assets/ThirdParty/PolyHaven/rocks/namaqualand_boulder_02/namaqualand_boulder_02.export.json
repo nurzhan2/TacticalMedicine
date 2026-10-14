@@ -1,0 +1,17 @@
+{
+ "name": "namaqualand_boulder_02",
+ "source": "namaqualand_boulder_02_1k.gltf",
+ "warnings": [],
+ "tris_source": 97964,
+ "tris": 4000,
+ "size_m": [
+  2.518,
+  1.233,
+  0.878
+ ],
+ "lods": 2,
+ "tris_lod1": 1400,
+ "materials": 1,
+ "armature_bones": 0,
+ "bones": []
+}

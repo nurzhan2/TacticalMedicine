@@ -1,0 +1,18 @@
+{
+ "rock_07": {
+  "color": [
+   1,
+   1,
+   1,
+   1
+  ],
+  "metallic": 1.0,
+  "smoothness": 1.0,
+  "cutout": false,
+  "transparent": false,
+  "albedo": "Textures/rock_07_albedo.png",
+  "ms": "Textures/rock_07_ms.png",
+  "normal": "Textures/rock_07_normal.png",
+  "normalScale": 1.0
+ }
+}
