@@ -28,3 +28,12 @@
 ## 14:24 review of s7_* screenshots
 - s7_s1_drop.jpg: the thigh wound renders as a bright red diamond/rhombus OUTLINE (looks like a UI marker or an emissive decal edge), not an organic wound. Wound must read as torn fabric + dark wet blood soak spreading from an irregular hole, no emissive/outline, no geometric shape. If a highlight is needed for training mode, make it a soft pulse only in Training, never in Scenarios/Exam.
 - s7_fpv_dive.jpg: drone is a few pixels - fine for realism, but add its buzzing audio ramp + a faint red/IR LED so the player can track it. Field beyond the wire looks flat/empty: add craters, shell holes, burnt vehicle silhouette on the horizon (tank/BMP wreck), smoke columns lit by the glow.
+
+## 14.10 18:50 - V2 START (stages w0..w6). Notes above this line are about the V1 night trench - treat as legacy.
+- Owner priorities in order: (1) the APK must start on a real Quest, (2) war atmosphere on an open steppe,
+  continuous battle, (3) real cover + drag Erlan from the open into ruins, (4) Training mode with the WHITE hint
+  panel, (5) insignia (KZ flag, Satbayev military department), (6) real IFAK from owner's Meshy files.
+- Real models only (BlenderKit free plan + Poly Haven CC0). Anything that looks like grey boxes / primitives in
+  a screenshot is a failure - fix it or replace it before closing a stage.
+- Every stage that changes runtime code ends with a quick APK build so a working APK always exists.
+- Keep V1 features working (CAT steps, packing, drag, RU/KZ, debrief); V1 tests may be updated, not deleted.
