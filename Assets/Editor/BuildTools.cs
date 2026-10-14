@@ -27,6 +27,8 @@ namespace FieldMedic.EditorTools
             EditorUserBuildSettings.buildAppBundle = false;
             EditorUserBuildSettings.development = false;
             EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
+            QuestLaunchSetup.Apply();
+            AssetDatabase.SaveAssets();
 
             var opts = new BuildPlayerOptions
             {
@@ -52,8 +54,32 @@ namespace FieldMedic.EditorTools
                     if (m.type == LogType.Error || m.type == LogType.Exception)
                         Debug.Log("[FMVR] build error: " + m.content);
                 if (Application.isBatchMode) EditorApplication.Exit(1);
+                return;
             }
+
+            // the final merged manifest must still launch in VR (w0 launch fix)
+            if (!QuestManifestAudit.AuditLastBuild(out _))
+            {
+                Debug.LogError("[FMVR] BuildAndroid: manifest audit FAILED, see logs/manifest_check.txt");
+                if (Application.isBatchMode) EditorApplication.Exit(2);
+                return;
+            }
+            CopyToDesktop();
             if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
+
+        /// <summary>Copies the APK to the owner's Desktop (sideload with MQDH / SideQuest / adb).</summary>
+        public static void CopyToDesktop()
+        {
+            try
+            {
+                var desk = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+                if (string.IsNullOrEmpty(desk) || !Directory.Exists(desk)) return;
+                var dst = Path.Combine(desk, Path.GetFileName(ApkPath));
+                File.Copy(ApkPath, dst, true);
+                Debug.Log("[FMVR] APK copied to " + dst);
+            }
+            catch (Exception e) { Debug.LogWarning("[FMVR] Desktop copy failed: " + e.Message); }
         }
     }
 }

@@ -1,7 +1,9 @@
+using System.Collections;
 using FieldMedic.Input;
 using FieldMedic.Interaction;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace FieldMedic.Tests
 {
@@ -61,6 +63,35 @@ namespace FieldMedic.Tests
             Haptics.Play(s, Haptics.Heartbeat, 0.5f);
             Assert.AreEqual(Haptics.Heartbeat.Amplitude * 0.5f, s.LastHapticAmplitude, 1e-5f);
             Haptics.Play(null, Haptics.Grab); // no hand → no throw
+        }
+
+        [UnityTest]
+        public IEnumerator HandRig_Switches_To_Headset_When_XR_Starts_After_Awake()
+        {
+            // Quest: the XR display starts after the first scene's Awake (w0 launch fix)
+            var root = new GameObject("RigRoot");
+            var anchor = new GameObject("RightHandAnchor").transform;
+            try
+            {
+                DesktopSimulator.XRActiveOverride = false;
+                root.AddComponent<DesktopSimulator>();
+                var hand = new GameObject("Hand").AddComponent<HandRig>();
+                hand.handedness = Handedness.Right;
+                hand.ovrAnchor = anchor;
+                Assert.AreEqual(HandRig.Mode.Desktop, hand.ActiveMode, "no XR at Awake -> desktop simulator");
+
+                DesktopSimulator.XRActiveOverride = true;
+                yield return null;
+                yield return null;
+                Assert.AreEqual(HandRig.Mode.OVR, hand.ActiveMode, "XR came up -> headset input");
+                Object.Destroy(hand.gameObject);
+            }
+            finally
+            {
+                DesktopSimulator.XRActiveOverride = null;
+                Object.Destroy(root);
+                Object.Destroy(anchor.gameObject);
+            }
         }
     }
 }

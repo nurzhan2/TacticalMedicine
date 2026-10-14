@@ -72,6 +72,8 @@ namespace FieldMedic.Input
 
         void Update()
         {
+            // XR can come up after Awake (first scene on the headset, Link in the editor) -> switch to the headset
+            if (mode == Mode.Auto && ActiveMode == Mode.Desktop && ovrAnchor != null && DesktopSimulator.XRActive) Resolve();
             if (Input == null) return;
             Input.Tick(Time.deltaTime);
             if (driveTransform) transform.SetPositionAndRotation(Input.Position, Input.Rotation);

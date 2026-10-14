@@ -36,9 +36,35 @@ namespace FieldMedic.Input
         bool _activeRight = true;
         float _yaw, _pitch, _eyeHeight;
 
-        public static bool XRActive => UnityEngine.XR.XRSettings.isDeviceActive;
+        /// <summary>Tests can force the XR answer (null = real detection).</summary>
+        public static bool? XRActiveOverride;
 
-        void Awake() => EnsureInit();
+        /// <summary>
+        /// True when the headset drives the view and hands. On the Quest player it is always true: XR Management
+        /// starts the display subsystem only after the first scene has loaded, so XRSettings.isDeviceActive is
+        /// still false during that scene's Awake/Start (V1 bug: the first scene's hands fell back to the
+        /// desktop simulator and the controllers did nothing).
+        /// </summary>
+        public static bool XRActive
+        {
+            get
+            {
+                if (XRActiveOverride.HasValue) return XRActiveOverride.Value;
+#if UNITY_ANDROID && !UNITY_EDITOR
+                return true;
+#else
+                return UnityEngine.XR.XRSettings.isDeviceActive;
+#endif
+            }
+        }
+
+        void Awake()
+        {
+            EnsureInit();
+#if UNITY_ANDROID && !UNITY_EDITOR
+            enabled = false; // never move the rig / capture input on the headset
+#endif
+        }
 
         /// <summary>Creates the hand inputs; safe to call from other components' Awake.</summary>
         public void EnsureInit()
