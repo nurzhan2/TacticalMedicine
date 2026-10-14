@@ -311,3 +311,8 @@
   - The Quest decodes ASTC natively, so these are expected to be editor-only. On the first device run, take a screencap (tools/quest_check.ps1). If speckle shows on the Quest, try Mobile_RPAsset HDR on (it made the editor clean) and check the ASTC normal maps.
 - **Assets**: 6 new Poly Haven CC0 textures (ph_fetch WANT list) + derived straw grass albedo; ATTRIBUTION.md updated.
 - **Git push**: still "Repository not found" (remote/credentials issue from w0); all work is committed locally.
+- **APK** 03:43 (10.9 min): manifest audit OK, copied to the Desktop. The size grew from 97.7 to 244 MB (Battlefield licensed models/textures + legacy Main). Consider dropping Main from the build in w6 if size matters. quest_check: NO DEVICE.
+- **w2 DONE.** Next, w3 (battle):
+  - use `CoverMath.Blocked/Shielded` + `PlayerStance` for enemy fire;
+  - `BattlefieldLayout` for positions;
+  - `LzMarker.PopSmoke` for the evac.
