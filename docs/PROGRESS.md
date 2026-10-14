@@ -162,3 +162,12 @@
   - New PlayMode tests: HandRig late-XR switch (pass) and LaunchSmokeTests (pass). BootSceneTests is pending.
 - Note: one Unity batch run hung ~3 h at editor startup (Package Manager IPC) before running the method. Always use the unity.ps1 timeout.
 - **Git push blocked**: `git push` and `git ls-remote` return "Repository not found" for github.com/Hevilim/TacticalMedicine. origin/main is still 37ebbe9, so the owner's 4f8d39e is not on GitHub either. The repo may have been renamed, deleted, or made private, or the stored token lost access. All w0 work is committed locally; push it after the remote or credentials are fixed.
+
+## 14.10 23:00 — w0 launch fix DONE
+- APK 22:49 (29.6 min): `Builds/FieldMedicVR.apk` and a copy on the Desktop (97.7 MB). The manifest audit is OK, cross-checked with aapt2. Scenes: Boot, Main.
+- BootSceneTests pass: Main is active 4.0 s after Boot.
+- quest_check: NO DEVICE (exit 0).
+- Next stage (w1+):
+  - Any new scene builder must keep `MainSceneBuilder.SetBuildScenes()` so Boot stays first.
+  - Run `tools/quest_check.ps1` after every build.
+  - Git push is still blocked ("Repository not found"); the owner must fix the remote or token.
