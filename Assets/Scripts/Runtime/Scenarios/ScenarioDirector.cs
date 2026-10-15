@@ -54,7 +54,13 @@ namespace FieldMedic.Scenarios
         public ScenarioState State => Timeline != null ? Timeline.State : ScenarioState.Briefing;
         public bool InMenu { get; private set; }
         public bool Exam { get; private set; }
-        public float IncidentPatientTime { get; private set; } = -1f;
+        public float IncidentPatientTime { get; set; } = -1f;
+        /// <summary>First place each protocol code happened (x, z) — the debrief mini map.</summary>
+        public readonly Dictionary<string, Vector3> MistakePlaces = new Dictionary<string, Vector3>();
+        readonly List<DebriefPhase> _phases = new List<DebriefPhase>();
+        int _logSeen;
+        Vector3 _fallPoint;
+        bool _fallKnown;
         public readonly List<string> Events = new List<string>();
         public event Action<DebriefReport> Finished;
 
@@ -111,6 +117,13 @@ namespace FieldMedic.Scenarios
             Timeline = new ScenarioTimeline(Run);
             Timeline.StateChanged += OnState;
             if (testMode) Timeline.autoEvacAfter = 1e6f;
+            // V2 battlefield: the helicopter lands at the LZ and the run ends when Erlan is loaded
+            var tac = TacevacController.Instance;
+            if (tac != null) { tac.ResetForRun(); Timeline.waitForLoading = true; }
+            _phases.Clear();
+            MistakePlaces.Clear();
+            _logSeen = 0;
+            _fallKnown = false;
             float preMin = Run.preTourniquet != null ? Run.preTourniquet.minutesAgo : 0f;
             int startMin = def.clockHour * 60 + def.clockMinute - Mathf.RoundToInt(preMin);
             startMin = (startMin + 24 * 60) % (24 * 60);
@@ -137,10 +150,18 @@ namespace FieldMedic.Scenarios
 
         void PlacePlayer(Transform spot)
         {
-            if (playerRig == null || spot == null) return;
+            if (spot == null) return;
+            PlacePlayerAt(spot.position, spot.eulerAngles.y);
+        }
+
+        public void PlacePlayerAt(Transform spot) => PlacePlayer(spot);
+
+        public void PlacePlayerAt(Vector3 pos, float yaw)
+        {
+            if (playerRig == null) return;
             var sim = playerRig.GetComponent<DesktopSimulator>();
-            playerRig.SetPositionAndRotation(new Vector3(spot.position.x, playerRig.position.y, spot.position.z), Quaternion.Euler(0f, spot.eulerAngles.y, 0f));
-            if (sim != null) sim.SnapYaw(spot.eulerAngles.y);
+            playerRig.SetPositionAndRotation(new Vector3(pos.x, playerRig.position.y, pos.z), Quaternion.Euler(0f, yaw, 0f));
+            if (sim != null) sim.SnapYaw(yaw);
         }
 
         void SetQuiet(float intensity)
@@ -168,6 +189,7 @@ namespace FieldMedic.Scenarios
                 if (def.incident == IncidentKind.Barrage && !testMode) IncidentProps.Spawn(IncidentKind.Barrage, CasualtyPos, CasualtyPos);
                 Timeline.Incident();
                 Timeline.CasualtyDown(def.startPhase);
+                HideBoardForRun();
                 yield break;
             }
             yield return Wait(def.incidentDelay);
@@ -221,6 +243,7 @@ namespace FieldMedic.Scenarios
             Timeline.CasualtyDown(def.startPhase);
             if (def.startPhase == Phase.CareUnderFire && ThreatSystem.Instance != null) ThreatSystem.Instance.underFire = true;
             if (amb != null) amb.intensity = 1.2f;
+            HideBoardForRun();
             Log("incident " + def.incident);
         }
 
@@ -289,13 +312,44 @@ namespace FieldMedic.Scenarios
             // the schedule follows the casualty's clock (tests and time-compression speed it up together)
             var due = Timeline.Tick(dt * Mathf.Max(0f, Timeline.State == ScenarioState.Evacuation ? 1f : casualty.simulationSpeed), proto.phase, proto.medevacRequested, casualty.Patient.outcome, _hit, evacDt);
             foreach (var c in due) Complication(c);
+            TrackPlaces();
+            var tac = TacevacController.Instance;
+            if (tac != null && Timeline.waitForLoading && Timeline.State == ScenarioState.Evacuation)
+            {
+                if (Timeline.EvacArrived && !tac.Called) { tac.Call(testMode); RadioSay("evac_arrived"); }
+                if (tac.Loaded && !Timeline.Loaded) Timeline.MarkLoaded();
+            }
             if (Timeline.State == ScenarioState.Debrief) return;
             WatchRules(dt);
+        }
+
+        /// <summary>The board on the ruin wall is only needed for the menu, the briefing and the debrief (draw calls).</summary>
+        void HideBoardForRun()
+        {
+            if (board != null && !testMode) board.gameObject.SetActive(false);
+        }
+
+        static readonly HashSet<string> PlayerCodes = new HashSet<string> { "player_exposed", "white_light", "stepped_off_path" };
+
+        void TrackPlaces()
+        {
+            var log = casualty.Protocol.log;
+            if (!_fallKnown && IncidentPatientTime >= 0f) { _fallKnown = true; _fallPoint = CasualtyPos; }
+            for (; _logSeen < log.Count; _logSeen++)
+            {
+                var code = log[_logSeen].code;
+                if (string.IsNullOrEmpty(code) || MistakePlaces.ContainsKey(code)) continue;
+                MistakePlaces[code] = PlayerCodes.Contains(code) && head != null ? head.position : CasualtyPos;
+            }
         }
 
         void OnState(ScenarioState s)
         {
             Log("state " + s);
+            float now = casualty != null && casualty.Patient != null ? casualty.Patient.secondsSinceStart : 0f;
+            if (_phases.Count > 0 && _phases[_phases.Count - 1].end < 0f) _phases[_phases.Count - 1].end = now;
+            string id = s switch { ScenarioState.CareUnderFire => "CUF", ScenarioState.TacticalFieldCare => "TFC", ScenarioState.Evacuation => "TACEVAC", _ => null };
+            if (id != null) _phases.Add(new DebriefPhase(id, now, -1f));
             switch (s)
             {
                 case ScenarioState.TacticalFieldCare:
@@ -309,7 +363,7 @@ namespace FieldMedic.Scenarios
                     break;
                 case ScenarioState.Debrief:
                     casualty.simulationSpeed = 1f;
-                    if (Timeline.EndReason == "evacuated") RadioSay("evac_arrived");
+                    if (Timeline.EndReason == "evacuated" && TacevacController.Instance == null) RadioSay("evac_arrived");
                     Finish();
                     break;
             }
@@ -481,13 +535,18 @@ namespace FieldMedic.Scenarios
                     proto.ScenarioMistake("conv_not_retightened");
             }
             casualty.autoTick = Timeline.EndReason != "evacuated"; // he is handed over; keep a dead/abandoned one as is
+            TrackPlaces();
             Report = DebriefBuilder.Build(Run.def, proto, Timeline.EndReason, ScenarioClock.Format, IncidentPatientTime, _hitText, GameSettings.KZ);
+            foreach (var ph in _phases) Report.phases.Add(new DebriefPhase(ph.id, ph.start, ph.end < 0f ? p.secondsSinceStart : ph.end));
+            foreach (var m in Report.mistakes)
+                if (MistakePlaces.TryGetValue(m.code, out var at)) { m.hasPos = true; m.x = at.x; m.z = at.z; }
+            if (_fallKnown) { Report.hasCasualtyPos = true; Report.casualtyX = _fallPoint.x; Report.casualtyZ = _fallPoint.z; }
             int best = GameSettings.BestScore(Run.def.id);
             if ((DebriefBuilder.UpdateBest(Report, Mathf.Max(0, best)) || best < 0) && !testMode) GameSettings.SetBestScore(Run.def.id, Report.bestScore);
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.forceDroneOverhead = false; }
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.3f;
             Log($"debrief {Run.def.id}: {Timeline.EndReason}, score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
-            if (board != null) board.ShowDebrief(Report, head);
+            if (board != null) { board.gameObject.SetActive(true); board.ShowDebrief(Report, head); }
             Finished?.Invoke(Report);
         }
 

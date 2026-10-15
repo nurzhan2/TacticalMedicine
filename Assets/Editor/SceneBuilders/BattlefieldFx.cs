@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using FieldMedic.Environment;
 using UnityEditor;
@@ -57,6 +58,67 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return m;
         }
 
+        /// <summary>
+        /// Soft smoke sheet (2×2 frames, 512²): each frame is a cauliflower billow of overlapping gaussian lobes with
+        /// fbm detail, very soft edges (no alpha clip → no "beads"), top-lit. Used by the horizon smoke columns (w4).
+        /// </summary>
+        public static Texture2D SmokeSheetTexture(string dir)
+        {
+            string path = dir + "/FX_SmokeSheet.png";
+            if (!File.Exists(path))
+            {
+                const int N = 512, F = 256;
+                var t = new Texture2D(N, N, TextureFormat.RGBA32, false);
+                var px = new Color[N * N];
+                var rng = new System.Random(5);
+                for (int fy = 0; fy < 2; fy++)
+                for (int fx = 0; fx < 2; fx++)
+                {
+                    var lobes = new List<Vector4>();
+                    for (int k = 0; k < 9; k++)
+                    {
+                        float a = (float)rng.NextDouble() * Mathf.PI * 2f, r = (float)rng.NextDouble() * 0.32f;
+                        lobes.Add(new Vector4(0.5f + Mathf.Cos(a) * r, 0.5f + Mathf.Sin(a) * r * 0.85f, 0.13f + (float)rng.NextDouble() * 0.12f, 0f));
+                    }
+                    float ox = (float)rng.NextDouble() * 50f, oy = (float)rng.NextDouble() * 50f;
+                    for (int y = 0; y < F; y++)
+                    for (int x = 0; x < F; x++)
+                    {
+                        float u = (x + 0.5f) / F, v = (y + 0.5f) / F;
+                        float d = 0f;
+                        foreach (var l in lobes) { float dx = u - l.x, dy = v - l.y; d += Mathf.Exp(-(dx * dx + dy * dy) / (2f * l.z * l.z)); }
+                        float f = 0f, amp = 0.5f, fr = 4f;
+                        for (int o = 0; o < 5; o++) { f += amp * Mathf.PerlinNoise(u * fr + ox + o * 7.1f, v * fr + oy + o * 3.3f); amp *= 0.5f; fr *= 2.03f; }
+                        float rr = Mathf.Sqrt((u - 0.5f) * (u - 0.5f) + (v - 0.5f) * (v - 0.5f)) * 2f;
+                        float window = Mathf.Clamp01(1f - rr * rr);                      // fade out well inside the frame
+                        float dens = Mathf.Clamp01(d * 0.55f) * (0.55f + 0.9f * f) * window;
+                        float alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(dens * 1.15f));
+                        float shade = Mathf.Lerp(0.55f, 1.05f, Mathf.Clamp01(v * 0.75f + f * 0.45f));  // lit from above
+                        px[(fy * F + y) * N + fx * F + x] = new Color(shade, shade, shade, alpha);
+                    }
+                }
+                t.SetPixels(px);
+                t.Apply();
+                File.WriteAllBytes(path, t.EncodeToPNG());
+                Object.DestroyImmediate(t);
+                AssetDatabase.ImportAsset(path);
+                var ti = (TextureImporter)AssetImporter.GetAtPath(path);
+                ti.alphaIsTransparency = true;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.mipmapEnabled = true;
+                ti.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        }
+
+        public static Material SmokeSheetMat(string dir)
+        {
+            var m = AtmosphereBuilder.FxMat("FX_SmokeColumn", Color.white, false);
+            m.SetTexture("_MainTex", SmokeSheetTexture(dir));
+            EditorUtility.SetDirty(m);
+            return m;
+        }
+
         // ------------------------------------------------------------------ smoke columns
         public static ParticleSystem SmokeColumn(Transform parent, string name, Vector3 pos, float scale, bool fire, Material smoke, Material glow, int seed)
         {
@@ -69,15 +131,16 @@ namespace FieldMedic.EditorTools.SceneBuilders
             main.loop = true;
             main.prewarm = true;
             main.playOnAwake = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(26f, 36f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(2.2f * scale, 3.6f * scale);
-            main.startSize = new ParticleSystem.MinMaxCurve(7f * scale, 12f * scale);
+            main.startLifetime = new ParticleSystem.MinMaxCurve(30f, 40f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(2.0f * scale, 3.0f * scale);
+            main.startSize = new ParticleSystem.MinMaxCurve(9f * scale, 15f * scale);
             main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
             main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.16f, 0.15f, 0.14f, 0.9f), new Color(0.26f, 0.24f, 0.22f, 0.9f));
             main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.maxParticles = 48;
+            main.maxParticles = 140;
             main.randomizeRotationDirection = 0.5f;
-            var em = ps.emission; em.rateOverTime = 1.3f;
+            // continuous column (w4, supervisor 07:00 #3): puffs overlap ~3× instead of a chain of separate beads
+            var em = ps.emission; em.rateOverTime = 3.4f;
             var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Cone; sh.angle = 7f; sh.radius = 2.2f * scale;
             sh.rotation = new Vector3(-90f, 0f, 0f);
             var fo = ps.forceOverLifetime; fo.enabled = true; fo.space = ParticleSystemSimulationSpace.World;
@@ -86,13 +149,22 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var vel = ps.velocityOverLifetime; vel.enabled = true; vel.space = ParticleSystemSimulationSpace.World;
             vel.x = new ParticleSystem.MinMaxCurve(Wind.x * 0.5f); vel.y = new ParticleSystem.MinMaxCurve(0f); vel.z = new ParticleSystem.MinMaxCurve(Wind.z * 0.5f);
             var sz = ps.sizeOverLifetime; sz.enabled = true;
-            sz.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.45f), new Keyframe(0.3f, 1.2f), new Keyframe(1f, 3.6f)));
+            sz.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.6f), new Keyframe(0.3f, 1.5f), new Keyframe(1f, 3.8f)));
             var rot = ps.rotationOverLifetime; rot.enabled = true; rot.z = new ParticleSystem.MinMaxCurve(-0.08f, 0.08f);
             var col = ps.colorOverLifetime; col.enabled = true;
             var g = new Gradient();
             g.SetKeys(new[] { new GradientColorKey(new Color(0.55f, 0.5f, 0.46f), 0f), new GradientColorKey(new Color(0.95f, 0.95f, 0.95f), 0.25f), new GradientColorKey(new Color(1.6f, 1.6f, 1.6f), 1f) },
-                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.85f, 0.06f), new GradientAlphaKey(0.55f, 0.5f), new GradientAlphaKey(0f, 1f) });
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.7f, 0.05f), new GradientAlphaKey(0.42f, 0.5f), new GradientAlphaKey(0f, 1f) });
             col.color = g;
+            if (smoke != null && smoke.mainTexture != null && smoke.mainTexture.name == "FX_SmokeSheet")
+            {
+                var tsa = ps.textureSheetAnimation;
+                tsa.enabled = true;
+                tsa.numTilesX = 2; tsa.numTilesY = 2;
+                tsa.animation = ParticleSystemAnimationType.WholeSheet;
+                tsa.frameOverTime = new ParticleSystem.MinMaxCurve(0f);
+                tsa.startFrame = new ParticleSystem.MinMaxCurve(0f, 3.99f);
+            }
             var r = go.GetComponent<ParticleSystemRenderer>();
             r.sharedMaterial = smoke;
             r.shadowCastingMode = ShadowCastingMode.Off;

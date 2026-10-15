@@ -688,5 +688,35 @@
   ],
   "path": "Assets/_Licensed/BlenderKit/props/smoke_grenade",
   "cmd": "python tools/bk_fetch.py get 718de840-4cab-4663-9bc7-99e778b77039 --category props --slug smoke_grenade --max-faces 9000 --tex 512 --size H=0.135"
+ },
+ "bombed_apartment": {
+  "category": "ruins",
+  "name": "Abandoned House",
+  "assetBaseId": "94e53774-84d7-430e-89bd-12cf7b2ef828",
+  "author": "PBRPX",
+  "license": "cc_zero",
+  "tris": 45000,
+  "size_m": [
+   34.56,
+   14.234,
+   21.296
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/bombed_apartment",
+  "cmd": "python tools/bk_fetch.py get 94e53774-84d7-430e-89bd-12cf7b2ef828 --category ruins --slug bombed_apartment --max-faces 45000 --tex 2048"
+ },
+ "ruined_farmhouse": {
+  "category": "ruins",
+  "name": "Ruined Farmhouse",
+  "assetBaseId": "cb1506a0-040e-4998-8b65-fd2c4b3f50c7",
+  "author": "paddy gaunt",
+  "license": "royalty_free",
+  "tris": 1014,
+  "size_m": [
+   8.811,
+   4.994,
+   5.442
+  ],
+  "path": "Assets/_Licensed/BlenderKit/ruins/ruined_farmhouse",
+  "cmd": "python tools/bk_fetch.py get cb1506a0-040e-4998-8b65-fd2c4b3f50c7 --category ruins --slug ruined_farmhouse --max-faces 8000 --tex 1024"
  }
 }

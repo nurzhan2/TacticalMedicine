@@ -179,6 +179,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             BuildGameplay(rig);
             AtmosphereBuilder.Build(rig, sun, night: false, parapetHeight: 99f);
             BattleBuilder.Build(rig, eye.transform); // w3: the continuous battle
+            W4Builder.Build(_root); // w4: TACEVAC helicopter + litter
             BuildLocomotion(rig);
             BuildBookmarks();
             BattleBuilder.Bookmarks();
@@ -418,17 +419,18 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RuinBuilder.BuildWall(houseA, new RuinBuilder.WallSpec
             {
                 name = "HouseA_North", start = new Vector3(a0.x - t, 0f, a1.y), end = new Vector3(a1.x + t, 0f, a1.y),
-                height = 2.55f, jag = 0.55f, seed = 11, soot = 0.35f,
-                openings = new[] { new RuinBuilder.Opening(1.95f, 2.85f, 1.3f, 2.1f), new RuinBuilder.Opening(6.15f, 6.9f, 1.35f, 2.15f), new RuinBuilder.Opening(4.4f, 5.2f, 1.75f, 2.4f) },
-                collapses = new[] { (3.3f, 4.6f, 1.75f) },
+                height = 5.6f, jag = 0.9f, seed = 11, soot = 0.35f,
+                openings = new[] { new RuinBuilder.Opening(1.95f, 2.85f, 1.3f, 2.1f), new RuinBuilder.Opening(6.15f, 6.9f, 1.35f, 2.15f), new RuinBuilder.Opening(4.4f, 5.2f, 1.75f, 2.4f),
+                                   new RuinBuilder.Opening(1.5f, 2.6f, 3.35f, 4.55f), new RuinBuilder.Opening(4.1f, 5.1f, 3.35f, 4.55f) },
+                collapses = new[] { (3.3f, 4.6f, 1.75f), (6.0f, 8.6f, 3.4f) },
             }, wallA, MeshDir);
             // west wall: collapsed at the south end (the debris pile outside is what is left of it)
             RuinBuilder.BuildWall(houseA, new RuinBuilder.WallSpec
             {
                 name = "HouseA_West", start = new Vector3(a0.x, 0f, a0.y - t), end = new Vector3(a0.x, 0f, a1.y + t),
-                height = 2.65f, jag = 0.5f, seed = 12, soot = 0.3f,
-                openings = new[] { new RuinBuilder.Opening(3.3f, 4.2f, 1.1f, 2.0f) },
-                collapses = new[] { (-0.6f, 2.4f, 0.35f) },
+                height = 5.2f, jag = 0.9f, seed = 12, soot = 0.3f,
+                openings = new[] { new RuinBuilder.Opening(3.3f, 4.2f, 1.1f, 2.0f), new RuinBuilder.Opening(4.6f, 5.5f, 3.3f, 4.4f) },
+                collapses = new[] { (-0.6f, 2.4f, 0.35f), (2.4f, 3.6f, 3.1f) },
             }, wallA, MeshDir);
             // south wall (rear): mostly down, a breach for the way back to the LZ
             float sx(float worldX) => a1.x + t - worldX;
@@ -444,12 +446,15 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RuinBuilder.BuildWall(houseA, new RuinBuilder.WallSpec
             {
                 name = "HouseA_East", start = new Vector3(a1.x, 0f, a1.y + t), end = new Vector3(a1.x, 0f, a0.y - t),
-                height = 2.35f, jag = 0.45f, seed = 14, soot = 0.3f,
-                openings = new[] { RuinBuilder.Opening.Breach(ez(d.y), ez(d.x)) },
+                height = 4.3f, jag = 0.8f, seed = 14, soot = 0.3f,
+                openings = new[] { RuinBuilder.Opening.Breach(ez(d.y), ez(d.x)), new RuinBuilder.Opening(0.7f, 1.6f, 2.9f, 3.8f) },
+                collapses = new[] { (4.6f, 6.6f, 2.5f) },
             }, wallA, MeshDir);
             var floorMat = BattlefieldFx.Lit(MatDir, "Bf_FloorConcrete", $"{PH}/concrete_floor_damaged_01/concrete_floor_damaged_01_diff.jpg",
                 $"{PH}/concrete_floor_damaged_01/concrete_floor_damaged_01_nor_gl.jpg", new Color(0.78f, 0.75f, 0.7f), 0.12f, 0f, new Vector2(0.4f, 0.4f));
             RuinBuilder.BuildFloor(houseA, "HouseA_Floor", new Vector2(a0.x + t, a0.y + t), new Vector2(a1.x - t, a1.y - t), 0.04f, floorMat, MeshDir, 3);
+            // what is left of the first floor: a slab hanging off the north-west corner (the storey above is gone)
+            RuinBuilder.BuildFloor(houseA, "HouseA_Slab1F", new Vector2(a0.x + t, a1.y - 2.1f), new Vector2(a0.x + 3.1f, a1.y - t), 2.95f, floorMat, MeshDir, 33);
             Footprints.Add(new Bounds(new Vector3((a0.x + a1.x) / 2f, 1f, (a0.y + a1.y) / 2f), new Vector3(a1.x - a0.x + 0.8f, 2f, a1.y - a0.y + 0.8f)));
 
             // collapsed roof + rubble inside and at the broken corners
@@ -466,14 +471,14 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RuinBuilder.BuildWall(houseC, new RuinBuilder.WallSpec
             {
                 name = "HouseC_North", start = new Vector3(-21.2f, 0f, 11f), end = new Vector3(-12.8f, 0f, 11f),
-                height = 3.4f, jag = 0.9f, seed = 21, soot = 0.55f,
+                height = 5.4f, jag = 1.1f, seed = 21, soot = 0.55f,
                 openings = new[] { new RuinBuilder.Opening(1.6f, 2.5f, 1.05f, 2.05f), new RuinBuilder.Opening(5.3f, 6.2f, 1.05f, 2.05f), new RuinBuilder.Opening(3.3f, 4.2f, 2.7f, 3.8f) },
                 collapses = new[] { (6.6f, 8.6f, 1.6f) },
             }, wallC, MeshDir);
             RuinBuilder.BuildWall(houseC, new RuinBuilder.WallSpec
             {
                 name = "HouseC_West", start = new Vector3(-21f, 0f, 3.2f), end = new Vector3(-21f, 0f, 11.2f),
-                height = 3.0f, jag = 0.8f, seed = 22, soot = 0.45f,
+                height = 4.6f, jag = 1.0f, seed = 22, soot = 0.45f,
                 openings = new[] { new RuinBuilder.Opening(4.6f, 5.5f, 1.05f, 2.05f) },
                 collapses = new[] { (-0.5f, 3.2f, 0.45f) },
             }, wallC, MeshDir);
@@ -496,13 +501,13 @@ namespace FieldMedic.EditorTools.SceneBuilders
             RuinBuilder.BuildWall(houseB, new RuinBuilder.WallSpec
             {
                 name = "HouseB_North", start = new Vector3(-21f, 0f, -10f), end = new Vector3(-13.2f, 0f, -10f),
-                height = 2.9f, jag = 0.7f, seed = 31, soot = 0.7f,
+                height = 5.0f, jag = 1.0f, seed = 31, soot = 0.7f,
                 openings = new[] { new RuinBuilder.Opening(1.2f, 2.1f, 1.0f, 2.0f), new RuinBuilder.Opening(4.6f, 5.5f, 1.0f, 2.0f), RuinBuilder.Opening.Breach(2.8f, 3.9f) },
             }, wallB, MeshDir);
             RuinBuilder.BuildWall(houseB, new RuinBuilder.WallSpec
             {
                 name = "HouseB_East", start = new Vector3(-13.2f, 0f, -9.8f), end = new Vector3(-13.2f, 0f, -16.2f),
-                height = 2.7f, jag = 0.6f, seed = 32, soot = 0.6f,
+                height = 4.4f, jag = 0.9f, seed = 32, soot = 0.6f,
                 openings = new[] { new RuinBuilder.Opening(2.4f, 3.3f, 1.0f, 2.0f) },
                 collapses = new[] { (4.6f, 6.6f, 0.6f) },
             }, wallB, MeshDir);
@@ -520,12 +525,17 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Prop(Place("bricks_debris_pile", houseB, new Vector3(-12.2f, 0f, -15.2f), 160f, 0.75f, sink: 0.1f));
             ScatterDebris(houseB, new Vector3(-17f, 0f, -13f), 6f, 6, 303);
 
-            // gutted concrete frame on the right flank (the infill retinted to sooty brick, the timber charred)
-            var f = Cover(Place("unfinished_building", g, new Vector3(25f, 0f, -14f), -24f, 0.9f));
-            Retint(f, "war", new Color(0.62f, 0.6f, 0.56f), 0.8f);
-            Retint(f, "brick", new Color(0.62f, 0.42f, 0.36f), 0.8f, null, "Brick");
-            Retint(f, "charred", new Color(0.16f, 0.14f, 0.12f), 0.5f, null, "Spruce");
-            Prop(Place("bricks_debris_pile", g, new Vector3(18.5f, 0f, -9f), 10f, 1.1f, sink: 0.1f));
+            // real ruins at full building scale (supervisor 03:55 #2 / 07:00 #2): a shelled five-storey apartment block
+            // behind the position (BlenderKit "Abandoned House", PBRPX) and a roofless farmhouse on the right flank
+            var block = Cover(Place("bombed_apartment", g, new Vector3(-30f, 0f, -26f), 62f, 1f, sink: 0.15f), false);
+            Retint(block, "war", new Color(0.82f, 0.8f, 0.77f), 0.8f);
+            ScatterDebris(g, new Vector3(-24f, 0f, -18f), 9f, 7, 404);
+            Prop(Place("bricks_debris_pile", g, new Vector3(-20.5f, 0f, -21f), 40f, 1.6f, sink: 0.1f));
+            Prop(Place("rubble_pile", g, new Vector3(-23.5f, 0f, -16.5f), 110f, 2.0f));
+            var farm = Cover(Place("ruined_farmhouse", g, new Vector3(25f, 0f, -14f), -24f, 1f, sink: 0.05f), false);
+            Retint(farm, "war", new Color(0.78f, 0.74f, 0.7f), 0.8f);
+            Prop(Place("bricks_debris_pile", g, new Vector3(19.5f, 0f, -10f), 10f, 1.1f, sink: 0.1f));
+            Prop(Place("junk_slab_pile", g, new Vector3(27f, 0.02f, -9.5f), 70f, 1.1f));
         }
 
         static void ScatterDebris(Transform parent, Vector3 centre, float radius, int count, int seed)
@@ -552,7 +562,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
             // checkpoint barriers covering the doorway approach from the north-east
             Sandbagged(g, "concrete_barriers_lowpoly", new Vector3(5.3f, 0f, 4.4f), 90f, 3.3f, 0.8f, alongZ: true);
             // a culvert pipe on the west flank and a bullet-pocked concrete post out front (cover on the drag line)
-            Retint(Cover(Place("concrete_pipe", g, new Vector3(-10.4f, 0f, 2.6f), 82f, 1f, sink: 0.05f)), "dirty", new Color(0.7f, 0.67f, 0.6f), 0.7f);
+            Burn(Cover(Place("car_wreck_beetle", g, new Vector3(-10.4f, 0f, 2.6f), 172f, 1f, new Vector3(0f, 0f, 3f), 0.08f)));
+            Prop(Place("junk_slab_pile", g, new Vector3(-12.2f, 0.02f, 1.2f), 30f, 0.9f));
             Cover(Place("pillar_bullet_holes", g, new Vector3(6.9f, 0f, 7.2f), -10f));
             // single road barriers dragged out as improvised cover (low: prone cover only)
             Retint(Prop(Place("concrete_road_barrier", g, new Vector3(8.6f, 0f, 2.4f), 35f)), "dirty", new Color(0.72f, 0.69f, 0.63f), 0.7f);
@@ -672,13 +683,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Prop(Place("debris_bricks_wall", g, new Vector3(-62f, 0f, 70f), 160f, 1.6f));
             Prop(Place("brick_block_wall", g, new Vector3(-58f, 0f, 74f), 190f, 1.8f));
             Prop(Place("bricks_debris_pile", g, new Vector3(-55f, 0f, 69f), 30f, 1.4f, sink: 0.1f));
-            Retint(Prop(Place("derelict_concrete_building", g, new Vector3(70f, 0f, 120f), 200f, 1.1f)), "war", new Color(0.66f, 0.63f, 0.58f), 0.8f);
-            Retint(Prop(Place("derelict_concrete_building", g, new Vector3(-48f, 0f, -70f), 120f, 1f)), "war", new Color(0.66f, 0.63f, 0.58f), 0.8f);
-            Prop(Place("unfinished_building", g, new Vector3(-95f, 0f, 135f), 30f, 1f));
+            // (w4: the intact derelict block and the glass-like unfinished frame read as fake on the horizon — removed;
+            // the real bombed apartment block stands behind our position instead, see BuildRuins)
         }
 
         static Material _smoke;
-        static Material SmokeMat() => _smoke != null ? _smoke : (_smoke = BattlefieldFx.PuffMat(ArtDir, "FX_SmokePuff", Color.white, false));
+        static Material SmokeMat() => _smoke != null ? _smoke : (_smoke = BattlefieldFx.SmokeSheetMat(ArtDir));
 
         static void BuildSmoke()
         {
@@ -812,6 +822,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.CommTrench, casualty = Anchor("Spot_HouseA_Casualty", BattlefieldLayout.TreatmentSpot + new Vector3(0f, 0.04f, 0f), 90f), player = Anchor("Spot_HouseA_Player", BattlefieldLayout.TreatmentSpot + new Vector3(0.9f, 0.04f, -0.6f), 300f) },
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.FarBay, casualty = Anchor("Spot_HouseC_Casualty", new Vector3(-16.5f, 0.04f, 9.4f), 90f), player = Anchor("Spot_HouseC_Player", new Vector3(-15.4f, 0.04f, 8.6f), 300f) },
                 new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.Dugout, casualty = Anchor("Spot_HouseA_Rear_Casualty", new Vector3(-3.6f, 0.04f, -0.6f), 0f), player = Anchor("Spot_HouseA_Rear_Player", new Vector3(-2.6f, 0.04f, 0.1f), 240f) },
+                new ScenarioDirector.SpotAnchor { spot = FieldMedic.Medical.CasualtySpot.OpenFar, casualty = Anchor("Spot_OpenFar_Casualty", BattlefieldLayout.ErlanFarPoint, 170f), player = Anchor("Spot_OpenFar_Player", BattlefieldLayout.DoorwayCentre + new Vector3(-0.8f, 0f, 0.2f), 0f) },
             };
             d.menuPlayerSpot = Anchor("Spot_Menu_Player", new Vector3(-3.9f, 0.04f, 1.2f), 270f);
             var boardGo = new GameObject("MenuBoard");

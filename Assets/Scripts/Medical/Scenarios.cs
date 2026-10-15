@@ -11,7 +11,9 @@ namespace FieldMedic.Medical
     public enum IncidentKind { DroneDrop, SniperShot, Mine, Mortar, Fpv, GlideBomb, Barrage, None }
 
     /// Where the casualty is when the incident happens (resolved to world positions by the Unity layer).
-    public enum CasualtySpot { FireBay, CommTrench, FarBay, Dugout }
+    /// V2 battlefield: FireBay = in the open 14 m from the ruins, CommTrench = inside house A, FarBay = house C,
+    /// Dugout = house A rear room, OpenFar = far out in the field (~22 m, long drag under the barrage).
+    public enum CasualtySpot { FireBay, CommTrench, FarBay, Dugout, OpenFar }
 
     public enum ComplicationKind
     {
@@ -88,7 +90,7 @@ namespace FieldMedic.Medical
         public string[] skillsRu = Array.Empty<string>();
         public string[] skillsKz = Array.Empty<string>();
         public int[] timeSkipMinutes = Array.Empty<int>();
-        public int clockHour = 1, clockMinute = 40;
+        public int clockHour = 14, clockMinute = 40;
         public bool polished;                  // showcase scenarios (S1, S2)
         /// Seconds after the incident by which a tourniquet must be on under fire (0 = no rule).
         public float tqDeadline;
@@ -183,8 +185,8 @@ namespace FieldMedic.Medical
                 id = "S1", number = 1, polished = true,
                 titleRu = "«Сброс»", titleKz = "«Тастау»",
                 taglineRu = "Дрон сбросил ВОГ: артериальное кровотечение бедра", taglineKz = "Дрон ВОГ тастады: санның артериялық қан кетуі",
-                briefingRu = "01:40. Окоп первой линии. Ерлан наблюдает за полем. Над позицией гудит разведывательный дрон-«сбросник». Будь готов: жгут — высоко и туго, затем в блиндаж.",
-                briefingKz = "01:40. Бірінші шептегі окоп. Ерлан далаға қарап отыр. Үстімізде барлау дроны ызыңдайды. Дайын бол: жгут — жоғары әрі қатты, сосын блиндажға.",
+                briefingRu = "14:40. Степь, разрушенный посёлок. Ерлан выдвигается к воронке в 14 м от руин. Над полем гудит дрон-«сбросник». Под огнём: жгут «высоко и туго», затем волоком в руины.",
+                briefingKz = "14:40. Дала, қираған кент. Ерлан қирандылардан 14 м жердегі шұңқырға жылжып барады. Үстімізде дрон ызыңдайды. Оқ астында: жгут — жоғары әрі қатты, сосын қирандыға сүйре.",
                 incident = IncidentKind.DroneDrop, hit = HitKind.Explosion, spot = CasualtySpot.FireBay,
                 wounds = { W("thigh_artery", WoundType.ArterialLimb, BodyRegion.ThighR, "Ragged"), W("forearm_frag", WoundType.Capillary, BodyRegion.ForearmL, "Fragment") },
                 complications = { new(ComplicationKind.SecondDrop, 75f, null, true), new(ComplicationKind.RadioLine, 20f, "air") },
@@ -197,94 +199,94 @@ namespace FieldMedic.Medical
                 id = "S2", number = 2, polished = true,
                 titleRu = "«Снайпер»", titleKz = "«Мерген»",
                 taglineRu = "Проникающее ранение груди, выходное отверстие на спине", taglineKz = "Кеуденің өтпелі жарасы, шығу тесігі арқада",
-                briefingRu = "03:10. Ерлан поднимает голову над бруствером. Снайпер работает по позиции. Ранение груди — ладонь на рану, наклейка на выдохе, осмотри спину.",
-                briefingKz = "03:10. Ерлан бруствердің үстіне басын көтерді. Мерген атып жатыр. Кеуде жарасы — алақанмен бас, демді шығарғанда жапсырма, арқасын тексер.",
+                briefingRu = "15:10. Ерлан перебегает открытый участок к руинам. Снайпер работает по позиции. Ранение груди: под огнём — в укрытие, там ладонь на рану, наклейка на выдохе, осмотри спину.",
+                briefingKz = "15:10. Ерлан ашық жерден қирандыға жүгіріп келеді. Мерген атып жатыр. Кеуде жарасы: баспанаға, сосын алақанмен бас, демді шығарғанда жапсырма, арқасын тексер.",
                 incident = IncidentKind.SniperShot, hit = HitKind.Shot, spot = CasualtySpot.FireBay,
                 wounds = { W("chest_entry", WoundType.PenetratingChest, BodyRegion.ChestR, "ChestEntry"), W("chest_exit", WoundType.PenetratingChest, BodyRegion.ChestR, "Exit", posterior: true, exit: true) },
                 complications = { new(ComplicationKind.RadioLine, 30f, "sniper") },
                 skillsRu = new[] { "Окклюзионная наклейка с клапаном на выдохе", "Перекат «бревном» — выходное отверстие", "Напряжённый пневмоторакс: «отрыжка» наклейки, игла 5 м/р ППЛ", "Полусидячее положение" },
                 skillsKz = new[] { "Клапанды жапсырма", "Аунату — шығу тесігі", "Кернеулі пневмоторакс: ине", "Жартылай отыру" },
-                incidentDelay = 10f, evacMinutes = 30f, clockHour = 3, clockMinute = 10,
+                incidentDelay = 10f, evacMinutes = 30f, clockHour = 15, clockMinute = 10,
             },
             new ScenarioDefinition
             {
                 id = "S3", number = 3,
                 titleRu = "«Мина»", titleKz = "«Мина»",
-                taglineRu = "Отрыв стопы в ходе сообщения", taglineKz = "Қатынас жолында табанның үзілуі",
-                briefingRu = "02:20. Ход сообщения. Ерлан идёт впереди. Глухой хлопок — противопехотная мина. Иди только по своим следам. Жгут высоко на бедро, второй — если кровит.",
-                briefingKz = "02:20. Қатынас жолы. Ерлан алда келе жатыр. Мина жарылды. Тек өз ізіңмен жүр. Жгут санның жоғарысына, қан тоқтамаса — екіншісі.",
+                taglineRu = "Отрыв стопы в руинах", taglineKz = "Қирандыда табанның үзілуі",
+                briefingRu = "13:20. Руины дома. Ерлан шагнул в пролом — глухой хлопок, противопехотная мина. Ступай только по своим следам. Жгут высоко на бедро, второй — если кровит.",
+                briefingKz = "13:20. Қираған үй. Ерлан ойыққа аяқ басты — мина жарылды. Тек өз ізіңмен жүр. Жгут санның жоғарысына, қан тоқтамаса — екіншісі.",
                 incident = IncidentKind.Mine, hit = HitKind.Explosion, spot = CasualtySpot.CommTrench, eardrums = true,
                 wounds = { W("foot_amputation", WoundType.TraumaticAmputation, BodyRegion.FootR, "Stump", onset: 45f), W("shin_frag", WoundType.Venous, BodyRegion.ShinL, "Fragment"), W("groin_frag", WoundType.Capillary, BodyRegion.GroinL, "Fragment") },
                 complications = { new(ComplicationKind.CasualtyCrawl, 25f), new(ComplicationKind.RadioLine, 15f, "mine") },
                 skillsRu = new[] { "Только по своим следам", "Жгут высоко на бедро над культёй", "Кровотечение после спазма сосудов — второй жгут", "Осмотр паха и второй ноги" },
                 skillsKz = new[] { "Тек өз ізіңмен", "Жгут санның жоғарысына", "Екінші жгут", "Шап пен екінші аяқты тексеру" },
-                incidentDelay = 10f, evacMinutes = 40f, clockHour = 2, clockMinute = 20, tqDeadline = 90f, startPhase = Phase.TacticalFieldCare,
+                incidentDelay = 10f, evacMinutes = 40f, clockHour = 13, clockMinute = 20, tqDeadline = 90f, startPhase = Phase.TacticalFieldCare,
             },
             new ScenarioDefinition
             {
                 id = "S4", number = 4,
                 titleRu = "«Миномёт»", titleKz = "«Миномёт»",
                 taglineRu = "Узловое кровотечение из паха", taglineKz = "Шаптан қан кету",
-                briefingRu = "04:05. Свист мины. Разрыв на бруствере. Рана в паху — жгут невозможен: колено/кулак, тампонада пальцами, 3 минуты давления, израильский бинт.",
-                briefingKz = "04:05. Мина ысқырды. Бруствердегі жарылыс. Шаптағы жара — жгут салынбайды: тізе/жұдырық, тампонада, 3 минут басу, израиль бинті.",
+                briefingRu = "16:05. Свист мины. Разрыв в поле, Ерлан упал в 14 м от руин. Рана в паху — жгут невозможен: волоком в укрытие, там колено/кулак, тампонада, 3 минуты давления, израильский бинт.",
+                briefingKz = "16:05. Мина ысқырды. Далада жарылыс, Ерлан қирандыдан 14 м жерде құлады. Шаптағы жара — жгут салынбайды: баспанаға сүйре, сосын тізе/жұдырық, тампонада, 3 минут басу, израиль бинті.",
                 incident = IncidentKind.Mortar, hit = HitKind.Explosion, spot = CasualtySpot.FireBay,
                 wounds = { W("groin_junctional", WoundType.Junctional, BodyRegion.GroinR, "Ragged") },
                 complications = { new(ComplicationKind.RadioLine, 25f, "air"), new(ComplicationKind.SecondDrop, 90f, "mortar", true) },
                 skillsRu = new[] { "Прямое давление коленом/кулаком", "Тампонада раны гемостатиком", "3 минуты давления без проверок", "Израильский бинт «восьмёркой»" },
                 skillsKz = new[] { "Тіземен/жұдырықпен басу", "Гемостатикпен тампонада", "3 минут басу", "Израиль бинті" },
-                incidentDelay = 10f, evacMinutes = 40f, clockHour = 4, clockMinute = 5,
+                incidentDelay = 10f, evacMinutes = 40f, clockHour = 16, clockMinute = 5,
             },
             new ScenarioDefinition
             {
                 id = "S5", number = 5,
                 titleRu = "«FPV»", titleKz = "«FPV»",
                 taglineRu = "Множественные осколки, скрытая рана под бронежилетом", taglineKz = "Көп жарықшақ, бронежилет астындағы жасырын жара",
-                briefingRu = "00:50. Нарастающий вой FPV. Разрыв у входа в окоп. Видимые раны — голень, плечо, лицо. Не верь глазам: полный осмотр, перекат, спина.",
-                briefingKz = "00:50. FPV ызыңы күшейеді. Окоп кіреберісінде жарылыс. Көрінетін жаралар — сирақ, иық, бет. Толық тексер, аунат, арқасын қара.",
+                briefingRu = "12:50. Нарастающий вой FPV. Разрыв в поле рядом с Ерланом. Видимые раны — голень, плечо, лицо. Не верь глазам: в укрытии — полный осмотр, перекат, спина.",
+                briefingKz = "12:50. FPV ызыңы күшейеді. Ерланның қасында жарылыс. Көрінетін жаралар — сирақ, иық, бет. Баспанада толық тексер, аунат, арқасын қара.",
                 incident = IncidentKind.Fpv, hit = HitKind.Explosion, spot = CasualtySpot.FireBay,
                 wounds = { W("shin_frag", WoundType.Venous, BodyRegion.ShinL, "Fragment"), W("arm_frag", WoundType.Capillary, BodyRegion.UpperArmR, "Fragment"),
                            W("face_frag", WoundType.Capillary, BodyRegion.Head, "Fragment"), W("buttock_hidden", WoundType.Venous, BodyRegion.Pelvis, "Ragged", posterior: true) },
                 complications = { new(ComplicationKind.SecondFpv, 70f, null, true), new(ComplicationKind.RadioLine, 20f, "fpv") },
                 skillsRu = new[] { "Не отвлекаться на видимые мелкие раны", "Полный осмотр «прочёсом»", "Перекат «бревном»: ягодица/спина", "Тампонада скрытой раны" },
                 skillsKz = new[] { "Ұсақ жараларға алаңдама", "Толық тексеру", "Аунату: арқа", "Жасырын жараны тампонада" },
-                incidentDelay = 10f, evacMinutes = 40f, clockHour = 0, clockMinute = 50,
+                incidentDelay = 10f, evacMinutes = 40f, clockHour = 12, clockMinute = 50,
             },
             new ScenarioDefinition
             {
                 id = "S6", number = 6,
                 titleRu = "«КАБ»", titleKz = "«КАБ»",
                 taglineRu = "Взрывная травма: без сознания, храп, рвота", taglineKz = "Жарылыс жарақаты: есінен танған, қорылдау, құсу",
-                briefingRu = "05:20. Управляемая авиабомба в 60 метрах. Ерлана отбросило. Без сознания, кровь из ушей. Дыхательные пути: рот, НФВ, устойчивое боковое положение.",
-                briefingKz = "05:20. 60 метр жерде басқарылатын авиабомба. Ерлан лақтырылды. Есі жоқ, құлағынан қан. Тыныс жолдары: ауыз, НФВ, бүйірге жатқызу.",
+                briefingRu = "11:20. Управляемая авиабомба в 60 метрах. Ерлана отбросило в поле. Без сознания, кровь из ушей. Дыхательные пути: рот, НФВ, устойчивое боковое положение.",
+                briefingKz = "11:20. 60 метр жерде басқарылатын авиабомба. Ерлан далаға лақтырылды. Есі жоқ, құлағынан қан. Тыныс жолдары: ауыз, НФВ, бүйірге жатқызу.",
                 incident = IncidentKind.GlideBomb, hit = HitKind.KnockedOut, spot = CasualtySpot.FireBay, tbi = true, eardrums = true,
                 wounds = { W("scalp", WoundType.Capillary, BodyRegion.Head, "Fragment") },
                 complications = { new(ComplicationKind.Vomit, 75f), new(ComplicationKind.Vomit, 200f, null, true), new(ComplicationKind.RadioLine, 15f, "kab") },
                 skillsRu = new[] { "Проверка дыхания: храп = западение языка", "НФВ: срез к перегородке, «к земле»", "Устойчивое боковое положение", "Рвота: повернуть, очистить рот" },
                 skillsKz = new[] { "Тынысты тексеру: қорылдау", "НФВ енгізу", "Бүйірге жатқызу", "Құсық: аузын тазалау" },
-                incidentDelay = 10f, evacMinutes = 30f, clockHour = 5, clockMinute = 20, startPhase = Phase.TacticalFieldCare,
+                incidentDelay = 10f, evacMinutes = 30f, clockHour = 11, clockMinute = 20, startPhase = Phase.TacticalFieldCare,
             },
             new ScenarioDefinition
             {
                 id = "S7", number = 7,
                 titleRu = "«Под огнём»", titleKz = "«Оқ астында»",
                 taglineRu = "Эвакуация раненого с жгутом под артобстрелом", taglineKz = "Атқылау кезінде жгутпен жараланғанды шығару",
-                briefingRu = "01:15. Жгут на бедре Ерлана уже наложен. Начинается обстрел. Тащи его в блиндаж рывками между разрывами, не поднимаясь. В укрытии — перепроверь жгут.",
-                briefingKz = "01:15. Ерланның санында жгут бар. Атқылау басталды. Жарылыстар арасында блиндажға сүйре, басыңды көтерме. Баспанада жгутты қайта тексер.",
-                incident = IncidentKind.Barrage, hit = HitKind.Explosion, spot = CasualtySpot.FarBay,
+                briefingRu = "15:15. Жгут на бедре Ерлана уже наложен, он лежит в поле в 20 м от руин. Начинается артобстрел. Тащи его в руины рывками между разрывами, не поднимаясь. В укрытии — перепроверь жгут.",
+                briefingKz = "15:15. Ерланның санында жгут бар, ол қирандыдан 20 м жерде жатыр. Атқылау басталды. Жарылыстар арасында қирандыға сүйре, басыңды көтерме. Баспанада жгутты қайта тексер.",
+                incident = IncidentKind.Barrage, hit = HitKind.Explosion, spot = CasualtySpot.OpenFar,
                 wounds = { W("thigh_artery", WoundType.ArterialLimb, BodyRegion.ThighR, "Ragged") },
                 preTourniquet = new TourniquetSpec { limb = "legR", position = 0.15f, minutesAgo = 4f, halfTurns = 4, timeMarked = true },
                 complications = { new(ComplicationKind.Barrage, 0f), new(ComplicationKind.Barrage, 20f), new(ComplicationKind.Barrage, 45f), new(ComplicationKind.RadioLine, 3f, "barrage"), new(ComplicationKind.TqSlip, -1f) },
-                skillsRu = new[] { "Ниже бруствера, рывками между разрывами", "Волок за стропу", "Жгут сполз: перепроверить пульс на стопе", "Докрутить вороток" },
-                skillsKz = new[] { "Бруствердан төмен", "Сүйреу", "Жгут сырғыды: пульсті тексер", "Бұрағышты бұра" },
-                incidentDelay = 6f, evacMinutes = 30f, clockHour = 1, clockMinute = 15,
+                skillsRu = new[] { "Ниже укрытий, рывками между разрывами", "Волок за стропу", "Жгут сполз: перепроверить пульс на стопе", "Докрутить вороток" },
+                skillsKz = new[] { "Баспанадан төмен", "Сүйреу", "Жгут сырғыды: пульсті тексер", "Бұрағышты бұра" },
+                incidentDelay = 6f, evacMinutes = 30f, clockHour = 15, clockMinute = 15,
             },
             new ScenarioDefinition
             {
                 id = "S8", number = 8,
-                titleRu = "«До рассвета»", titleKz = "«Таң атқанша»",
+                titleRu = "«До темноты»", titleKz = "«Қараңғы түскенше»",
                 taglineRu = "Продлённая помощь: переоценка и конверсия жгута", taglineKz = "Ұзақ көмек: жгутты қайта бағалау және ауыстыру",
-                briefingRu = "22:25. Дорога под дронами — эвакуации до рассвета не будет. Жгут наложен в 22:10 на рану голени. Переоцени: если нет шока — тампон и давящая повязка, ослабь жгут до 2 часов.",
-                briefingKz = "22:25. Жол дрондардың астында — таңға дейін эвакуация жоқ. Жгут 22:10-да салынған. Шок болмаса — тампон, қысатын таңғыш, 2 сағатқа дейін жгутты босат.",
+                briefingRu = "16:25. Дорога под дронами — эвакуации до темноты не будет. Жгут наложен в 16:10 на рану голени. Переоцени: если нет шока — тампон и давящая повязка, ослабь жгут до 2 часов.",
+                briefingKz = "16:25. Жол дрондардың астында — қараңғы түскенше эвакуация жоқ. Жгут 16:10-да салынған. Шок болмаса — тампон, қысатын таңғыш, 2 сағатқа дейін жгутты босат.",
                 incident = IncidentKind.None, hit = HitKind.Explosion, spot = CasualtySpot.Dugout, startPhase = Phase.TacticalFieldCare,
                 wounds = { W("shin_venous", WoundType.Venous, BodyRegion.ShinR, "Ragged") },
                 preTourniquet = new TourniquetSpec { limb = "legR", position = 0.2f, minutesAgo = 15f, halfTurns = 4, timeMarked = true },
@@ -292,7 +294,7 @@ namespace FieldMedic.Medical
                 timeSkipMinutes = new[] { 30, 60, 120, 240 },
                 skillsRu = new[] { "Переоценка жгута ≤ 2 ч", "Условия конверсии: нет шока, нет ампутации, < 6 ч", "Тампон + давящая повязка, затем ослабить жгут", "Тепло, не давать спать, записи времени" },
                 skillsKz = new[] { "Жгутты 2 сағатқа дейін бағалау", "Ауыстыру шарттары", "Таңғыш, сосын жгутты босату", "Жылу, ұйықтатпау" },
-                incidentDelay = 2f, evacMinutes = 30f, clockHour = 22, clockMinute = 25,
+                incidentDelay = 2f, evacMinutes = 30f, clockHour = 16, clockMinute = 25,
             },
         };
     }
@@ -316,6 +318,12 @@ namespace FieldMedic.Medical
         public float autoEvacAfter = 480f;
         /// Evacuation wait passes this many times faster than real time (the player can still act).
         public float evacTimeScale = 20f;
+        /// TACEVAC (V2 battlefield): when the wait is over the helicopter lands and the run only ends once the
+        /// casualty is loaded (<see cref="MarkLoaded"/>). Off = the wait itself ends the run (V1, tests).
+        public bool waitForLoading;
+        public bool EvacArrived { get; private set; }
+        public bool Loaded { get; private set; }
+        public void MarkLoaded() => Loaded = true;
 
         public event Action<ScenarioState> StateChanged;
         readonly List<ComplicationSpec> _pending;
@@ -389,8 +397,17 @@ namespace FieldMedic.Medical
                     }
                     break;
                 case ScenarioState.Evacuation:
-                    EvacRemaining -= evacScaledDt >= 0f ? evacScaledDt : dt * evacTimeScale;
-                    if (EvacRemaining <= 0f) { EvacRemaining = 0f; End("evacuated"); return due; }
+                    if (!EvacArrived)
+                    {
+                        EvacRemaining -= evacScaledDt >= 0f ? evacScaledDt : dt * evacTimeScale;
+                        if (EvacRemaining <= 0f)
+                        {
+                            EvacRemaining = 0f;
+                            EvacArrived = true;
+                            if (!waitForLoading) { End("evacuated"); return due; }
+                        }
+                    }
+                    if (EvacArrived && Loaded) { End("evacuated"); return due; }
                     break;
             }
 

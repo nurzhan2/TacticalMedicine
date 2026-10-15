@@ -12,6 +12,23 @@ namespace FieldMedic.Medical
         public string consequence;   // what would have happened in reality
         public int points;
         public float time = -1f;
+        /// The TCCC step this mistake belongs to (same text as the training hint card), e.g. "Жгут «высоко и туго»".
+        public string step;
+        /// Where it happened (battlefield metres, x/z) for the debrief mini map; hasPos = false → unknown.
+        public bool hasPos;
+        public float x, z;
+        /// Marker number on the mini map and the timeline (1-based, in time order).
+        public int number;
+    }
+
+    /// One phase segment of the run (CUF / TFC / TACEVAC) on the debrief timeline strip (patient seconds).
+    [Serializable]
+    public sealed class DebriefPhase
+    {
+        public string id;
+        public float start, end;
+        public DebriefPhase() { }
+        public DebriefPhase(string id, float start, float end) { this.id = id; this.start = start; this.end = end; }
     }
 
     [Serializable]
@@ -41,6 +58,22 @@ namespace FieldMedic.Medical
         public string endReason;
         public readonly List<DebriefEntry> timeline = new();
         public readonly List<DebriefMistake> mistakes = new();
+        public readonly List<DebriefPhase> phases = new();
+        /// Timeline strip range (patient seconds): the injury → the end of the run.
+        public float startTime, endTime;
+        /// Casualty fall point / treatment spot on the mini map (x, z), when known.
+        public bool hasCasualtyPos;
+        public float casualtyX, casualtyZ;
+
+        /// <summary>Number the mistakes in time order (unknown times last) for the map and the timeline.</summary>
+        public void NumberMistakes()
+        {
+            int n = 1;
+            foreach (var m in mistakes.OrderBy(m => m.time < 0f ? float.MaxValue : m.time)) m.number = n++;
+        }
+
+        /// <summary>0..1 position of a time on the timeline strip.</summary>
+        public float TimelineX(float t) => endTime > startTime ? Math.Max(0f, Math.Min(1f, (t - startTime) / (endTime - startTime))) : 0f;
 
         /// Grade label for the big number on the board.
         public string Grade(bool kz) => !survived ? (kz ? "ҚАЗА" : "ГИБЕЛЬ")
@@ -100,13 +133,18 @@ namespace FieldMedic.Medical
             {
                 if (!CareProtocol.Penalty.TryGetValue(kv.Key, out var pen)) continue;
                 var first = protocol.log.FirstOrDefault(e => e.code == kv.Key);
+                var step = TrainingCatalog.StepForMistake(kv.Key);
                 r.mistakes.Add(new DebriefMistake
                 {
-                    code = kv.Key, text = pen.text, points = pen.points, time = first != null ? first.time : -1f,
+                    code = kv.Key, text = TrainingCatalog.Reason(kv.Key, kz) ?? pen.text, points = pen.points, time = first != null ? first.time : -1f,
                     consequence = CareProtocol.Consequence.TryGetValue(kv.Key, out var c) ? c : "",
+                    step = step?.Text(kz),
                 });
             }
             r.mistakes.Sort((a, b) => b.points.CompareTo(a.points));
+            r.startTime = Math.Max(0f, incidentAt);
+            r.endTime = Math.Max(r.startTime + 1f, p.secondsSinceStart);
+            r.NumberMistakes();
             return r;
         }
 

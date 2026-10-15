@@ -29,6 +29,8 @@ namespace FieldMedic.Environment
 
         /// <summary>Where Erlan falls (open ground, ~14 m from the doorway, nothing between him and the enemy).</summary>
         public static readonly Vector3 ErlanFallPoint = new Vector3(5.5f, 0f, 14f);
+        /// <summary>S7 (barrage): Erlan lies far out in the field, ~20 m from the doorway (long drag between impacts).</summary>
+        public static readonly Vector3 ErlanFarPoint = new Vector3(-0.5f, 0f, 19.5f);
         /// <summary>Treatment spot in cover inside house A (behind the north wall, out of the doorway's line).</summary>
         public static readonly Vector3 TreatmentSpot = new Vector3(-1.6f, 0f, 1.6f);
         public static readonly Vector3 PlayerStart = new Vector3(0.6f, 0f, 0.4f);
