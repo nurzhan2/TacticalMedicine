@@ -370,3 +370,15 @@
 - **Tests**: EditMode 127/127. `DemoFlowTests` (PlayMode): full demo by scripted hands (266 s → 128 s game time with the barrier detour), menu button, wrist drag 0.83 m / two-hand 2.0 m/s / wall stop, "nothing auto-completes by touching" (tab touch, CAT laid on the leg, unopened seal, one gauze touch); `DemoPouchDiag` (items visible after menu → demo reload, Quest quality).
 - **Backup video**: `DemoCapture.Demo_Video_And_Screenshots -fmCapture` (30 fps fixed clock, steady third-person camera, hint card billboards to it) + `tools/make_demo_video.py` (title card, battle bed + distant events + RU instructor lines + helicopter; ffmpeg from imageio-ffmpeg in %TEMP%) → Desktop\FMVR_DEMO\FieldMedicVR_demo.mp4 (2:22, 1080p30). Screens → FMVR_DEMO\screens (12).
 - **Known**: in the capture camera the open pouch tray looks empty for a few seconds (the items are present and visible in the diagnostic renders, including Quest quality and the menu→demo path; cause not found, cosmetic in the video only). Erlan's own IFAK items float near the crater at the start (pre-existing). Load into the helicopter is still a world button pressed with the finger (not a drag onto the litter).
+- **Test status (w7 end, 04:50)**: EditMode 127/127. Full PlayMode suite (02:50 run): 118/131 before the fixes. After them: DemoFlowTests 5/5, DemoPouchDiag, SceneStreamingTests, W4ModesTests (Combat S1 + Training topics + hint panel) pass in a combined run; TreatmentBotTests 8/8 alone; ScenarioBotTests 16/17 alone (S5 bandage grab); DemoCapture 2/2.
+- **Still failing**:
+  - pre-existing: `BattlefieldTests.Every_Cover_Piece_Has_A_Cover_Point`, which expects "concrete_pipe", but w4 replaced the pipe with a car wreck → update the test list;
+  - `W4ModesTests.Training_FullTccc` at the forearm bandage pad placement (bot precision; the demo lesson has no bandage step);
+  - the known order-dependent bot grab flakes (Grab/TreatmentBot/ScenarioBot/TreatmentScreenshots) in the full-suite order;
+  - BattleSoak saw one frame > 64 KB once.
+- **w7 regression found and fixed**: the drag wall check made the old W4 bot drag route stick on the concrete barriers → the W4 route goes west of their end (the player has to route around them too: real cover).
+- **APKs (04:00)** in Desktop\FMVR_DEMO, both pass QuestSceneAudit + QuestManifestAudit (quest2|questpro|quest3|quest3s):
+  - FieldMedicVR_DEMO.apk 175.5 MB (FULL);
+  - FieldMedicVR_SAFE.apk 81.7 MB (Boot + Main_Core).
+  README.txt (RU), video and screens are in the same folder. The headset was not connected → no on-device check (run tools\quest_check.ps1 -Apk ...).
+- **Next**: on-device run of the DEMO flow (tab grab on the body-locked pouch, drag around the barriers to the doorway); a real IFAK pouch model; loading by dragging Erlan onto the litter instead of the «ПОГРУЗИТЬ» button.

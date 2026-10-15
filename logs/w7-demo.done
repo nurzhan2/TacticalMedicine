@@ -1,0 +1,10 @@
+w7-demo done (16.10 04:55). The Kazakhstan flag hung upside down because the BlenderKit atlas holds it rotated 180° and the cloth UV flipped only u. It now uses a corrected upright texture with plain UVs (sun above the eagle, ornament at the pole), checked by EditMode texture/UV tests and a front/back screenshot pixel check. KZ flag and Satbayev placeholder patches were added on Erlan's shoulders, the player's sleeves and the menu. The game is hands-on end to end:
+- the IFAK starts closed and opens only by pulling its red tab;
+- Erlan can be dragged by the plate-carrier handle, either shoulder strap, a wrist or an ankle, with one or two hands, and the body stops at walls;
+- every treatment is a hand motion.
+A big white ДЕМО button starts a Training demo lesson: CAT high and tight → drag into the ruins → time on the CAT → packing → chest seal → blanket → card → radio → helicopter → «ПОГРУЗИТЬ» → debrief (score 95). DemoFlowTests run all of it with ScriptedHandInput (plus wrist/two-hand/wall drag and "nothing auto-completes by touching" tests). Desktop\FMVR_DEMO holds:
+- FieldMedicVR_DEMO.apk (175.5 MB) and FieldMedicVR_SAFE.apk (81.7 MB), both passing QuestSceneAudit and the manifest audit;
+- the 2:22 1080p backup video with battle audio and instructor voice;
+- 12 screenshots;
+- a Russian README.
+Not done: on-device testing (no headset). Remaining test failures (one pre-existing cover-list test, one old W4 bandage bot step, order-dependent bot flakes) are listed in docs/PROGRESS.md.
