@@ -54,4 +54,102 @@ In addition, `OVRManager.isInsightPassthroughEnabled` was `1` in the battlefield
 
 ## 3. Measured numbers
 
-(filled in below from `logs/w0b_timings.txt` and `logs/apk_report_*.txt`)
+### Start path (editor, PlayMode `SceneStreamingTests`, headset code path, Vulkan, logs/w0b_timings.txt)
+
+| Step | Time |
+|---|---|
+| Boot first frame (scene load + 1 frame) | **306 ms** |
+| Main_Core active (Boot → async load → activation) | **1.01 s**; async load 0.69 s |
+| Main_Ruins (648k tris) | load 0.16 s, activation 72 ms, longest frame **73 ms** |
+| Main_Wrecks | load 0.30 s, activation 221 ms across several frames, longest frame **70 ms** |
+| Main_Cover (sandbag line, wire, cover points) | load 0.12 s, activation 71 ms, longest frame **20 ms** |
+| Main_Scenery | load 0.21 s, activation 141 ms, longest frame **30 ms** |
+| Main_Battle | load 0.15 s, activation 110 ms, longest frame **18 ms** |
+| Longest frame after the core is visible | 297 ms (editor; Core's own first Start frame) |
+| Error logs during the whole start | **0** |
+
+Before: a single `Battlefield` scene of ~1.9 M triangles was integrated in one go. With the cover in one additive scene,
+its activation took 444 ms; that is why the cover is now split into three scenes. On the headset the same numbers
+are written to `fmvr_log.txt` (`[FMVR] additive …`, `frame stats`, `STALL`).
+
+### APK sizes (`logs/apk_report_*.txt`)
+
+| APK | Size | Scenes |
+|---|---|---|
+| V1 (14.10) | 97.7 MB | Boot + Main (trench) |
+| w3 (15.10) | 256 MB | Boot + Battlefield + Main |
+| first w0b build (overrides not applied yet) | 228.7 MB | Boot + Main_* |
+| **1_HELLO.apk** | **52.9 MB** | Hello |
+| **2_SAFE.apk** | **85.3 MB** | Boot + Main_Core |
+| **3_FULL.apk** | **175.6 MB** | Boot + Main_Core + 5 additive |
+| 3_FULL_DEV.apk | 202.5 MB | same, Development Build (built after FULL; same byte size as the earlier DEV — likely reused cached data, re-check with `BuildFullAndDev` if it matters) |
+
+**FULL is 175.6 MB, above the 150 MB budget and below the 200 MB hard limit.** Where it goes (packed, before APK
+compression):
+
+* textures 83.4 MB;
+* meshes 78.9 MB;
+* audio 10.1 MB;
+* shaders 8.0 MB;
+* native code: `libil2cpp.so` 78 MB, `libunity.so` 24 MB, `libOVRPlugin.so` 7 MB (uncompressed in the zip listing).
+
+**What is left and why it was not cut tonight:**
+
+* **Static-batching output ≈ 45 MB of meshes** ("Combined Mesh (root: scene)", 7.1/5.9/5.6/5.2/4.6/3.3/2.5 MB…).
+  Turning static batching off would save roughly 25 MB in the APK. It would also push draw calls further over the
+  budget (w3 already measured 184–434). Better: merge the far field into fewer unique meshes and use LODs instead of
+  copies (w6 performance work).
+* **Meta core package textures ≈ 12 MB:** ImmersiveDebugger panels 7.4 MB, hand-tracking UV map 2.4 MB and two bar
+  backgrounds of 1 MB each, all in `Resources` folders inside the immutable package. URP FilmGrain/SMAA add 2.8 MB.
+* Erlan 2×2.4 MB (2048, the casualty is seen at 40 cm), the BauyrSans SDF font atlas 2 MB (RU+KZ glyphs), and the HDRI
+  sky 1.2 MB.
+* Licensed vehicles 12.5 MB and ruins 9.4 MB (1024 albedo, normals 512) — these are what the player looks at.
+
+### Top assets of FULL (packed)
+
+```
+7.05 MB  Built-in Mesh: Combined Mesh (root: scene)        (static batching)
+5.92 MB  Built-in Mesh: Combined Mesh (root: scene) 2
+5.60 MB  Built-in Mesh: Combined Mesh (root: scene) 4
+5.41 MB  URP Lit.shader
+5.19 MB  Combined Mesh (root: scene) 6
+4.60 MB  Combined Mesh (root: scene) 3
+3.25 MB  Combined Mesh (root: scene) 5
+3.17 MB  _Licensed/_Combined/Combined_Debris_1.asset
+3.01 MB  _Licensed/_Combined/Combined_Sandbags_0.asset
+2.58 MB  BlenderKit/ruins/bombed_apartment.fbx
+2.45 MB  Art/Battlefield/Meshes/Combined_Concertina_0.asset
+2.38 MB  meta.xr.sdk.core HandTracking_uvmap_2048.png
+2.38 MB  Erlan_Body1_Albedo / 2.38 MB Erlan_Body2_Albedo
+2.30 MB  Erlan.fbx
+2.07 MB  m1a2_tank.fbx, 2.04 MB BauyrSans SDF, 1.91 MB pinzgauer_truck.fbx, 1.84 MB arx_apc.fbx
+```
+
+The full list is in `logs/apk_report_full.txt`; per-folder texture totals are in the same file.
+
+### Import overrides found on the way
+* `LicensedModelSetup.OnPreprocessTexture` forced every licensed map back to 1024 / ASTC 5×5 on every import, which
+  silently undid any override. It now asks `AndroidAssetOptimizer.MaxSizeFor/FormatFor` (one rule set).
+* The first audit put the editor-only `GUI/Text Shader` into Always Included, and every build failed
+  ("HideFlags.DontSave … included in the build"). The audit now removes DontSave shaders and only requires
+  TMP + FieldMedic runtime shaders.
+* Every build logs one `NullReferenceException` in `OVRGradleGeneration.SendXRPluginSettingsTelemetry` (Meta SDK
+  post-build telemetry). It is harmless; the APK and the manifest audit are OK.
+
+## 4. On the headset (next step)
+
+`powershell -ExecutionPolicy Bypass -File tools\quest_bisect.ps1`. It installs 1_HELLO → 2_SAFE → 3_FULL from
+`Desktop\FMVR_TEST`, launches each one, takes a screenshot, pulls `fmvr_log.txt` + logcat and prints PASS/FAIL plus
+the first failing APK with its key log lines. Reading the result:
+
+* HELLO black → XR/manifest/device problem (not content).
+* HELLO OK, SAFE black → Boot/Main_Core.
+* SAFE OK, FULL black → streaming/memory.
+
+If FULL crashes once, its next launch starts in SAFE mode by itself (also without the shader warm-up). In that case,
+look for `XR status`, `first frame`, `STALL` and `ERROR` lines in `fmvr_log_prev.txt`.
+
+## 5. Not verifiable tonight
+* The frame on the headset, on-device timings, and whether `WarmUpProgressively` is safe on the Quest's Adreno
+  driver. It crashed this laptop's Intel Vulkan driver, so it is skipped in the editor and in SAFE mode.
+* PSO pre-creation needs a `GraphicsStateCollection` recorded on the device (Unity 6), which needs the headset.
