@@ -117,9 +117,14 @@ def main():
         if only and pid not in only:
             continue
         print("MODEL", pid); fetch_model(pid, cat, faces); rows.append(credit(pid, "model (%s)" % cat))
-    with open(os.path.join(OUT, "CREDITS.md"), "w", encoding="utf-8") as f:
+    # merge into CREDITS.md: a partial run (ids on the command line) must not drop the rows fetched earlier
+    path = os.path.join(OUT, "CREDITS.md")
+    old = [l.rstrip("\n") for l in open(path, encoding="utf-8")] if os.path.exists(path) else []
+    new_assets = {r.split("|")[2] for r in rows}
+    keep = [l for l in old if l.startswith("| ") and not l.startswith("| type") and l.split("|")[2] not in new_assets]
+    with open(path, "w", encoding="utf-8") as f:
         f.write("# Poly Haven assets (CC0 1.0)\n\n| type | asset | authors | url | license |\n|---|---|---|---|---|\n")
-        f.write("\n".join(rows) + "\n")
+        f.write("\n".join(keep + rows) + "\n")
     print("done", len(rows))
 
 

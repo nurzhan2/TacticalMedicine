@@ -53,3 +53,20 @@
    must exist in MESHY_PROMPTS_V2.md.
 4. A grey floating box building on the horizon (center) - remove or ground it into the haze properly.
 5. Overall look target: grey overcast war zone, burnt and muddy, craters, debris, scorched ground near wrecks.
+
+
+## 15.10 07:00 - supervisor review of w3 screenshots (fix in w4 FIRST, re-verify in w6)
+Good: real tanks firing with muzzle flash, burlap sandbags (no print), overcast sky, wire/hedgehog lines.
+Still wrong:
+1. SPECKLE NOISE IS NOT FIXED and is GLOBAL: white/coloured single-pixel dots over the ground AND on sandbags and
+   tanks (v2_w3_assault, v2_w3_tank, v2_w3_overview). Because it is on every material it is not the ground shader -
+   find the global cause (LOD cross-fade dithering, alpha-to-coverage/MSAA mismatch in the capture, a post-process
+   dither/film grain, NaN/specular fireflies, HDR off precision, the screenshot path rendering at a different MSAA).
+   Verify both in an editor capture AND by reasoning about what the Quest build uses. Zero speckles is the bar.
+2. Ruins are still the small procedural brick boxes; the glass/white frame building (left horizon) and the grey box
+   building (right horizon) look fake. Use the real BlenderKit ruins at full building scale or remove these.
+3. Smoke columns are chains of separate dark round puffs ("beads on a string"). Use a soft smoke flipbook/particle
+   sheet with size-over-life growth, rotation, alpha fade and overlap so it reads as one continuous column.
+4. No infantry visible in v2_w3_assault / overview - the near layer (8-12 soldiers running/shooting with tracers)
+   must be clearly visible from the player position in at least one screenshot; add muzzle flashes/tracers and dust hits.
+5. The concrete pipe in the middle of the position looks odd - replace with a destroyed vehicle or concrete slabs.

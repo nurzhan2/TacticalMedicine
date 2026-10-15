@@ -63,7 +63,13 @@ namespace FieldMedic.Tests
                 allocSum += a;
                 if (a > allocMax) allocMax = a;
                 if (a > 16 * 1024) bigFrames++;
-                if (a > 64 * 1024) spikes++;
+                if (a > 64 * 1024)
+                {
+                    spikes++;
+                    string spike = $"spike t={t:F1}s alloc={a} B lastEvent={d.LastEvent} events={d.EventsFired} jet={AirLayer.Instance.JetBusy} heli={AirLayer.Instance.HeliBusy} proj={BattleFx.Instance.ActiveProjectiles} respawns={NearInfantry.Instance.Respawns} gc0={System.GC.CollectionCount(0) - gc0}";
+                    log.AppendLine(spike);
+                    Debug.Log("[FMVR] soak " + spike);
+                }
                 if (dt > dtMax) dtMax = dt;
                 dts.Add(dt);
                 if (t >= nextReport)

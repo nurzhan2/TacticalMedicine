@@ -28,7 +28,7 @@ Render counters via `ProfilerRecorder` (`BattlefieldScreenshots.Profile_Render_S
 
 | Spot | worst heading | triangles | draw calls | batches | SetPass | shadow casters |
 |---|---|---|---|---|---|---|
-| player start (house A) | 315° | 495 142 | 197 | 179 | 37 | 69 |
-| behind the sandbags (kneeling) | 180° | 456 060 | 203 | 197 | 44 | 31 |
-| Erlan in the open | 270° | 454 908 | 161 | 144 | 34 | 45 |
-| LZ | 0° | 498 677 | 224 | 201 | 46 | 57 |
+| player start (house A) | 315° | 599 611 | 310 | 282 | 52 | 76 |
+| behind the sandbags (kneeling) | 180° | 514 969 | 179 | 174 | 47 | 31 |
+| Erlan in the open | 270° | 548 716 | 241 | 221 | 50 | 49 |
+| LZ | 0° | 645 095 | 407 | 386 | 71 | 62 |

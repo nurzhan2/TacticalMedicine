@@ -31,6 +31,8 @@ namespace FieldMedic.Casualty.Blood
 
         public void Feed(Vector3 source, float ml, float dt)
         {
+            // pools live at the scene root: a scene change can destroy them under us
+            for (int i = Pools.Count - 1; i >= 0; i--) if (Pools[i].transform == null) Pools.RemoveAt(i);
             if (ml <= 0f) { Animate(dt); return; }
             Vector3 ground = FindGround(source);
             Pool target = null;
