@@ -20,3 +20,4 @@
 | model (rocks) | Sand Rocks Small 01 (sand_rocks_small_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/sand_rocks_small_01 | CC0 1.0 |
 | model (vegetation) | Grass Medium 01 (grass_medium_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/grass_medium_01 | CC0 1.0 |
 | model (props) | Old Tyre (old_tyre) | MP | https://polyhaven.com/a/old_tyre | CC0 1.0 |
+| texture 1k | Hessian 230 (hessian_230) | colormass, Rico Cilliers | https://polyhaven.com/a/hessian_230 | CC0 1.0 |

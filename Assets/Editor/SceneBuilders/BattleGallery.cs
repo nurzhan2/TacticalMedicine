@@ -55,6 +55,42 @@ namespace FieldMedic.EditorTools.SceneBuilders
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
+        /// <summary>Experiment: remove BatchingStatic from every object of the saved Battlefield scene.</summary>
+        public static void StripBatching()
+        {
+            var scene = EditorSceneManager.OpenScene(BattlefieldLayout.ScenePath, OpenSceneMode.Single);
+            int n = 0;
+            foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var f = GameObjectUtility.GetStaticEditorFlags(t.gameObject);
+                if ((f & StaticEditorFlags.BatchingStatic) == 0) continue;
+                GameObjectUtility.SetStaticEditorFlags(t.gameObject, f & ~StaticEditorFlags.BatchingStatic);
+                n++;
+            }
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[FMVR] stripped BatchingStatic from " + n + " objects");
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
+
+        public static void GroundDiag2()
+        {
+            EditorSceneManager.OpenScene(BattlefieldLayout.ScenePath, OpenSceneMode.Single);
+            ScreenshotTool.JpgQuality = 90; ScreenshotTool.MedianOf = 1;
+            QualitySettings.SetQualityLevel(0, true);
+            var rp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+            rp.supportsHDR = true;
+            Vector3 from = new Vector3(-24f, 16f, -22f), look = new Vector3(4f, 0f, 48f);
+            var ground = Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None).Where(r => r.sharedMaterial != null && r.sharedMaterial.name == "Bf_Ground").ToArray();
+            var gm = ground[0].sharedMaterial;
+            Shot("w3_d2_base", from, look, 62f);
+            var keep = new[] { "_GrassMap", "_DirtMap", "_BurnMap" }.Select(n => gm.GetTexture(n)).ToArray();
+            gm.SetTexture("_GrassMap", Texture2D.grayTexture); Shot("w3_d2_nograsstex", from, look, 62f); gm.SetTexture("_GrassMap", keep[0]);
+            gm.SetTexture("_GrassNormal", null); gm.SetTexture("_DirtNormal", null); Shot("w3_d2_nonormals", from, look, 62f);
+            var sun = RenderSettings.sun; var sh = sun.shadows; sun.shadows = LightShadows.None; Shot("w3_d2_noshadow", from, look, 62f); sun.shadows = sh;
+            rp.supportsHDR = false;
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
+
         public static void GroundDiag()
         {
             EditorSceneManager.OpenScene(BattlefieldLayout.ScenePath, OpenSceneMode.Single);

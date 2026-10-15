@@ -62,6 +62,9 @@ namespace FieldMedic.Environment
             var dsh = _debris.shape; dsh.shapeType = ParticleSystemShapeType.Circle; dsh.radius = 1.1f;
             dsh.rotation = new Vector3(90f, 0f, 0f);
             BuildRain();
+            // pre-warm the tracer pool (the w3 battle fires hundreds of tracers; growing it mid-battle allocates)
+            for (int i = 0; i < 24; i++) _tracerState[FreeTracer()] = new Vector4(0f, 0f, 0f, 1f);
+            for (int i = 0; i < _tracerState.Count; i++) _tracerState[i] = Vector4.zero;
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }

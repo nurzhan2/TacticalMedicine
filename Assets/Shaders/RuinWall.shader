@@ -100,14 +100,31 @@ Shader "FieldMedic/RuinWall"
                 return o;
             }
 
-            half vnoise(float2 x)
+            // sine-free hash (D. Hoskins): frac(sin(big)*43758) degenerates into per-pixel garbage on GPUs with
+
+            // reduced sin() precision for large arguments (the 'pixel noise' on the ground, supervisor 15.10 #1)
+
+            float Hash21(float2 p)
+
+            {
+
+                float3 p3 = frac(float3(p.xyx) * 0.1031);
+
+                p3 += dot(p3, p3.yzx + 33.33);
+
+                return frac((p3.x + p3.y) * p3.z);
+
+            }
+
+
+            float vnoise(float2 x)
             {
                 float2 i = floor(x); float2 f = frac(x);
                 f = f * f * (3.0 - 2.0 * f);
-                float a = frac(sin(dot(i, float2(127.1, 311.7))) * 43758.55);
-                float b = frac(sin(dot(i + float2(1, 0), float2(127.1, 311.7))) * 43758.55);
-                float c = frac(sin(dot(i + float2(0, 1), float2(127.1, 311.7))) * 43758.55);
-                float d = frac(sin(dot(i + float2(1, 1), float2(127.1, 311.7))) * 43758.55);
+                float a = Hash21(i);
+                float b = Hash21(i + float2(1, 0));
+                float c = Hash21(i + float2(0, 1));
+                float d = Hash21(i + float2(1, 1));
                 return lerp(lerp(a, b, f.x), lerp(c, d, f.x), f.y);
             }
 

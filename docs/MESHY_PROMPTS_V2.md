@@ -57,7 +57,7 @@ For soldiers: enable Meshy auto-rigging (humanoid), A-pose or T-pose, export FBX
 
 | File name (glb/fbx) | Item | Stand-in now |
 |---|---|---|
-| env_sandbag_wall | sandbag wall section | burlap_sacks |
+| env_sandbag_wall (= military_sandbag_wall, supervisor 15.10 #3) | sandbag wall section | burlap_sacks (w3: retextured with plain CC0 hessian, no print) |
 | env_sandbag_pile | loose sandbag pile | burlap_sacks |
 | env_shell_crater | artillery shell crater | none (w2: terrain dent + decal) |
 | env_burnt_car | burnt-out civilian car | car_wreck_beetle |

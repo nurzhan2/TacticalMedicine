@@ -26,7 +26,8 @@ namespace FieldMedic.Battle
         public Mesh scorchMesh;          // unit quad on XZ
         public Transform head;
 
-        ParticleSystem _muzzle, _dirtPuff, _hardPuff, _sparks, _chunks, _ring, _column, _trail, _glow;
+        ParticleSystem _muzzle, _dirtPuff, _hardPuff, _sparks, _chunks, _ring, _column, _trail, _glow, _tracer;
+        public int TracersFired { get; private set; }
         ParticleSystem.EmitParams _ep;
 
         // projectiles
@@ -67,6 +68,14 @@ namespace FieldMedic.Battle
             _column = Make("BombColumn", smokeMaterial, 9f, 15f, 5f, 11f, 3.5f, -0.05f, 160);
             _trail = Make("SmokeTrail", smokeMaterial, 1.5f, 3.2f, 0.35f, 0.9f, 0.3f, -0.02f, 900);
             _glow = Make("ProjectileGlow", glowMaterial, 0.06f, 0.09f, 0.35f, 0.6f, 0f, 0f, 200);
+            // tracers: stretched additive particles (one draw call for every tracer on the battlefield)
+            _tracer = Make("Tracers", glowMaterial, 0.5f, 1.5f, 0.07f, 0.09f, 0f, 0f, 400);
+            var tr = _tracer.GetComponent<ParticleSystemRenderer>();
+            tr.renderMode = ParticleSystemRenderMode.Stretch;
+            tr.velocityScale = 0.028f;
+            tr.lengthScale = 1f;
+            var tcol = _tracer.colorOverLifetime; tcol.enabled = false;
+            var tsz0 = _tracer.sizeOverLifetime; tsz0.enabled = false;
             var sz = _ring.sizeOverLifetime; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.5f, 1f, 1.8f));
             var csz = _column.sizeOverLifetime; csz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.4f, 1f, 1.6f));
             var tsz = _trail.sizeOverLifetime; tsz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 2.6f));
@@ -108,13 +117,30 @@ namespace FieldMedic.Battle
             return ps;
         }
 
-        void Emit(ParticleSystem ps, Vector3 at, int count, Color color, Vector3 velocity = default, float size = -1f)
+        void Emit(ParticleSystem ps, Vector3 at, int count, Color color, Vector3 velocity = default, float size = -1f, float life = -1f)
         {
             if (ps == null || count <= 0) return;
             _ep = new ParticleSystem.EmitParams { applyShapeToPosition = true, position = at, startColor = color };
             if (velocity != Vector3.zero) _ep.velocity = velocity;
             if (size > 0f) _ep.startSize = size;
+            if (life > 0f) _ep.startLifetime = life;
             ps.Emit(_ep, count);
+        }
+
+        /// <summary>A glowing tracer round flying from <paramref name="from"/> along <paramref name="dir"/> for
+        /// <paramref name="distance"/> metres (visual speed 320 m/s, ~9 m streak).</summary>
+        public void Tracer(Vector3 from, Vector3 dir, float distance = 150f)
+        {
+            if (_tracer == null) return;
+            TracersFired++;
+            const float speed = 320f;
+            _ep = new ParticleSystem.EmitParams
+            {
+                applyShapeToPosition = false, position = from, velocity = dir.normalized * speed,
+                startLifetime = Mathf.Clamp(distance / speed, 0.05f, 1.6f), startSize = 0.08f,
+                startColor = new Color(1f, 0.5f, 0.2f, 1f),
+            };
+            _tracer.Emit(_ep, 1);
         }
 
         // ------------------------------------------------------------------ guns
@@ -248,14 +274,14 @@ namespace FieldMedic.Battle
                 {
                     case ProjectileKind.Rocket:
                         Emit(_trail, p.pos, 2, new Color(0.78f, 0.76f, 0.72f, 0.55f), -p.vel * 0.02f);
-                        Emit(_glow, p.pos, 1, new Color(1f, 0.7f, 0.35f, 1f), default, 0.5f);
+                        Emit(_glow, p.pos, 1, new Color(1f, 0.7f, 0.35f, 1f), default, 0.5f, 0.08f);
                         break;
                     case ProjectileKind.HeatFlare:
                         Emit(_trail, p.pos, 1, new Color(0.85f, 0.85f, 0.85f, 0.4f), Vector3.zero, 0.7f);
-                        Emit(_glow, p.pos, 1, new Color(1f, 0.92f, 0.7f, 1f), default, 1.3f);
+                        Emit(_glow, p.pos, 1, new Color(1f, 0.92f, 0.7f, 1f), default, 1.3f, 0.1f);
                         break;
                     case ProjectileKind.TankShell:
-                        Emit(_glow, p.pos, 1, new Color(1f, 0.6f, 0.3f, 0.8f), default, 0.25f);
+                        if (Time.frameCount % 2 == 0) Emit(_glow, p.pos, 1, new Color(1f, 0.6f, 0.3f, 0.8f), default, 0.22f, 0.03f);
                         break;
                 }
                 float ground = BattlefieldLayout.GroundHeight(p.pos.x, p.pos.z);

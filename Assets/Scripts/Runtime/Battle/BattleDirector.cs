@@ -310,7 +310,10 @@ namespace FieldMedic.Battle
                     case Job.Burst:
                     {
                         Vector3 dir = (j.b - j.a).normalized;
-                        CombatVfx.Instance?.TracerBurst(j.a + dir * 2f, dir, Mathf.Max(3, j.n / 3));
+                        var bfx = BattleFx.Instance;
+                        float len = Vector3.Distance(j.a, j.b) + 40f;
+                        if (bfx != null) for (int k = 0, n = Mathf.Max(3, j.n / 3); k < n; k++)
+                            bfx.Tracer(j.a + dir * (2f + k * 2.5f), (dir + Random.insideUnitSphere * 0.012f).normalized, len);
                         BattleAudio.Instance?.Gunfire(j.a, true, 1f);
                         // a few rounds land around the aim point (impacts visible from our position)
                         int hits = Mathf.Min(6, j.n / 2);

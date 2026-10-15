@@ -142,7 +142,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
         [MenuItem("FieldMedic/Scenes/Build Battlefield (V2)")]
         public static void Build()
         {
-            PrefabPaths.Clear(); OverrideCache.Clear(); SolidCover.Clear(); Missing.Clear(); Footprints.Clear();
+            PrefabPaths.Clear(); OverrideCache.Clear(); _sandbag = null; SolidCover.Clear(); Missing.Clear(); Footprints.Clear();
             Directory.CreateDirectory(MeshDir);
             Directory.CreateDirectory(MatDir);
             Directory.CreateDirectory(OverrideDir);
@@ -259,7 +259,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             m.SetTexture("_DirtMap", Tex("dry_ground_01/dry_ground_01_diff.jpg"));
             m.SetTexture("_DirtNormal", Tex("dry_ground_01/dry_ground_01_nor_gl.jpg"));
             m.SetTexture("_BurnMap", Tex("burned_ground_01/burned_ground_01_diff.jpg"));
-            m.SetColor("_GrassTint", new Color(0.84f, 0.83f, 0.7f));    // autumn steppe: khaki-olive, not desert sand
+            m.SetColor("_GrassTint", new Color(0.72f, 0.7f, 0.58f));    // autumn steppe: muted khaki-olive, war-grey, not desert sand
             m.SetColor("_DirtTint", new Color(0.76f, 0.7f, 0.62f));
             m.SetColor("_BurnTint", new Color(0.8f, 0.78f, 0.76f));
             m.SetVector("_Tile", new Vector4(3.2f, 2.6f, 3f, 60f));
@@ -559,6 +559,10 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Retint(Prop(Place("concrete_road_barrier", g, new Vector3(-8.6f, 0f, 7.8f), -20f)), "dirty", new Color(0.72f, 0.69f, 0.63f), 0.7f);
         }
 
+        static Material _sandbag;
+        static Material SandbagMaterial() => _sandbag != null ? _sandbag : (_sandbag = BattlefieldFx.Lit(MatDir, "Bf_Sandbag",
+            $"{PH}/hessian_230/hessian_230_diff.jpg", $"{PH}/hessian_230/hessian_230_nor_gl.jpg", new Color(0.66f, 0.62f, 0.47f), 0.12f, 0f, new Vector2(2.2f, 2.2f)));
+
         static void Sandbagged(Transform g, string barrier, Vector3 pos, float yaw, float length, float height, bool alongZ = false)
         {
             var b = Place(barrier, g, pos, yaw);
@@ -580,6 +584,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
                     var s = Place("burlap_sacks", b.transform, new Vector3(p.x, 0f, p.z), yaw + (alongZ ? 90f : 0f) + (i % 2 == 0 ? 2f : -3f) + course * 4f,
                         1f, new Vector3(0f, 0f, (i % 3 - 1) * 2f));
                     if (s == null) continue;
+                    // military sandbags: plain olive-khaki hessian, no "50KG" grain-sack print (supervisor 15.10 #3)
+                    foreach (var r in s.GetComponentsInChildren<Renderer>(true)) r.sharedMaterials = r.sharedMaterials.Select(_ => SandbagMaterial()).ToArray();
                     s.transform.position = new Vector3(p.x, y0 + course * 0.33f, p.z);
                     Cover(s, false);
                 }

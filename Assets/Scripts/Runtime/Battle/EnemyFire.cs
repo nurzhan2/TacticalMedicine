@@ -215,7 +215,7 @@ namespace FieldMedic.Battle
                     fx?.Impact(hit.point, hit.normal, hard);
                     if (ba != null) ba.Play(BattleAudio.Pick(hard ? ba.impactHard : ba.impactDirt), hit.point, 0.8f, 2f, 50f, UnityEngine.Random.Range(0.9f, 1.1f));
                 }
-                if (NearMisses % 3 == 0) CombatVfx.Instance?.TracerBurst(_lastShooter + dir * 3f, (pass - _lastShooter).normalized, 1);
+                if (NearMisses % 3 == 0) fx?.Tracer(_lastShooter + dir * 3f, (pass - _lastShooter).normalized, Vector3.Distance(_lastShooter, pass) + 30f);
             }
             else
             {

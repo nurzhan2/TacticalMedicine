@@ -34,7 +34,7 @@ Shader "FieldMedic/ImpostorTwinkle"
             CBUFFER_END
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; float4 data : TEXCOORD1; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings { float4 positionCS : SV_POSITION; float2 uv : TEXCOORD0; half k : TEXCOORD1; float fog : TEXCOORD2; UNITY_VERTEX_OUTPUT_STEREO };
-            float hash(float n) { return frac(sin(n) * 43758.5453); }
+            float hash(float n) { n = frac(n * 0.1031); n *= n + 33.33; n *= n + n; return frac(n); }
             Varyings vert(Attributes v)
             {
                 Varyings o;

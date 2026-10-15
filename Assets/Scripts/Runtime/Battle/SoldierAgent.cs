@@ -19,6 +19,7 @@ namespace FieldMedic.Battle
         internal float stateUntil;        // time the current state ends
         internal float nextBurst;         // time of the next burst
         internal int roundsLeft;          // rounds left in the current burst
+        public int BurstRoundsLeft => roundsLeft;
         internal float nextRound;
         internal int spotIndex = -1;
         internal float speed = 3.6f;

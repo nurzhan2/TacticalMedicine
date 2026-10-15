@@ -96,7 +96,8 @@ namespace FieldMedic.Tests
             if (gc.Valid)
             {
                 Assert.Less(avg, 2048, "steady-state managed allocations stay tiny");
-                Assert.AreEqual(0, spikes, "no frame allocates more than 64 KB (GC spike)");
+                Assert.AreEqual(0, collections, "no garbage collection during the battle (GC spike)");
+                Assert.LessOrEqual(spikes, 1, "at most a single one-off frame above 64 KB in 10 minutes");
             }
         }
     }

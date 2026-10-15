@@ -35,6 +35,21 @@ namespace FieldMedic.EditorTools.SceneBuilders
             return s;
         }
 
+        /// <summary>Batch: re-import the ground textures (import rules changed in w3), rebuild Battlefield + Boot.</summary>
+        public static void BuildBatchW3()
+        {
+            bool ok = false;
+            try
+            {
+                foreach (var p in GroundTextureFix.Ground) AssetDatabase.ImportAsset(p, ImportAssetOptions.ForceUpdate);
+                BattlefieldBuilder.Build();
+                BootSceneBuilder.Build();
+                ok = true;
+            }
+            catch (System.Exception e) { Debug.LogError("[FMVR] w3 build failed: " + e); }
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+        }
+
         static Vector3 G(float x, float z, float up = 0f) => new Vector3(x, BattlefieldLayout.GroundHeight(x, z) + up, z);
 
         public static void Build(GameObject rig, Transform eye)

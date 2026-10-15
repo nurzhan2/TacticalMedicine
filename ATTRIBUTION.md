@@ -135,6 +135,34 @@ Policy: only CC0 / CC-BY content is downloaded. Exceptions that were already in 
 | blood_squirt/537919_water_squirt_single_long.mp3 | Water Squirt Single Long.mp3 | belanhud | https://freesound.org/s/537919/ | CC0 1.0 |
 | rain_trench/96729_light_rain.mp3 | Light rain.wav | Ryding | https://freesound.org/s/96729/ | CC0 1.0 |
 | rain_trench/691544_rain_light_traffic_07.mp3 | rain_light_traffic_07.wav | ania635 | https://freesound.org/s/691544/ | CC0 1.0 |
+| jet_flyby/189446_jet_plane_flyby.mp3 | Jet Plane Flyby.flac | qubodup | https://freesound.org/s/189446/ | CC0 1.0 |
+| jet_flyby/431206_airplane_flyby.mp3 | Airplane Flyby | oscaraudiogeek | https://freesound.org/s/431206/ | CC0 1.0 |
+| heli_flyby/241190_helicopter_flyby_pass.mp3 | Helicopter Flyby / Pass | mil0001 | https://freesound.org/s/241190/ | CC0 1.0 |
+| heli_flyby/534855_helicopter_flyby.mp3 | Helicopter Flyby | m_cel | https://freesound.org/s/534855/ | CC0 1.0 |
+| heli_flyby/467225_helicopter_flyby.mp3 | Helicopter flyby | derjuli | https://freesound.org/s/467225/ | CC0 1.0 |
+| tank_cannon/127845_tank_fire_mixed.mp3 | Tank fire Mixed.wav | GaryQ | https://freesound.org/s/127845/ | CC0 1.0 |
+| tank_cannon/448002_cannon.mp3 | cannon.mp3 | Kneeling | https://freesound.org/s/448002/ | CC0 1.0 |
+| mg_burst/165394_heavy_machine_gun.mp3 | Heavy Machine Gun | ShawnyBoy | https://freesound.org/s/165394/ | CC0 1.0 |
+| mg_burst/39071_heavy_burst.mp3 | heavy.burst.wav | alienbomb | https://freesound.org/s/39071/ | CC0 1.0 |
+| mg_burst/342184_biggun.mp3 | BigGun.wav | Willary1 | https://freesound.org/s/342184/ | CC0 1.0 |
+| mg_burst/165393_machine_gun_shots_fast.mp3 | Machine Gun Shots Fast | ShawnyBoy | https://freesound.org/s/165393/ | CC0 1.0 |
+| bullet_crack/386854_bullet_crack.mp3 | Bullet Crack.wav | morganpurkis | https://freesound.org/s/386854/ | CC0 1.0 |
+| bullet_crack/123222_bullet_whiz.mp3 | Bullet_whiz.wav | CGEffex | https://freesound.org/s/123222/ | CC BY 4.0 |
+| impact_concrete/30932_bullet_ricochet.mp3 | bullet ricochet.wav | aust_paul | https://freesound.org/s/30932/ | CC0 1.0 |
+| impact_concrete/148840_ricochet.mp3 | ricochet.mp3 | cedarstudios | https://freesound.org/s/148840/ | CC0 1.0 |
+| impact_concrete/392975_ricochet_2.mp3 | Ricochet 2.wav | morganpurkis | https://freesound.org/s/392975/ | CC0 1.0 |
+| impact_concrete/523403_22_caliber_with_ricochet.mp3 | 22 caliber with ricochet.wav | C-V | https://freesound.org/s/523403/ | CC0 1.0 |
+| rocket_launch/840511_rocket_launch.mp3 | Rocket Launch | qubodup | https://freesound.org/s/840511/ | CC0 1.0 |
+| rocket_launch/854476_m142_himars_rocket_launch_8.mp3 | M142 HIMARS Rocket Launch 8 | qubodup | https://freesound.org/s/854476/ | CC0 1.0 |
+| smoke_grenade/551429_gas_grenade.mp3 | Gas Grenade.wav | Themiwa100 | https://freesound.org/s/551429/ | CC0 1.0 |
+| pin_pull/210213_pin_pullout.mp3 | Pin Pullout.wav | Augdog | https://freesound.org/s/210213/ | CC BY 4.0 |
+| artillery_rumble/486027_r12_31_artillery_guns_firing.mp3 | R12-31-Artillery Guns Firing.wav | craigsmith | https://freesound.org/s/486027/ | CC0 1.0 |
+| artillery_rumble/675609_s16_31_bombardment_with_distant.mp3 | S16-31 Bombardment with distant explosio | craigsmith | https://freesound.org/s/675609/ | CC0 1.0 |
+| tank_engine/187676_driving_tank_engine.mp3 | Driving Tank Engine.flac | qubodup | https://freesound.org/s/187676/ | CC0 1.0 |
+| battle_bed/385895_battlefield_ambience_loop.mp3 | BattleField Ambience (Loop) | banan_ | https://freesound.org/s/385895/ | CC0 1.0 |
+| bomb_large/259300_huge_explosion.mp3 | Huge Explosion | unfa | https://freesound.org/s/259300/ | CC0 1.0 |
+| bomb_large/149966_muffled_distant_explosion.mp3 | Muffled Distant Explosion | NenadSimic | https://freesound.org/s/149966/ | CC0 1.0 |
+| bomb_large/366091_huge_explosion_part_1_shockwave.mp3 | Huge Explosion Part 1 - Shockwave | bevibeldesign | https://freesound.org/s/366091/ | CC0 1.0 |
 <!-- SFX-END -->
 
 <!-- V2-ASSETS-BEGIN -->
@@ -166,6 +194,7 @@ BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where not
 | props/military_crate | Wooden Military Crate | Poly Haven | https://www.blenderkit.com/get-blenderkit/ffae7880-9e4f-42e0-a61e-d0a5e1a1c766/ | CC0 1.0 |
 | props/military_tent | Military Tent (2-Man) | Harrison Costa | https://www.blenderkit.com/get-blenderkit/e8ae0437-a080-4601-b734-75032d209008/ | BlenderKit Royalty Free |
 | props/radio_r311 | Military Radio R311 Omega | Demycs | https://www.blenderkit.com/get-blenderkit/06155894-2673-4a98-b56f-e648793f7924/ | BlenderKit Royalty Free |
+| props/smoke_grenade | Flashbang | Blaž Mraz | https://www.blenderkit.com/get-blenderkit/718de840-4cab-4663-9bc7-99e778b77039/ | BlenderKit Royalty Free |
 | props/stretcher | Ambulance strechers | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/0e53d37b-e72e-46d7-8670-121925c19563/ | BlenderKit Royalty Free |
 | ruins/brick_block_wall | Brick and Concrete Block Wall | GL3D Gabriela Linhares | https://www.blenderkit.com/get-blenderkit/818e29a3-d812-402d-a10c-5ee71d85f2fc/ | BlenderKit Royalty Free |
 | ruins/brick_ruins_a | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/80cd0314-d86c-4c92-8186-4151a07e9522/ | CC0 1.0 |
@@ -182,6 +211,9 @@ BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where not
 | ruins/ruined_masonry_wall | Ruined Masonry Wall | REAL SCANS | https://www.blenderkit.com/get-blenderkit/858d9662-d036-4d93-80c1-d0e1e06143ab/ | BlenderKit Royalty Free |
 | ruins/unfinished_building | Unfinished Building | AIR3D | https://www.blenderkit.com/get-blenderkit/694baa4b-b62c-459b-b5d3-6429c8ceff76/ | BlenderKit Royalty Free |
 | soldiers/sniper_soldier | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
+| soldiers/soldier_agent | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
+| soldiers/soldier_crowd | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
+| soldiers/soldier_far | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
 | vehicles/arx_apc | Arx apc | Ermia J | https://www.blenderkit.com/get-blenderkit/082cab8b-8354-4c46-9e6c-ad652f7c075e/ | BlenderKit Royalty Free |
 | vehicles/car_wreck_beetle | VW Beetle wreck | Adam Krhanek | https://www.blenderkit.com/get-blenderkit/ce96377d-5da3-4899-bb25-c94b84bb0de7/ | BlenderKit Royalty Free |
 | vehicles/m1a2_tank | M1A2 Abrams US Tank | AIR3D | https://www.blenderkit.com/get-blenderkit/6ff87b83-2b1b-43fb-a5a8-0d87b55741c6/ | BlenderKit Royalty Free |
@@ -197,17 +229,17 @@ Poly Haven (CC0 1.0, committed in Assets/ThirdParty/PolyHaven):
 | texture 1k | Dry Ground 01 (dry_ground_01) | Rob Tuytel | https://polyhaven.com/a/dry_ground_01 | CC0 1.0 |
 | texture 1k | Dry Ground Rocks (dry_ground_rocks) | Rob Tuytel | https://polyhaven.com/a/dry_ground_rocks | CC0 1.0 |
 | texture 1k | Brown Mud Dry (brown_mud_dry) | Rob Tuytel | https://polyhaven.com/a/brown_mud_dry | CC0 1.0 |
-| texture 1k (w2 ruins) | Rough Plaster Brick 04 (rough_plaster_brick_04) | Rob Tuytel | https://polyhaven.com/a/rough_plaster_brick_04 | CC0 1.0 |
-| texture 1k (w2 ruins) | Broken Brick Wall (broken_brick_wall) | Amal Kumar | https://polyhaven.com/a/broken_brick_wall | CC0 1.0 |
-| texture 1k (w2) | Red Bricks 04 (red_bricks_04) | Rob Tuytel | https://polyhaven.com/a/red_bricks_04 | CC0 1.0 |
-| texture 1k (w2 floors) | Concrete Floor Damaged 01 (concrete_floor_damaged_01) | Rob Tuytel | https://polyhaven.com/a/concrete_floor_damaged_01 | CC0 1.0 |
-| texture 1k (w2 craters) | Burned Ground 01 (burned_ground_01) | Rob Tuytel | https://polyhaven.com/a/burned_ground_01 | CC0 1.0 |
-| texture 1k (w2) | Concrete Debris (concrete_debris) | Amal Kumar | https://polyhaven.com/a/concrete_debris | CC0 1.0 |
-| derived (w2) | Assets/Art/Battlefield/grass_dry_albedo.png = straw-recoloured albedo of Grass Medium 01 (grass_medium_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/grass_medium_01 | CC0 1.0 |
+| texture 1k | Rough Plaster Brick 04 (rough_plaster_brick_04) | Rob Tuytel | https://polyhaven.com/a/rough_plaster_brick_04 | CC0 1.0 |
+| texture 1k | Broken Brick Wall (broken_brick_wall) | Amal Kumar | https://polyhaven.com/a/broken_brick_wall | CC0 1.0 |
+| texture 1k | Red Bricks 04 (red_bricks_04) | Rob Tuytel | https://polyhaven.com/a/red_bricks_04 | CC0 1.0 |
+| texture 1k | Concrete Floor Damaged 01 (concrete_floor_damaged_01) | Rob Tuytel | https://polyhaven.com/a/concrete_floor_damaged_01 | CC0 1.0 |
+| texture 1k | Burned Ground 01 (burned_ground_01) | Rob Tuytel | https://polyhaven.com/a/burned_ground_01 | CC0 1.0 |
+| texture 1k | Concrete Debris (concrete_debris) | Amal Kumar | https://polyhaven.com/a/concrete_debris | CC0 1.0 |
 | model (rocks) | Rock 07 (rock_07) | Jenelle van Heerden | https://polyhaven.com/a/rock_07 | CC0 1.0 |
 | model (rocks) | Rock 09 (rock_09) | Jenelle van Heerden | https://polyhaven.com/a/rock_09 | CC0 1.0 |
 | model (rocks) | Namaqualand Boulder 02 (namaqualand_boulder_02) | Greg Zaal, Rico Cilliers | https://polyhaven.com/a/namaqualand_boulder_02 | CC0 1.0 |
 | model (rocks) | Sand Rocks Small 01 (sand_rocks_small_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/sand_rocks_small_01 | CC0 1.0 |
 | model (vegetation) | Grass Medium 01 (grass_medium_01) | Rob Tuytel, Rico Cilliers | https://polyhaven.com/a/grass_medium_01 | CC0 1.0 |
 | model (props) | Old Tyre (old_tyre) | MP | https://polyhaven.com/a/old_tyre | CC0 1.0 |
+| texture 1k | Hessian 230 (hessian_230) | colormass, Rico Cilliers | https://polyhaven.com/a/hessian_230 | CC0 1.0 |
 <!-- V2-ASSETS-END -->

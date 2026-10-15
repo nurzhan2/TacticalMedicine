@@ -331,7 +331,7 @@ namespace FieldMedic.Battle
             // spread ~1.2° (MG 1.8°)
             float spread = a.mg ? 0.031f : 0.021f;
             dir = (dir + new Vector3(Random.Range(-spread, spread), Random.Range(-spread * 0.6f, spread), Random.Range(-spread, spread))).normalized;
-            if (a.Shots % 3 == 0) CombatVfx.Instance?.TracerBurst(muzzle + dir * 1.5f, dir, 1);
+            if (a.Shots % 3 == 0 && fx != null) fx.Tracer(muzzle + dir * 1.5f, dir, dist + 20f);
             // impact (only worth simulating where the player can see it)
             if (head != null && (a.aim - head.position).sqrMagnitude < 45f * 45f && fx != null)
             {
