@@ -472,3 +472,50 @@ namespace FieldMedic.Tests
         }
     }
 }
+
+namespace FieldMedic.Tests
+{
+    public class DemoPouchDiag
+    {
+        [UnityTest]
+        public IEnumerator Pouch_Items_Visible_After_Opening()
+        {
+            var run = new DemoFlowRunner();
+            yield return DemoFlowRunner.Load(() => ScenarioLaunch.Training(TrainingCatalog.DemoId));
+            AudioListener.volume = 0f;
+            yield return DemoFlowRunner.Seconds(1f);
+            run.TakeHead(run.HeadAt(1.3f));
+            run.KitNear();
+            run.MakeBot();
+            yield return run.HandsTo(run.Hips);
+            var pouch = run.Pouch;
+            yield return run.bot.OpenPouch(pouch, run.bot.right);
+            yield return DemoFlowRunner.Seconds(0.5f);
+            int visible = 0;
+            foreach (var it in pouch.Items)
+            {
+                var rs = it.GetComponentsInChildren<Renderer>(true);
+                int on = rs.Count(r => r.enabled && r.gameObject.activeInHierarchy);
+                var b = rs.Where(r => r.enabled && r.gameObject.activeInHierarchy).Select(r => r.bounds).FirstOrDefault();
+                Debug.Log($"[FMVR] pouch diag {it.name}: active={it.gameObject.activeInHierarchy} inPouch={it.InPouch} local={pouch.transform.InverseTransformPoint(it.transform.position):F3} renderers {on}/{rs.Length} bounds {b.center:F2} {b.size:F3} parent={it.transform.parent?.name}");
+                if (on > 0) visible++;
+            }
+            var pt = pouch.transform;
+            foreach (Transform ch in pt) Debug.Log($"[FMVR] pouch child {ch.name} active={ch.gameObject.activeInHierarchy} local={ch.localPosition:F3} rot={ch.localEulerAngles:F0}");
+            var vis = pt.Find("PouchVisual");
+            if (vis != null) foreach (var r in vis.GetComponentsInChildren<Renderer>()) Debug.Log($"[FMVR] pouch visual {r.name} bounds {r.bounds.center:F3} {r.bounds.size:F3}");
+            var cam = new GameObject("~DiagCam").AddComponent<Camera>();
+            cam.enabled = false; cam.fieldOfView = 50f; cam.nearClipPlane = 0.02f;
+            cam.transform.SetPositionAndRotation(pt.position + new Vector3(0f, 0.55f, -0.3f), Quaternion.LookRotation(pt.position - (pt.position + new Vector3(0f, 0.55f, -0.3f))));
+            var rt = new RenderTexture(1280, 720, 24);
+            UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(cam, new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = rt });
+            UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(cam, new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = rt });
+            var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+            RenderTexture.active = rt; tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0); tex.Apply(); RenderTexture.active = null;
+            System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "w7"));
+            System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "w7", "pouch_diag.jpg"), tex.EncodeToJPG(85));
+            Object.Destroy(rt); Object.Destroy(tex); Object.Destroy(cam.gameObject);
+            Assert.Greater(visible, pouch.Items.Count / 2, "items visible in the opened pouch");
+        }
+    }
+}

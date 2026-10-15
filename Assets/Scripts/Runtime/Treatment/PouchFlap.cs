@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using FieldMedic.Interaction;
 using UnityEngine;
 
@@ -6,7 +5,7 @@ namespace FieldMedic.Treatment
 {
     /// <summary>
     /// Rip-away IFAK lid (w7, owner: "open the IFAK pouch by pulling its handle"). The pouch starts closed: a coyote
-    /// lid hinged at the back edge covers the tray and the items in it cannot be seen or grabbed. Grab the red pull
+    /// lid hinged at the back edge covers the tray and the items in it cannot be grabbed. Grab the red pull
     /// tab on the front edge and pull it ≥ <see cref="pullToOpen"/> away: the velcro lets go (crackle + haptic), the
     /// lid flips back and the items can be taken out one by one. Touching the tab alone does nothing.
     /// </summary>
@@ -27,7 +26,6 @@ namespace FieldMedic.Treatment
         public float Pull { get; private set; }
 
         float _angle;
-        readonly List<Renderer> _hidden = new List<Renderer>();
 
         public static PouchFlap Add(IfakPouch p)
         {
@@ -61,32 +59,10 @@ namespace FieldMedic.Treatment
             Kit.Merge(lid);
             Tab = ProxyHandle.Create<ProxyHandle>("Grab_PouchTab", lid, lid.TransformPoint(new Vector3(0f, -0.03f, -size.z - 0.025f)), 0.045f, 4);
             Tab.Grabbed += (_, h) => Haptics.Play(h.Input, Haptics.Grab);
-            SetItemsVisible(false);
-        }
-
-        void SetItemsVisible(bool v)
-        {
-            if (pouch == null) return;
-            if (!v)
-            {
-                _hidden.Clear();
-                foreach (var it in pouch.Items)
-                {
-                    if (it == null || !it.InPouch) continue;
-                    foreach (var r in it.GetComponentsInChildren<Renderer>())
-                        if (r.enabled) { r.enabled = false; _hidden.Add(r); }
-                }
-            }
-            else
-            {
-                foreach (var r in _hidden) if (r != null) r.enabled = true;
-                _hidden.Clear();
-            }
         }
 
         void Update()
         {
-            if (pouch != null && !IsOpen && _hidden.Count == 0 && pouch.Built) SetItemsVisible(false); // items built after the lid
             if (!IsOpen && Tab != null && Tab.Hand != null)
             {
                 float d = Tab.PalmDelta.magnitude;
@@ -112,7 +88,6 @@ namespace FieldMedic.Treatment
             if (byHand != null) { Haptics.Play(byHand.Input, Haptics.PressClick, 1.3f); Tab.ForceRelease(); }
             TreatmentAudio.Velcro(Tab != null ? Tab.transform.position : transform.position, 0.9f);
             if (Tab != null) Tab.gameObject.SetActive(false);
-            SetItemsVisible(true);
             Debug.Log("[FMVR] IFAK opened " + (byHand != null ? "by pulling the tab" : "(setup)"));
         }
     }

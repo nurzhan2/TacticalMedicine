@@ -118,12 +118,12 @@ namespace FieldMedic.UI
                     "Дала. Қираған кент. Шайқас тоқтамайды.\nЕрлан — сенің қаруластың. Оның өмірі — сенің қолыңда."),
                 -W / 2 + 0.06f, H / 2 - 0.16f, 0.022f, Ink);
             // w7: the presentation run — big white button, Training mode with the white hint panel
-            var demo = Btn("ДЕМО\nDEMO", 0.52f, 0.19f, 0.22f, new Color(0.95f, 0.95f, 0.93f), () => Go("lesson:" + TrainingCatalog.DemoId, () => ScenarioLaunch.Training(TrainingCatalog.DemoId)), 0.042f);
+            var demo = Btn("ДЕМО\nDEMO", 0.56f, 0.205f, 0.2f, new Color(0.95f, 0.95f, 0.93f), () => Go("lesson:" + TrainingCatalog.DemoId, () => ScenarioLaunch.Training(TrainingCatalog.DemoId)), 0.03f);
             demo.name = "Btn_DEMO";
             if (demo.Label != null) demo.Label.color = new Color(0.1f, 0.1f, 0.09f);
-            Txt(GameSettings.T("5–7 минут, белая подсказка:\nжгут → в укрытие → тампонада →\nнаклейка → одеяло → карточка → вертолёт",
-                    "5–7 минут, ақ кеңес:\nжгут → баспанаға → тампонада →\nжапсырма → көрпе → карточка → тікұшақ"),
-                0.38f, 0.255f, 0.0135f, Dim, TextAnchor.UpperRight, TextAlignment.Right);
+            Txt(GameSettings.T("ДЕМО · 5–7 минут, белая подсказка:\nжгут · в укрытие · тампонада\nнаклейка · одеяло · карточка · вертолёт",
+                    "ДЕМО · 5–7 минут, ақ кеңес:\nжгут · баспанаға · тампонада\nжапсырма · көрпе · карточка · тікұшақ"),
+                0.43f, 0.2f, 0.0135f, Dim, TextAnchor.UpperRight, TextAlignment.Right);
             float y = -0.04f, d = 0.2f;
             Btn("1", -0.54f, y, d, Olive, ShowTraining, 0.06f, GameSettings.T("ОБУЧЕНИЕ", "ОҚЫТУ"), 0.026f);
             Btn("2", -0.18f, y, d, Rust, ShowScenarios, 0.06f, GameSettings.T("БОЙ", "ШАЙҚАС"), 0.026f);

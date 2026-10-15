@@ -65,6 +65,7 @@ namespace FieldMedic.Tests
             BattleDirector.Mode = BattleMode.Combat;
             SmokeScreens.Clear();
             if (_run.head != null) Object.Destroy(_run.head.gameObject);
+            if (_cam != null) Object.Destroy(_cam.gameObject);
             if (_rt != null) Object.Destroy(_rt);
             if (_tex != null) Object.Destroy(_tex);
         }
@@ -156,6 +157,7 @@ namespace FieldMedic.Tests
             if (Directory.Exists(_frameDir)) Directory.Delete(_frameDir, true);
             Directory.CreateDirectory(_frameDir);
             var go = new GameObject("~VideoCam");
+            Object.DontDestroyOnLoad(go);
             _cam = go.AddComponent<Camera>();
             _cam.clearFlags = CameraClearFlags.Skybox;
             _cam.fieldOfView = 58f;
@@ -167,9 +169,11 @@ namespace FieldMedic.Tests
             _tex = new Texture2D(VW, VH, TextureFormat.RGB24, false);
         }
 
+        bool _frames;
+
         void Frame()
         {
-            if (!_recording || _cam == null) return;
+            if (!_recording || _cam == null || !_frames) return;
             var req = new UnityEngine.Rendering.RenderPipeline.StandardRequest { destination = _rt };
             UnityEngine.Rendering.RenderPipeline.SubmitRenderRequest(_cam, req);
             RenderTexture.active = _rt;
@@ -203,8 +207,9 @@ namespace FieldMedic.Tests
             else if (_mode == "debrief")
             {
                 var board = Object.FindAnyObjectByType<MenuBoard>();
-                wantPos = _cam.transform.position;
-                wantLook = board != null && board.isActiveAndEnabled ? board.transform.position : chest;
+                bool on = board != null && board.isActiveAndEnabled;
+                wantPos = on ? board.transform.position - board.transform.forward * 1.2f : _cam.transform.position;
+                wantLook = on ? board.transform.position : chest;
             }
             else
             {
@@ -212,10 +217,10 @@ namespace FieldMedic.Tests
                 if (_mode == "drag") { toHead = _run.C.Interaction.Drag.Velocity.sqrMagnitude > 0.01f ? Vector3.Cross(Vector3.up, _run.C.Interaction.Drag.Velocity) : toHead; }
                 toHead.y = 0f;
                 if (toHead.sqrMagnitude < 0.01f) toHead = Vector3.right;
-                Vector3 side = Quaternion.Euler(0f, 28f, 0f) * toHead.normalized;
-                float dist = _mode == "drag" ? 2.8f : 1.45f;
-                wantPos = new Vector3(hips.x, D.casualty.transform.position.y + (_mode == "drag" ? 1.9f : 1.45f), hips.z) + side * dist;
-                wantLook = Vector3.Lerp(hips, chest, 0.5f) + Vector3.up * 0.1f;
+                Vector3 side = Quaternion.Euler(0f, 20f, 0f) * toHead.normalized;
+                float dist = _mode == "drag" ? 2.8f : 1.3f;
+                wantPos = new Vector3(hips.x, D.casualty.transform.position.y + (_mode == "drag" ? 1.9f : 1.6f), hips.z) + side * dist;
+                wantLook = Vector3.Lerp(hips, chest, 0.6f) + Vector3.up * (_mode == "drag" ? 0.1f : 0.32f);
             }
             if (snap) { _camPos = wantPos; _look = wantLook; _camVel = _lookVel = Vector3.zero; }
             _camPos = Vector3.SmoothDamp(_camPos, wantPos, ref _camVel, 0.9f, 3f, dt);
@@ -254,9 +259,15 @@ namespace FieldMedic.Tests
             switch (m)
             {
                 case "open": Shot("01_erlan_in_the_open", hips + new Vector3(-4.5f, 2.2f, -3.5f), hips, 50f); break;
-                case "hint": Shot("02_hint_panel", _camPos, _look, 60f); break;
+                case "hint":
+                    var tdp = TrainingDirector.Instance != null ? TrainingDirector.Instance.Panel : null;
+                    Vector3 pp = tdp != null ? tdp.transform.position : chest + Vector3.up * 0.6f;
+                    Vector3 away = _camPos - pp; away.y = 0f;
+                    Shot("02_hint_panel", pp + away.normalized * 1.5f + Vector3.up * 0.25f, Vector3.Lerp(pp, hips, 0.4f), 60f); break;
                 case "ifak": Shot("03_ifak_open", _run.Pouch.transform.position + new Vector3(-0.45f, 0.5f, -0.45f), _run.Pouch.transform.position, 50f); break;
-                case "tq": Shot("04_cat_locked", LimbMath.PointAt(D.casualty.rig, Limb.RightLeg, 0.12f) + new Vector3(0.45f, 0.55f, 0.3f), LimbMath.PointAt(D.casualty.rig, Limb.RightLeg, 0.12f), 45f); break;
+                case "tq":
+                    Vector3 tqp = LimbMath.PointAt(D.casualty.rig, Limb.RightLeg, 0.12f);
+                    Shot("04_cat_locked", tqp + Vector3.up * 0.62f + D.casualty.rig.BodyRight * 0.32f - D.casualty.rig.BodyUp * 0.2f, tqp, 50f); break;
                 case "drag": Shot("05_dragged_into_ruins", hips + new Vector3(2.4f, 1.8f, -2.2f), hips, 55f); break;
                 case "pack": Shot("06_wound_packed", _camPos, _look, 55f); break;
                 case "seal": Shot("07_chest_seal", chest + D.casualty.rig.BodyForward * 0.6f + Vector3.up * 0.3f + D.casualty.rig.BodyRight * 0.3f, chest, 45f); break;
@@ -271,6 +282,7 @@ namespace FieldMedic.Tests
         public IEnumerator Demo_Video_And_Screenshots()
         {
             bool frames = System.Environment.GetCommandLineArgs().Contains("-fmCapture");
+            _frames = frames;
             // menu with the big ДЕМО button
             yield return DemoFlowRunner.Load(() => ScenarioLaunch.Menu());
             AudioListener.volume = 0f;
@@ -310,8 +322,8 @@ namespace FieldMedic.Tests
             _mode = "follow";
             UpdateCamera(0f, true);
             if (frames) { Time.captureFramerate = 30; _recording = true; }
-            var rec = frames ? new GameObject("~Rec").AddComponent<CoroutineHost>() : null;
-            if (rec != null) rec.StartCoroutine(Recorder());
+            var rec = new GameObject("~Rec").AddComponent<FieldMedic.Scenarios.Bots.MedicBot>();
+            _recording = true; rec.StartCoroutine(Recorder()); if (!frames) Debug.Log("[FMVR] demo capture without frames (no -fmCapture)");
             yield return _run.Run();
             yield return Hold(1.5f);
             // the debrief board comes to the viewer
@@ -330,6 +342,5 @@ namespace FieldMedic.Tests
             if (frames) Assert.Greater(_frame, 30 * 60, "at least a minute of video");
         }
 
-        sealed class CoroutineHost : MonoBehaviour { }
     }
 }

@@ -245,7 +245,7 @@ namespace FieldMedic.Scenarios
             if (Lesson.debrief)
             {
                 Report = DebriefBuilder.Build(null, C.Protocol, "evacuated", ScenarioClock.Format, director.IncidentPatientTime, null, kz);
-                Report.title = Lesson.Title(kz);
+                Report.title = kz ? "ДЕМО" : "ДЕМО"; // short: the board header also carries the flag + patch
                 Debug.Log($"[FMVR] training: demo debrief score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
             }
             if (director.board != null && !director.testMode)
