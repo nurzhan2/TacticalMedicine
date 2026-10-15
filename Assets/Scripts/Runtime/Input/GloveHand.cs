@@ -150,6 +150,7 @@ namespace FieldMedic.Input
 
             // GDD_V2 §4: Kazakhstan flag on the left sleeve, Satbayev military department patch on the right one
             // (on top of the sleeve = back of the hand side, texture top toward the fingers)
+            if (_rig == null) return; // the training ghost glove has no sleeve patch
             bool left = side < 0f;
             var patch = FieldMedic.UI.Insignia.Patch(transform, left ? FieldMedic.UI.Insignia.KzFlag : FieldMedic.UI.Insignia.Satbayev,
                 transform.TransformPoint(new Vector3(0f, 0.0352f, -0.1f)), transform.up, transform.forward,

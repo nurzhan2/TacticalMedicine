@@ -106,6 +106,25 @@ namespace FieldMedic.Scenarios.Bots
             yield return Wait(0.3f);
         }
 
+        /// <summary>Press a round button with the index fingertip (from in front of the cap, push, pull back).</summary>
+        public IEnumerator Poke(FieldMedic.UI.RoundButton b, HandGrabber h, int times = 1)
+        {
+            if (b == null) yield break;
+            lastStep = "poke " + b.name;
+            if (h.Held != null) yield return Release(h);
+            for (int i = 0; i < times; i++)
+            {
+                // the cap faces the button's local −Z; its surface is ~2.5 cm in front of the pivot
+                Vector3 front = b.transform.TransformPoint(new Vector3(0f, 0f, -0.07f / Mathf.Max(1e-4f, b.transform.lossyScale.z)));
+                Vector3 pressed = b.transform.TransformPoint(new Vector3(0f, 0f, -0.004f / Mathf.Max(1e-4f, b.transform.lossyScale.z)));
+                yield return Move(h, front, true, 1.5f);
+                yield return Move(h, pressed, true, 0.25f);
+                yield return Wait(0.1f);
+                yield return Move(h, front, true, 0.5f);
+                yield return Wait(0.15f);
+            }
+        }
+
         public IEnumerator Grab(HandGrabber h, Grabbable g, Vector3? at = null)
         {
             if (g is MedItem mi && mi.InPouch && mi.pouch != null && !mi.pouch.IsOpen)

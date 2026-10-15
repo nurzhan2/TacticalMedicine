@@ -59,6 +59,7 @@ namespace FieldMedic.Casualty
             return n;
         }
 
+        float _lastBlockLog = -10f;
         Vector3 _wantSum, _pivotSum;
         int _pulls;
         float _maxStretch;
@@ -158,6 +159,11 @@ namespace FieldMedic.Casualty
                     if (h.distance <= 0f) continue; // overlapping at the start (rubble he lies on, a doorframe he is in)
                     if (Mathf.Abs(h.normal.y) > 0.6f) continue; // floor / ramp / step top
                     if (Vector3.Dot(h.normal, dir) > -0.2f) continue; // grazing along it
+                    // only wall-sized solids (walls, sandbags, wrecks, blocks): not pebbles, hint ghosts, small props
+                    var bs = h.collider.bounds.size;
+                    if (Mathf.Max(bs.x, bs.z) < 0.6f || h.collider.bounds.max.y < root.position.y + 0.3f) continue;
+                    if (h.collider.GetComponentInParent<Interaction.Grabbable>() != null) continue;
+                    if (Time.time - _lastBlockLog > 2f) { _lastBlockLog = Time.time; Debug.Log("[FMVR] drag blocked by " + h.collider.name + " at " + h.point.ToString("F2")); }
                     return true;
                 }
             }
