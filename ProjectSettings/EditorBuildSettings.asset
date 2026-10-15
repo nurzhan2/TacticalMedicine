@@ -9,11 +9,17 @@ EditorBuildSettings:
     path: Assets/Scenes/Boot.unity
     guid: 55bb9b197d8bbc64fb60182ff8613c37
   - enabled: 1
-    path: Assets/Scenes/Battlefield.unity
-    guid: ab1452f95ab44de488cc61f0e7301cc9
+    path: Assets/Scenes/Main_Core.unity
+    guid: 5fafbb862fa29c14283ff7394f5a36b0
   - enabled: 1
-    path: Assets/Scenes/Main.unity
-    guid: c5a82579e57e95645a685803f36601d9
+    path: Assets/Scenes/Main_Cover.unity
+    guid: ad5ea14133352a24b993b7aa506116c3
+  - enabled: 1
+    path: Assets/Scenes/Main_Scenery.unity
+    guid: 5d60fab5d58a0da41ba189a692ab86f7
+  - enabled: 1
+    path: Assets/Scenes/Main_Battle.unity
+    guid: d68a3497122244643b828aacf77d0da5
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

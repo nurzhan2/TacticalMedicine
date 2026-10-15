@@ -181,34 +181,15 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var comfort = rig.AddComponent<ComfortRig>();
             comfort.trackingSpace = ts;
             comfort.head = eye;
+            // w0b: no passthrough at all. ProximityPassthrough blacked out the whole image whenever the boundary
+            // query failed / the player stood outside the fallback play area, because passthrough itself never ran
+            // (project config: passthrough off) → black screen on the Quest. Horizon OS's own guardian is the fallback.
             var mgr = rig.GetComponent<OVRManager>();
             if (mgr != null)
             {
-                mgr.isInsightPassthroughEnabled = true;
+                mgr.isInsightPassthroughEnabled = false;
                 EditorUtility.SetDirty(mgr);
             }
-            var ptLayer = rig.AddComponent<OVRPassthroughLayer>();
-            ptLayer.hidden = true;
-            var prox = rig.AddComponent<ProximityPassthrough>();
-            prox.trackingSpace = ts;
-            prox.head = eye;
-            prox.leftHand = Find(rig.transform, "LeftHandAnchor");
-            prox.rightHand = Find(rig.transform, "RightHandAnchor");
-            prox.layer = ptLayer;
-            var fade = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            fade.name = "PassthroughFade";
-            Object.DestroyImmediate(fade.GetComponent<Collider>());
-            fade.transform.SetParent(eye, false);
-            fade.transform.localPosition = new Vector3(0f, 0f, 0.08f);
-            fade.transform.localScale = new Vector3(0.6f, 0.6f, 1f);
-            var fr = fade.GetComponent<Renderer>();
-            string fpath = FxDir + "/PassthroughFade.mat";
-            var fm = AssetDatabase.LoadAssetAtPath<Material>(fpath);
-            if (fm == null) { fm = new Material(Shader.Find("FieldMedic/PassthroughFade")); AssetDatabase.CreateAsset(fm, fpath); }
-            fr.sharedMaterial = fm;
-            fr.shadowCastingMode = ShadowCastingMode.Off;
-            fr.enabled = false;
-            prox.fadeQuad = fr;
         }
 
         static IlluminationFlare BuildFlare(Transform root, int i, Material glow, Material smoke)

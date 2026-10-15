@@ -53,19 +53,24 @@ namespace FieldMedic.EditorTools.SceneBuilders
             }
 
             var panel = new GameObject("BootPanel").transform;
-            panel.position = new Vector3(0f, 1.5f, 2.2f);
+            panel.position = new Vector3(0f, 1.5f, 2f);
             var white = new Color(0.93f, 0.92f, 0.88f);
             WorldUI.Text(panel, "Title", "БАУЫР", new Vector3(0f, 0.22f, 0f), 0.16f, white, TextAnchor.MiddleCenter, TextAlignment.Center);
             WorldUI.Text(panel, "Subtitle", "Field Medic VR · TCCC", new Vector3(0f, 0.02f, 0f), 0.05f,
                 new Color(0.7f, 0.7f, 0.66f), TextAnchor.MiddleCenter, TextAlignment.Center);
-            var status = WorldUI.Text(panel, "Status", "Загрузка / Жүктелуде…", new Vector3(0f, -0.14f, 0f), 0.045f,
+            var status = WorldUI.Text(panel, "Status", "Загрузка / Жүктелуде… Loading", new Vector3(0f, -0.14f, 0f), 0.045f,
                 new Color(0.75f, 0.8f, 0.72f), TextAnchor.MiddleCenter, TextAlignment.Center);
 
             var boot = new GameObject("BootLoader").AddComponent<BootLoader>();
             boot.head = head;
             boot.panel = panel;
             boot.status = status;
-            boot.nextScene = FieldMedic.Environment.BattlefieldLayout.SceneName; // V2: the open battlefield (Main = V1 trench, legacy)
+            // w0b: Boot loads only the core of the battlefield; GameplayScenes streams the rest in after the first frame
+            boot.nextScene = FieldMedic.Startup.GameplayScenes.CoreScene;
+            boot.distance = 2f;
+            boot.warmup = AssetDatabase.LoadAssetAtPath<ShaderVariantCollection>(ShaderWarmupBuilder.SvcPath);
+            if (boot.warmup == null) Debug.LogWarning("[FMVR] Boot: no shader variant collection yet (" + ShaderWarmupBuilder.SvcPath + ")");
+            SceneSplitter.Sanitize(scene);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             MainSceneBuilder.SetBuildScenes();

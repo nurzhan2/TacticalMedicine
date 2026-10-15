@@ -6,6 +6,7 @@
         "Oculus.VR",
         "Unity.InputSystem",
         "Unity.XR.Management",
+        "Unity.XR.OpenXR",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

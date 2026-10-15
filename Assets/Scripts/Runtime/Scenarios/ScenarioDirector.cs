@@ -73,7 +73,7 @@ namespace FieldMedic.Scenarios
         void Awake() => Instance = this;
         void OnDestroy() { if (Instance == this) Instance = null; }
 
-        void Start()
+        IEnumerator Start()
         {
             if (casualty == null) casualty = FindAnyObjectByType<CasualtyController>();
             if (head == null && Camera.main != null) head = Camera.main.transform;
@@ -82,9 +82,13 @@ namespace FieldMedic.Scenarios
                 ThreatSystem.Instance.showRunEndOverlay = false;
                 ThreatSystem.Instance.PlayerHit += OnPlayerHit;
             }
-            if (!autoStart) return;
+            if (!autoStart) yield break;
             var req = ScenarioLaunch.Consume();
-            if (req == null || req.mode == LaunchMode.Menu) EnterMenu(req?.lastReport);
+            if (req == null || req.mode == LaunchMode.Menu) { EnterMenu(req?.lastReport); yield break; }
+            // w0b: a run needs the cover/battle scenes that Main_Core streams in additively — wait for them (max 30 s)
+            float waitUntil = Time.realtimeSinceStartup + 30f;
+            while (!testMode && FieldMedic.Startup.GameplayScenes.Loading && Time.realtimeSinceStartup < waitUntil) yield return null;
+            if (req.mode == LaunchMode.Menu) EnterMenu(req.lastReport);
             else if (req.mode == LaunchMode.Training) TrainingDirector.Ensure(this).Begin(req.lessonId);
             else Begin(ScenarioCatalog.Get(req.scenarioId) ?? ScenarioCatalog.All[0], req.variant, req.mode == LaunchMode.Exam);
         }
@@ -103,7 +107,7 @@ namespace FieldMedic.Scenarios
         public static void Launch(Action request)
         {
             request();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            FieldMedic.Startup.GameplayScenes.Reload(); // async (w0b): a blocking LoadScene froze the headset → black
         }
 
         // ------------------------------------------------------------------ run

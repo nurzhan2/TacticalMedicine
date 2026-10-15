@@ -103,6 +103,21 @@ namespace FieldMedic.EditorTools
                 OVRProjectConfig.CommitProjectConfig(cfg);
             }
 
+            // w0b black screen: no passthrough anywhere, OS loading screen black (not passthrough-contextual),
+            // no Unity splash (the license allows it; it only delays the first frame)
+            if (cfg != null)
+            {
+                bool dirty = false;
+                if (cfg.insightPassthroughSupport != OVRProjectConfig.FeatureSupport.None)
+                { changes.Add("OVR passthrough support: " + cfg.insightPassthroughSupport + " -> None"); cfg.insightPassthroughSupport = OVRProjectConfig.FeatureSupport.None; dirty = true; }
+                if (cfg.systemLoadingScreenBackground != OVRProjectConfig.SystemLoadingScreenBackground.Black)
+                { changes.Add("OS loading screen: " + cfg.systemLoadingScreenBackground + " -> Black"); cfg.systemLoadingScreenBackground = OVRProjectConfig.SystemLoadingScreenBackground.Black; dirty = true; }
+                if (dirty) OVRProjectConfig.CommitProjectConfig(cfg);
+            }
+            Set("Unity splash", PlayerSettings.SplashScreen.show, false, v => PlayerSettings.SplashScreen.show = v);
+            Set("Unity splash logo", PlayerSettings.SplashScreen.showUnityLogo, false, v => PlayerSettings.SplashScreen.showUnityLogo = v);
+            Set("static batching", PlayerSettings.GetStaticBatchingForPlatform(BuildTarget.Android), true, v => PlayerSettings.SetStaticBatchingForPlatform(BuildTarget.Android, v));
+
             Debug.Log("[FMVR] QuestLaunchSetup: " + (changes.Count == 0 ? "all launch settings already OK" : string.Join("; ", changes)));
         }
 

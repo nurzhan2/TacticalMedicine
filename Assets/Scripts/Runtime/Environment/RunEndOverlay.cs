@@ -89,7 +89,7 @@ namespace FieldMedic.Environment
             if (_t > 2f && restart)
             {
                 Current = null;
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                FieldMedic.Startup.GameplayScenes.Reload();
             }
         }
 

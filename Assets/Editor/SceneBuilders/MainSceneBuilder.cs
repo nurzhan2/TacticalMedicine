@@ -393,10 +393,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
         /// Main (V1 trench, legacy — still built so its tests and the scene reload by index keep working).</summary>
         public static void SetBuildScenes()
         {
+            // w0b: the APK ships Boot + Main_Core + additive battle scenes (SceneSplitter); the authored Battlefield and
+            // the V1 night trench (this scene) are editor-only sources now.
+            if (File.Exists(SceneSplitter.CorePath)) { SceneSplitter.SetBuildScenes(full: true); return; }
             var list = new List<EditorBuildSettingsScene>();
             if (File.Exists(BootSceneBuilder.ScenePath)) list.Add(new EditorBuildSettingsScene(BootSceneBuilder.ScenePath, true));
             if (File.Exists(BattlefieldLayout.ScenePath)) list.Add(new EditorBuildSettingsScene(BattlefieldLayout.ScenePath, true));
-            list.Add(new EditorBuildSettingsScene(ScenePath, true)); // V1 night trench: legacy, not in the main flow
             EditorBuildSettings.scenes = list.ToArray();
         }
 
