@@ -85,7 +85,7 @@ namespace FieldMedic.Tests
                 File.WriteAllText("logs/w0b_timings.txt", sb.ToString());
                 Debug.Log("[FMVR] w0b streaming timings:\n" + sb);
                 Assert.IsEmpty(errors, "error logs during start: " + string.Join(" | ", errors.Take(5)));
-                Assert.AreEqual(3, GameplayScenes.Timings.Count);
+                Assert.AreEqual(GameplayScenes.DefaultAdditive.Length, GameplayScenes.Timings.Count);
             }
             finally
             {

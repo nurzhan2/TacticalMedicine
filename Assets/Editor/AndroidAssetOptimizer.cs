@@ -57,7 +57,6 @@ namespace FieldMedic.EditorTools
                 if (path.Contains("/Resources/") && !path.Contains("/Editor/")) foreach (var d in AssetDatabase.GetDependencies(path, true)) deps.Add(d);
             }
             int tex = 0, models = 0, audio = 0, meshes = 0;
-            long before = 0;
             AssetDatabase.StartAssetEditing();
             try
             {
@@ -80,16 +79,17 @@ namespace FieldMedic.EditorTools
             }
             finally { AssetDatabase.StopAssetEditing(); }
             AssetDatabase.SaveAssets();
-            Debug.Log($"[FMVR] AndroidAssetOptimizer: {deps.Count} shipped assets; changed textures {tex}, models {models}, audio {audio}, mesh assets {meshes} (before {before})");
+            Debug.Log($"[FMVR] AndroidAssetOptimizer: {deps.Count} shipped assets; changed textures {tex}, models {models}, audio {audio}, mesh assets {meshes}");
         }
 
         /// <summary>Meshes that runtime code reads (CombineMeshes / vertices / BakeMesh) must stay readable.</summary>
         public static bool NeedsReadable(string path)
         {
             string p = path.ToLowerInvariant();
-            return p.Contains("/characters/") || p.Contains("erlan") || p.Contains("glove") || p.Contains("hand") ||
+            p = p.Replace("blenderkit", "");
+            return p.Contains("/characters/") || p.Contains("erlan") || p.Contains("glove") || p.Contains("/hands/") ||
                    p.Contains("meshy") || p.Contains("ifak") || p.Contains("medical") || p.Contains("drone") ||
-                   p.Contains("/treatment/") || p.Contains("blanket") || p.Contains("kit");
+                   p.Contains("/treatment/") || p.Contains("blanket") || p.Contains("/kit");
         }
 
         static bool Texture(TextureImporter ti, string path)

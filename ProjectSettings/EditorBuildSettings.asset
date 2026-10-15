@@ -12,6 +12,12 @@ EditorBuildSettings:
     path: Assets/Scenes/Main_Core.unity
     guid: 5fafbb862fa29c14283ff7394f5a36b0
   - enabled: 1
+    path: Assets/Scenes/Main_Ruins.unity
+    guid: 56dd0b3b11f92e94884a639866407a59
+  - enabled: 1
+    path: Assets/Scenes/Main_Wrecks.unity
+    guid: ea817478da79a7941ac0706429f73d6b
+  - enabled: 1
     path: Assets/Scenes/Main_Cover.unity
     guid: ad5ea14133352a24b993b7aa506116c3
   - enabled: 1

@@ -29,11 +29,14 @@ namespace FieldMedic.EditorTools.SceneBuilders
         /// <summary>Group (see <see cref="W0bDiag.GroupOf"/>) → additive scene. Everything else stays in the core.</summary>
         public static readonly (string scene, string[] groups)[] Additive =
         {
+            // cover in three parts (one 1.1 M-triangle scene took 444 ms to activate); the line + cover points come
+            // last because CoverPoint.cover links back into the ruins and wrecks
+            ("Main_Ruins", new[] { "Battlefield/Ruins" }),
+            ("Main_Wrecks", new[] { "Battlefield/ObstaclesAndWrecks", "Battlefield/Combined_Debris", "Battlefield/Combined_Rocks" }),
             ("Main_Cover", new[]
             {
-                "Battlefield/Ruins", "Battlefield/CoverLine", "Battlefield/CoverPoints", "Battlefield/ObstaclesAndWrecks",
-                "Battlefield/Combined_Sandbags", "Battlefield/Combined_Concertina", "Battlefield/Combined_WireFrames",
-                "Battlefield/Combined_Debris", "Battlefield/Combined_Rocks",
+                "Battlefield/CoverLine", "Battlefield/CoverPoints", "Battlefield/Combined_Sandbags",
+                "Battlefield/Combined_Concertina", "Battlefield/Combined_WireFrames",
             }),
             ("Main_Scenery", new[]
             {
@@ -41,6 +44,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
             }),
             ("Main_Battle", new[] { "Battle" }),
         };
+
+        static int Order(string scene) => Array.FindIndex(Additive, a => a.scene == scene);
 
         public static string[] AdditivePaths => Additive.Select(a => Dir + a.scene + ".unity").ToArray();
         public static string[] AllPaths => new[] { CorePath }.Concat(AdditivePaths).ToArray();
@@ -107,9 +112,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
                         errors++;
                         continue;
                     }
-                    if (to != GameplayScenes.CoreScene)
+                    if (to != GameplayScenes.CoreScene && Order(to) >= Order(from))
                     {
-                        Debug.LogError($"[FMVR] SceneSplitter: {from} → {to} reference {c.GetType().Name}.{it.propertyPath} (additive scenes may only reference the core)");
+                        Debug.LogError($"[FMVR] SceneSplitter: {from} → {to} reference {c.GetType().Name}.{it.propertyPath} (additive scenes may only reference the core or earlier additive scenes)");
                         errors++;
                         continue;
                     }

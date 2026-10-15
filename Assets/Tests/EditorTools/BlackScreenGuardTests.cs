@@ -167,7 +167,7 @@ namespace FieldMedic.Tests
             var full = BuildTools.ScenesFor(BuildTools.Variant.Full);
             Assert.AreEqual(BootSceneBuilder.ScenePath, full[0], "Boot first");
             Assert.AreEqual(SceneSplitter.CorePath, full[1]);
-            Assert.AreEqual(5, full.Length);
+            Assert.AreEqual(2 + SceneSplitter.Additive.Length, full.Length);
             CollectionAssert.DoesNotContain(full, "Assets/Scenes/Main.unity", "legacy V1 trench stays out of the APK");
             CollectionAssert.DoesNotContain(full, "Assets/Scenes/Battlefield.unity", "authored source stays out of the APK");
         }

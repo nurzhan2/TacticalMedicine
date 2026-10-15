@@ -17,7 +17,7 @@ namespace FieldMedic.Startup
     public sealed class GameplayScenes : MonoBehaviour
     {
         public const string CoreScene = "Main_Core";
-        public static readonly string[] DefaultAdditive = { "Main_Cover", "Main_Scenery", "Main_Battle" };
+        public static readonly string[] DefaultAdditive = { "Main_Ruins", "Main_Wrecks", "Main_Cover", "Main_Scenery", "Main_Battle" };
 
         [Tooltip("Loaded additively in this order after the core is visible.")]
         public string[] additive = DefaultAdditive;

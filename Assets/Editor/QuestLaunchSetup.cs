@@ -116,6 +116,8 @@ namespace FieldMedic.EditorTools
             }
             Set("Unity splash", PlayerSettings.SplashScreen.show, false, v => PlayerSettings.SplashScreen.show = v);
             Set("Unity splash logo", PlayerSettings.SplashScreen.showUnityLogo, false, v => PlayerSettings.SplashScreen.showUnityLogo = v);
+            // licensed models are Read/Write off (memory); their MeshColliders get prebaked collision data
+            Set("prebake collision meshes", PlayerSettings.bakeCollisionMeshes, true, v => PlayerSettings.bakeCollisionMeshes = v);
             Set("static batching", PlayerSettings.GetStaticBatchingForPlatform(BuildTarget.Android), true, v => PlayerSettings.SetStaticBatchingForPlatform(BuildTarget.Android, v));
 
             Debug.Log("[FMVR] QuestLaunchSetup: " + (changes.Count == 0 ? "all launch settings already OK" : string.Join("; ", changes)));

@@ -54,7 +54,12 @@ namespace FieldMedic.UI
 
             // shader warm-up runs on the main thread a few variants per frame while the scene loads in the background
             float tw = Time.realtimeSinceStartup;
-            bool warmDone = warmup == null || warmup.variantCount == 0;
+            // Warm-up is skipped in the editor (WarmUpProgressively crashes this laptop's Intel Vulkan driver,
+            // logs/playmode.log 16.10) and in SAFE mode: if it ever crashes on the headset, the crash flag makes the
+            // next launch SAFE → no warm-up → the game still starts.
+            bool skipWarm = Application.isEditor || LaunchGuard.SafeMode;
+            if (skipWarm && warmup != null) Debug.Log("[FMVR] boot: shader warm-up skipped (" + (Application.isEditor ? "editor" : "SAFE mode") + ")");
+            bool warmDone = skipWarm || warmup == null || warmup.variantCount == 0;
             int total = warmup != null ? warmup.variantCount : 0;
             int warmed = 0;
             while (!warmDone || op.progress < 0.9f)
