@@ -43,9 +43,11 @@ namespace FieldMedic.Scenarios
         public bool LessonComplete { get; private set; }
         public float StartedAt { get; private set; }
         public float CompletedAt { get; private set; } = -1f;
+        /// <summary>Debrief of a lesson with `debrief` (the DEMO run), built when it completes.</summary>
+        public DebriefReport Report { get; private set; }
 
         CasualtyController C => director.casualty;
-        Wound _wound, _wound2, _exit;
+        Wound _wound, _wound2, _exit, _wound3;
         bool[] _sticky;
         float _doneAt = -1f, _t, _penaltyWrongUntil, _dragLetGoAt = -1f;
         string _penaltyWrong;
@@ -76,7 +78,7 @@ namespace FieldMedic.Scenarios
             HintTable.EnsureLoaded();
             FieldMedic.Battle.BattleDirector.Mode = FieldMedic.Battle.BattleMode.Training; // battle far away, nobody targets the player
             FieldMedic.Battle.BattleDirector.PlayerArmed = false;
-            var l = TrainingCatalog.Get(lessonId) ?? TrainingCatalog.All[0];
+            var l = TrainingCatalog.Get(lessonId) ?? TrainingCatalog.Get("full") ?? TrainingCatalog.All[0];
             Progress = new LessonProgress(l);
             GameSettings.HoldTimeScale = 6f;
             muted |= director.testMode;
@@ -108,7 +110,14 @@ namespace FieldMedic.Scenarios
             {
                 var s2 = C.AddWound(l.secondType, l.secondRegion, WoundVisual.FragmentHole, "lesson2");
                 _wound2 = s2.Wound;
-                _wound2.hiddenUnderClothing = true; // found by the blood sweep
+                _wound2.hiddenUnderClothing = l.secondHidden; // found by the blood sweep (or torn open by the blast)
+                if (!l.secondHidden) { _wound2.exposed = true; _wound2.discovered = true; }
+            }
+            if (l.thirdWound)
+            {
+                var s3 = C.AddWound(l.thirdType, l.thirdRegion, ScenarioDirector.Visual(l.thirdVisual), "lesson3");
+                _wound3 = s3.Wound;
+                _wound3.discovered = true;
             }
             if (l.id == "chest")
             {
@@ -233,10 +242,17 @@ namespace FieldMedic.Scenarios
             Panel.SetStep(final, Progress.StepCount, Progress.StepCount, kz);
             Panel.SetDone();
             Debug.Log($"[FMVR] training: lesson {Lesson.id} complete in {secs:0} s, wrong actions {WrongCount}");
+            if (Lesson.debrief)
+            {
+                Report = DebriefBuilder.Build(null, C.Protocol, "evacuated", ScenarioClock.Format, director.IncidentPatientTime, null, kz);
+                Report.title = Lesson.Title(kz);
+                Debug.Log($"[FMVR] training: demo debrief score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
+            }
             if (director.board != null && !director.testMode)
             {
                 director.board.gameObject.SetActive(true);
-                director.board.ShowTrainingDone(Lesson, secs, WrongCount, director.head);
+                if (Report != null) director.board.ShowDebrief(Report, director.head);
+                else director.board.ShowTrainingDone(Lesson, secs, WrongCount, director.head);
             }
         }
 
@@ -256,7 +272,8 @@ namespace FieldMedic.Scenarios
 
         public bool PanelVisible => Panel != null && Panel.Visibility > 0.95f;
 
-        Wound TargetWound() => Progress.Step != null && Progress.Step.target == "Wound2" && _wound2 != null ? _wound2 : _wound;
+        Wound TargetWound() => Progress.Step != null && Progress.Step.target == "Wound2" && _wound2 != null ? _wound2
+            : Progress.Step != null && Progress.Step.target == "Wound3" && _wound3 != null ? _wound3 : _wound;
 
         Vector3 WoundPoint(Wound w)
         {
@@ -289,6 +306,11 @@ namespace FieldMedic.Scenarios
                 case "gloves": return C.Protocol.glovesOn;
                 case "exposed": return _wound.exposed;
                 case "packed": return _wound.packed;
+                case "ifak_open": return _pouch == null || _pouch.IsOpen;
+                case "gauze_grab": return FindObjectsByType<GauzeItem>(FindObjectsSortMode.None).Any(g => g.IsHeld) || (_wound2 != null && _wound2.packed);
+                case "packed2": return _wound2 != null && _wound2.packed;
+                case "seal_open": return FindObjectsByType<ChestSealItem>(FindObjectsSortMode.None).Any(c => c.IsHeld || c.Attached) || (_wound3 != null && _wound3.control == BleedControl.OcclusiveSeal);
+                case "seal3": return _wound3 != null && _wound3.control == BleedControl.OcclusiveSeal;
                 case "held": return _wound.control is BleedControl.PackedAndHeld or BleedControl.PressureDressing;
                 case "bandage": return _wound.control == BleedControl.PressureDressing;
                 case "bandage2": return _wound2 != null && _wound2.control == BleedControl.PressureDressing;
@@ -300,7 +322,7 @@ namespace FieldMedic.Scenarios
                 case "seal_back": return _exit != null && _exit.control == BleedControl.OcclusiveSeal;
                 case "tension": return p.pneumo is PneumoState.Tension or PneumoState.Decompressed;
                 case "needle": return p.pneumo == PneumoState.Decompressed;
-                case "drag_grab": return C.Interaction != null && C.Interaction.Drag != null && (C.Interaction.Drag.Hand != null || C.Interaction.Drag.DraggedDistance > 0.3f);
+                case "drag_grab": return C.Interaction != null && C.Interaction.Drag != null && (C.Interaction.Drag.AnyHeld || C.Interaction.Drag.DraggedDistance > 0.3f);
                 case "drag_cover": return C.Protocol.phase != Phase.CareUnderFire;
                 case "sweep": return p.wounds.All(w => w.discovered);
                 case "npa_grab": return FindObjectsByType<NpaItem>(FindObjectsSortMode.None).Any(n => n.IsHeld || n.Attached);
@@ -335,7 +357,7 @@ namespace FieldMedic.Scenarios
             if (w.Contains("drag_released") && C.Interaction != null && C.Interaction.Drag != null)
             {
                 var drag = C.Interaction.Drag;
-                bool letGo = drag.DraggedDistance > 0.6f && drag.Hand == null && C.Protocol.phase == Phase.CareUnderFire;
+                bool letGo = drag.DraggedDistance > 0.6f && !drag.AnyHeld && C.Protocol.phase == Phase.CareUnderFire;
                 if (!letGo) _dragLetGoAt = -1f;
                 else if (_dragLetGoAt < 0f) _dragLetGoAt = Time.time;
                 if (letGo && Time.time - _dragLetGoAt > 0.8f) return TrainingCatalog.Reason("drag_released", kz);
@@ -405,6 +427,8 @@ namespace FieldMedic.Scenarios
                 case "ThighHigh": return LimbMath.PointAt(rig, LimbOf(_wound), 0.1f);
                 case "Wound": return WoundPoint(_wound);
                 case "Wound2": return _wound2 != null && _wound2.discovered ? WoundPoint(_wound2) : (Vector3?)null;
+                case "Wound3": return _wound3 != null ? WoundPoint(_wound3) : (Vector3?)null;
+                case "Ifak": return _pouch != null ? _pouch.transform.position : (Vector3?)null;
                 case "Foot": return HandTreatment.PulsePoint(rig, _wound.region.ToString().EndsWith("L") ? PulseSite.PedalL : PulseSite.PedalR);
                 case "TqLabel": return cat != null && cat.State.OnLimb ? cat.TimeLabelPoint : (Vector3?)null;
                 case "DragHandle": return C.Interaction != null && C.Interaction.Drag != null ? C.Interaction.Drag.transform.position : (Vector3?)null;
@@ -456,6 +480,12 @@ namespace FieldMedic.Scenarios
                 case "bandage2_on":
                 case "bandage2": if (_wound2 == null) return false; from = Item<BandageItem>(); to = WoundPoint(_wound2); return true;
                 case "seal_front": from = Item<ChestSealItem>(); to = wound; return true;
+                case "ifak_open": if (_pouch == null || _pouch.Flap == null || _pouch.Flap.Tab == null || _pouch.IsOpen) return false;
+                    from = _pouch.Flap.Tab.transform.position; to = from + (_pouch.transform.up - _pouch.transform.forward).normalized * 0.12f; return true;
+                case "gauze_grab": from = hand; to = Item<GauzeItem>(); return true;
+                case "packed2": if (_wound2 == null) return false; from = Item<GauzeItem>(); to = WoundPoint(_wound2); return true;
+                case "seal_open": from = hand; to = Item<ChestSealItem>(); return true;
+                case "seal3": if (_wound3 == null) return false; from = Item<ChestSealItem>(); to = WoundPoint(_wound3); return true;
                 case "seal_back": var ex = C.WoundSites.FirstOrDefault(s => s != null && s.Wound == _exit); from = Item<ChestSealItem>(); to = ex != null ? ex.transform.position : wound; return true;
                 case "needle": from = Item<NeedleItem>(); to = rig.ChestBone.position + rig.BodyRight * 0.15f; return true;
                 case "drag_grab": from = hand; to = C.Interaction.Drag.transform.position; return true;

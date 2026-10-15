@@ -92,8 +92,24 @@ namespace FieldMedic.Scenarios.Bots
             }
         }
 
+        /// <summary>Rip the IFAK lid open: grab the red pull tab and pull it up and toward the medic.</summary>
+        public IEnumerator OpenPouch(IfakPouch pouch, HandGrabber h)
+        {
+            if (pouch == null || pouch.IsOpen || pouch.Flap == null || pouch.Flap.Tab == null) yield break;
+            lastStep = "open IFAK";
+            var tab = pouch.Flap.Tab;
+            if (h.Held != null) yield return Release(h);
+            yield return Grab(h, tab);
+            Vector3 pull = (pouch.transform.up * 0.7f - pouch.transform.forward * 0.7f).normalized;
+            yield return Move(h, h.PalmPosition + pull * (pouch.Flap.pullToOpen + 0.04f), false, 0.6f);
+            yield return Release(h);
+            yield return Wait(0.3f);
+        }
+
         public IEnumerator Grab(HandGrabber h, Grabbable g, Vector3? at = null)
         {
+            if (g is MedItem mi && mi.InPouch && mi.pouch != null && !mi.pouch.IsOpen)
+                yield return OpenPouch(mi.pouch, h);
             lastStep = "grab " + g.name;
             Vector3 aim = at ?? g.transform.position;
             yield return Move(h, aim);

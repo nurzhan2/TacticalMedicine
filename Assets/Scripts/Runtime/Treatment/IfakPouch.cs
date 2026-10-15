@@ -33,6 +33,11 @@ namespace FieldMedic.Treatment
         public float tilt = 35f;
         public float yawSlack = 35f;
 
+        [Tooltip("w7: the player's pouch starts closed — pull the red tab to rip the lid open (PouchFlap).")]
+        public bool closedLid = true;
+        public PouchFlap Flap { get; private set; }
+        public bool IsOpen => Flap == null || Flap.IsOpen;
+
         public readonly List<MedItem> Items = new List<MedItem>();
         public bool Built { get; private set; }
         float _yaw;
@@ -56,6 +61,7 @@ namespace FieldMedic.Treatment
                 item.PutInPouch(this, slot);
                 Items.Add(item);
             }
+            if (buildVisual && closedLid) Flap = PouchFlap.Add(this);
             if (bodyLocked) Follow(1f, true);
         }
 

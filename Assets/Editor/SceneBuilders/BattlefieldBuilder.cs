@@ -163,7 +163,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             Physics.SyncTransforms();
             BattlefieldTerrain.ScatterGrass(envRoot, Prefab("grass_medium_01"), MeshDir, GrassBlocked);
             BuildSmoke();
-            var flagTex = AssetDatabase.LoadAssetAtPath<Texture>("Assets/_Licensed/BlenderKit/props/kz_flag_stand/Textures/standing_flag_mat_015_albedo.jpg");
+            var flagTex = AssetDatabase.LoadAssetAtPath<Texture>(W7Demo.FlagTexturePath);
             BattlefieldFx.Flag(_root, new Vector3(BattlefieldLayout.FlagPole.x, BattlefieldLayout.GroundHeight(BattlefieldLayout.FlagPole.x, BattlefieldLayout.FlagPole.z), BattlefieldLayout.FlagPole.z), MatDir, MeshDir, flagTex);
             BattlefieldFx.LandingZone(_root, BattlefieldLayout.LandingZone, MatDir, MeshDir,
                 BattlefieldFx.PuffMat(ArtDir, "FX_SignalSmoke", Color.white, false));

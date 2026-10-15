@@ -77,6 +77,9 @@ namespace FieldMedic.Treatment
             col.size = Vector3.Max(b.size, Vector3.one * 0.012f);
         }
 
+        /// <summary>In a closed IFAK (rip-away lid not pulled open yet) the item can be neither seen nor taken.</summary>
+        public override bool CanBeGrabbedBy(HandGrabber hand) => (!InPouch || pouch == null || pouch.IsOpen) && base.CanBeGrabbedBy(hand);
+
         // ------------------------------------------------------------------ pouch
         public void PutInPouch(IfakPouch p, Transform slot)
         {

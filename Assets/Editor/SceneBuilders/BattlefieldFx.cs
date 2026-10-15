@@ -271,8 +271,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var cap = pgo.AddComponent<CapsuleCollider>();
             cap.radius = 0.05f; cap.height = poleH; cap.center = new Vector3(0f, poleH * 0.5f, 0f);
 
-            // cloth: 28 × 14 grid, x = 0 at the pole; UV maps the flag rectangle of the source texture (hoist
-            // ornament at u ≈ 0.93 → u = 1 at the pole), v 0..0.665 (the upper third of that texture is the stand)
+            // cloth: 28 × 14 grid, x = 0 at the pole. w7: the texture is the corrected flag (W7Demo.FlagTexturePath,
+            // the BlenderKit atlas crop rotated 180°): u = 0 at the pole (hoist ornament), v = 1 at the top (sun above
+            // the eagle). The old mapping read the rotated atlas with only u flipped → the flag hung upside down.
             var fm = new Mesh { name = "FlagCloth" };
             const int nx = 28, ny = 14;
             var v = new Vector3[(nx + 1) * (ny + 1)];
@@ -282,7 +283,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             {
                 float x = i / (float)nx * flagL, y = j / (float)ny * flagH;
                 v[j * (nx + 1) + i] = new Vector3(x, y, 0f);
-                uv[j * (nx + 1) + i] = new Vector2(1f - i / (float)nx * 0.995f, 0.004f + j / (float)ny * 0.66f);
+                uv[j * (nx + 1) + i] = FlagUV(i / (float)nx, j / (float)ny);
             }
             var t = new int[nx * ny * 6];
             int k = 0;
@@ -319,6 +320,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
             fr.shadowCastingMode = ShadowCastingMode.On;
             return root;
         }
+
+        /// <summary>Cloth UV for grid point (x 0 = pole → 1 = fly end, y 0 = bottom → 1 = top) on the corrected flag texture.</summary>
+        public static Vector2 FlagUV(float x, float y) => new Vector2(Mathf.Lerp(0.003f, 0.997f, x), Mathf.Lerp(0.004f, 0.996f, y));
 
         // ------------------------------------------------------------------ LZ
         public static LzMarker LandingZone(Transform parent, Vector3 pos, string matDir, string meshDir, Material smokeMat)

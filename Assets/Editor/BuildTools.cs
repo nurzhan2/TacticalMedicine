@@ -52,6 +52,39 @@ namespace FieldMedic.EditorTools
             BatchExit(code != 0 ? code : c3);
         }
 
+        public const string DemoDir = "FMVR_DEMO";
+
+        /// <summary>w7 presentation set: FULL (demo button, all w0b guards) + SAFE (core only, no battle) → Desktop\FMVR_DEMO.</summary>
+        public static void BuildDemoSet()
+        {
+            int code = Build(Variant.Full, "Builds/FieldMedicVR_DEMO.apk", null);
+            if (code == 0 || code == 4) { File.Copy("Builds/FieldMedicVR_DEMO.apk", ApkPath, true); CopyToDemo("Builds/FieldMedicVR_DEMO.apk"); }
+            int c2 = Build(Variant.Safe, "Builds/FieldMedicVR_SAFE.apk", null);
+            if (c2 == 0) CopyToDemo("Builds/FieldMedicVR_SAFE.apk");
+            Debug.Log($"[FMVR] w7 demo set: DEMO {code} SAFE {c2}");
+            BatchExit(code != 0 ? code : c2);
+        }
+
+        public static void BuildDemoSafeOnly()
+        {
+            int c2 = Build(Variant.Safe, "Builds/FieldMedicVR_SAFE.apk", null);
+            if (c2 == 0) CopyToDemo("Builds/FieldMedicVR_SAFE.apk");
+            BatchExit(c2);
+        }
+
+        static void CopyToDemo(string apk)
+        {
+            try
+            {
+                var desk = System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory);
+                var dir = Path.Combine(desk, DemoDir);
+                Directory.CreateDirectory(dir);
+                File.Copy(apk, Path.Combine(dir, Path.GetFileName(apk)), true);
+                Debug.Log("[FMVR] APK copied to " + Path.Combine(dir, Path.GetFileName(apk)));
+            }
+            catch (Exception e) { Debug.LogWarning("[FMVR] demo copy failed: " + e.Message); }
+        }
+
         static void BatchExit(int code) { if (Application.isBatchMode) EditorApplication.Exit(code); }
 
         public static string[] ScenesFor(Variant v)

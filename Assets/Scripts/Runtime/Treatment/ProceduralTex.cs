@@ -88,6 +88,38 @@ namespace FieldMedic.Treatment
             }
         }
 
+        static AudioClip _velcro;
+
+        /// <summary>Rip-away velcro: dense random crackle (hook-and-loop letting go) over ~0.35 s.</summary>
+        public static AudioClip VelcroClip
+        {
+            get
+            {
+                if (_velcro != null) return _velcro;
+                const int rate = 22050;
+                int len = (int)(rate * 0.45f);
+                var data = new float[len];
+                var rng = new System.Random(11);
+                for (int i = 0; i < len; i++)
+                {
+                    float t = i / (float)rate;
+                    float env = Mathf.Min(1f, t / 0.015f) * (t < 0.32f ? 1f : Mathf.Exp(-(t - 0.32f) * 30f));
+                    float crackle = rng.NextDouble() < 0.18 ? (float)(rng.NextDouble() * 2.0 - 1.0) : 0f;
+                    float w = (float)(rng.NextDouble() * 2.0 - 1.0) * 0.25f;
+                    data[i] = (crackle + w) * env * 0.6f;
+                }
+                _velcro = AudioClip.Create("Velcro", len, 1, rate, false);
+                _velcro.SetData(data, 0);
+                return _velcro;
+            }
+        }
+
+        public static void Velcro(Vector3 at, float volume)
+        {
+            if (Muted) return;
+            AudioSource.PlayClipAtPoint(VelcroClip, at, volume);
+        }
+
         public static void Hiss(Vector3 at, float volume)
         {
             if (Muted) return;

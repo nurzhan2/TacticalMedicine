@@ -94,6 +94,9 @@ namespace FieldMedic.UI
         void Header(string sub)
         {
             Txt("БАУЫР", -W / 2 + 0.06f, H / 2 - 0.04f, 0.05f, Amber);
+            // Kazakhstan flag (corrected texture: sun above the eagle, ornament on the hoist = left) + Satbayev patch
+            WorldUI.Quad(_content, "Flag_KZ", new Vector3(W / 2 - 0.36f, H / 2 - 0.08f, -0.002f), new Vector2(0.12f, 0.06f), Insignia.UnlitMaterial(Insignia.KzFlag));
+            WorldUI.Quad(_content, "Patch_Satbayev", new Vector3(W / 2 - 0.255f, H / 2 - 0.08f, -0.002f), new Vector2(0.052f, 0.065f), Insignia.UnlitMaterial(Insignia.Satbayev));
             Txt(GameSettings.T("Тренажёр боевого медика", "Жауынгер-медик тренажёры") + (sub != null ? "  ·  " + sub : ""), -W / 2 + 0.36f, H / 2 - 0.065f, 0.02f, Dim);
             Btn("RU", W / 2 - 0.16f, H / 2 - 0.08f, 0.07f, GameSettings.KZ ? Steel * 0.6f : Steel, () => { GameSettings.Language = GameLanguage.RU; Refresh(); }, 0.018f);
             Btn("KZ", W / 2 - 0.07f, H / 2 - 0.08f, 0.07f, GameSettings.KZ ? Steel : Steel * 0.6f, () => { GameSettings.Language = GameLanguage.KZ; Refresh(); }, 0.018f);
@@ -114,6 +117,13 @@ namespace FieldMedic.UI
             Txt(GameSettings.T("Степь. Разрушенный посёлок. Бой не стихает.\nЕрлан — твой брат по оружию. Его жизнь — в твоих руках.",
                     "Дала. Қираған кент. Шайқас тоқтамайды.\nЕрлан — сенің қаруластың. Оның өмірі — сенің қолыңда."),
                 -W / 2 + 0.06f, H / 2 - 0.16f, 0.022f, Ink);
+            // w7: the presentation run — big white button, Training mode with the white hint panel
+            var demo = Btn("ДЕМО\nDEMO", 0.52f, 0.19f, 0.22f, new Color(0.95f, 0.95f, 0.93f), () => Go("lesson:" + TrainingCatalog.DemoId, () => ScenarioLaunch.Training(TrainingCatalog.DemoId)), 0.042f);
+            demo.name = "Btn_DEMO";
+            if (demo.Label != null) demo.Label.color = new Color(0.1f, 0.1f, 0.09f);
+            Txt(GameSettings.T("5–7 минут, белая подсказка:\nжгут → в укрытие → тампонада →\nнаклейка → одеяло → карточка → вертолёт",
+                    "5–7 минут, ақ кеңес:\nжгут → баспанаға → тампонада →\nжапсырма → көрпе → карточка → тікұшақ"),
+                0.38f, 0.255f, 0.0135f, Dim, TextAnchor.UpperRight, TextAlignment.Right);
             float y = -0.04f, d = 0.2f;
             Btn("1", -0.54f, y, d, Olive, ShowTraining, 0.06f, GameSettings.T("ОБУЧЕНИЕ", "ОҚЫТУ"), 0.026f);
             Btn("2", -0.18f, y, d, Rust, ShowScenarios, 0.06f, GameSettings.T("БОЙ", "ШАЙҚАС"), 0.026f);

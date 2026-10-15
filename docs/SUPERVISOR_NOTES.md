@@ -70,3 +70,13 @@ Still wrong:
 4. No infantry visible in v2_w3_assault / overview - the near layer (8-12 soldiers running/shooting with tracers)
    must be clearly visible from the player position in at least one screenshot; add muzzle flashes/tracers and dust hits.
 5. The concrete pipe in the middle of the position looks odd - replace with a destroyed vehicle or concrete slabs.
+
+## 15.10 23:55 SUPERVISOR: PRESENTATION TOMORROW MORNING
+- Owner presents the game on the morning of 16.10. Final demo APK + backup video must be ready by 07:30 local (stage w7-demo, runs right after w0b).
+- w0b-blackscreen: time-box to ~02:30 local. Skip 3_FULL_DEV.apk if short on time; HELLO + SAFE + FULL are enough. Do not gold-plate.
+- Owner: Kazakhstan flag hangs UPSIDE DOWN - must be fixed (w7). Game must be fully interactive: grab/drag Erlan, treat by hand (w7).
+
+## 15.10 23:55 SUPERVISOR: PRESENTATION TOMORROW MORNING
+- Owner presents the game on the morning of 16.10. Final demo APK + backup video must be ready by 07:30 local (stage w7-demo, runs right after w0b).
+- w0b-blackscreen: time-box to ~02:30 local. Skip 3_FULL_DEV.apk if short on time; HELLO + SAFE + FULL are enough.
+- Owner: Kazakhstan flag hangs UPSIDE DOWN - must be fixed (w7). Game must be fully interactive: grab/drag Erlan, treat by hand (w7).

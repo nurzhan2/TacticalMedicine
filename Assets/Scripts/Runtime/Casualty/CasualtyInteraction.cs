@@ -77,6 +77,12 @@ namespace FieldMedic.Casualty
             Vector3 hp = handleT != null ? handleT.position : chest.position - rig.BodyForward * 0.17f + rig.BodyUp * 0.12f;
             Drag = ProxyHandle.Create<CasualtyDrag>("Grab_DragHandle", handleT != null ? handleT : chest, hp, 0.07f, 3);
             Drag.casualty = casualty;
+            // w7: both shoulder straps of the plate carrier are grips too (second hand / two-hand drag)
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 sp = chest.position + rig.BodyUp * 0.17f + rig.BodyRight * side * 0.11f + rig.BodyForward * 0.07f;
+                Drag.strapHandles.Add(ProxyHandle.Create<ProxyHandle>(side < 0 ? "Grab_StrapL" : "Grab_StrapR", chest, sp, 0.055f, 2));
+            }
 
             // log roll: shoulder + hip on each side
             Roll = gameObject.AddComponent<LogRoll>();
@@ -87,7 +93,31 @@ namespace FieldMedic.Casualty
             Roll.hipR = HipHandle("Roll_HipR", HumanBodyBones.RightUpperLeg, 1f);
 
             if (buildIfak) BuildIfak();
+            if (buildPatches) AddPatches();
             SyncWoundCare();
+        }
+
+        [Tooltip("GDD_V2 §4: KZ flag on the left shoulder, Satbayev military department patch on the right.")]
+        public bool buildPatches = true;
+        [Tooltip("Distance of the shoulder patches from the upper-arm bone axis (sleeve surface).")]
+        public float patchRadius = 0.062f;
+
+        void AddPatches()
+        {
+            ShoulderPatch(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, -1f, FieldMedic.UI.Insignia.KzFlag, new Vector2(0.08f, 0.04f));
+            ShoulderPatch(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, 1f, FieldMedic.UI.Insignia.Satbayev, new Vector2(0.052f, 0.065f));
+        }
+
+        void ShoulderPatch(HumanBodyBones bone, HumanBodyBones child, float side, string id, Vector2 size)
+        {
+            var rig = casualty.rig;
+            var b = rig.Bone(bone); var c = rig.Bone(child);
+            if (b == null || c == null) return;
+            Vector3 dir = (c.position - b.position).normalized;
+            Vector3 outward = Vector3.ProjectOnPlane(rig.BodyRight * side, dir).normalized;
+            if (outward.sqrMagnitude < 0.5f) return;
+            Vector3 pos = Vector3.Lerp(b.position, c.position, 0.3f) + outward * patchRadius;
+            FieldMedic.UI.Insignia.Patch(b, id, pos, outward, -dir, size); // top of the patch toward the shoulder
         }
 
         void AddLimbHandle(Limb limb, LimbHandle.Grip grip, HumanBodyBones bone, HumanBodyBones child, float along, float radius)

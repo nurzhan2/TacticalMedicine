@@ -57,6 +57,15 @@ namespace FieldMedic.Medical
         public bool secondWound;
         public WoundType secondType = WoundType.Venous;
         public BodyRegion secondRegion = BodyRegion.ForearmL;
+        /// The second wound is under the clothing (blood sweep) — false: torn open by the blast, visible at once.
+        public bool secondHidden = true;
+        /// Third wound (DEMO: penetrating chest wound for the chest seal).
+        public bool thirdWound;
+        public WoundType thirdType = WoundType.PenetratingChest;
+        public BodyRegion thirdRegion = BodyRegion.ChestR;
+        public string thirdVisual = "ChestEntry";
+        /// Ends with the real debrief (score, mistakes, map) instead of the training summary.
+        public bool debrief;
         /// Erlan lies in the open (care under fire + drag) instead of inside the ruins.
         public bool inTheOpen;
         public List<LessonStep> steps = new();
@@ -149,7 +158,12 @@ namespace FieldMedic.Medical
         /// Use an edited table (HintTable asset). Null/empty arguments keep the defaults.
         public static void Use(List<TrainingLesson> lessons, List<HintWrong> wrongs)
         {
-            if (lessons != null && lessons.Count > 0) _all = lessons;
+            if (lessons != null && lessons.Count > 0)
+            {
+                // lessons added in code after the asset was saved (w7 DEMO) stay available
+                _all = new List<TrainingLesson>(lessons);
+                foreach (var d in Build()) if (!_all.Any(l => l.id == d.id)) _all.Add(d);
+            }
             if (wrongs != null && wrongs.Count > 0) _wrongs = wrongs.Where(w => !string.IsNullOrEmpty(w.id)).GroupBy(w => w.id).ToDictionary(g => g.Key, g => g.First());
         }
 
@@ -177,8 +191,54 @@ namespace FieldMedic.Medical
             ["tq_not_rechecked"] = "pulse_foot", ["no_gloves"] = "gloves",
         };
 
+        /// The presentation run behind the big white ДЕМО button (w7).
+        public const string DemoId = "demo";
+
         static List<TrainingLesson> Build() => new()
         {
+            // ------------------------------------------------------------------ DEMO (presentation, 5–7 min)
+            new TrainingLesson
+            {
+                id = DemoId, titleRu = "ДЕМО: Ерлан ранен в поле", titleKz = "ДЕМО: Ерлан далада жараланды", woundType = WoundType.ArterialLimb, region = BodyRegion.ThighR,
+                inTheOpen = true, secondWound = true, secondType = WoundType.Venous, secondRegion = BodyRegion.ThighL, secondHidden = false,
+                thirdWound = true, thirdType = WoundType.PenetratingChest, thirdRegion = BodyRegion.ChestR, thirdVisual = "ChestEntry", debrief = true,
+                steps =
+                {
+                    new LessonStep("reach", "К раненому", "Жаралыға", "h_reach").In("CUF").Show(null, "Erlan", "run")
+                        .Act("Ерлан ранен в бедро — артериальное кровотечение", "Ерлан санынан жараланды — артериялық қан кету")
+                        .Act("Подойди к нему, пригнувшись", "Еңкейіп, оған жақында", "reach"),
+                    new LessonStep("tq_lock", "Жгут «высоко и туго»", "Жгут «жоғары әрі қатты»", "h_tq_cuf").In("CUF").Show("CAT", "ThighHigh", "tq")
+                        .Act("Аптечка на поясе: потяни красный язычок", "Белдегі дәрі қобдишасы: қызыл тілшені тарт", "ifak_open")
+                        .Act("Достань CAT, петлю — высоко на бедро", "CAT ал, ілмекті санның жоғарысына сал", "tq_high")
+                        .Act("Затяни ленту, крути вороток, защёлкни", "Таспаны тарт, бұра, бекіт", "tq_twist")
+                        .Watch("tq_below_wound", "tq_on_joint", "tq_wrong_limb"),
+                    new LessonStep("drag_cover", "В укрытие", "Баспанаға", "h_drag").In("CUF").Show(null, "DragHandle", "drag")
+                        .Act("Хватай за стропу разгрузки (можно двумя руками)", "Разгрузка бауынан ұста (екі қолмен де болады)", "drag_grab")
+                        .Act("Тащи головой вперёд в руины", "Басымен алға қирандыға сүйре")
+                        .Watch("drag_released"),
+                    new LessonStep("tq_time", "Время на жгуте", "Жгут уақыты", "h_time").Show("Marker", "TqLabel", "marker")
+                        .Act("Возьми маркер, зажми курок", "Маркерді ал, шүріппені бас", "marker_grab")
+                        .Act("Запиши время на белой ленте жгута", "Жгуттың ақ таспасына уақытты жаз"),
+                    new LessonStep("packed2", "Тампонада раны", "Жараны тампонадалау", "t_pack_2").Show("Gauze", "Wound2", "gauze")
+                        .Act("Вторая рана — левое бедро. Возьми гемостатик", "Екінші жара — сол сан. Гемостатикті ал", "gauze_grab")
+                        .Act("Пальцами вталкивай бинт в рану до заполнения", "Саусақпен бинтті жараға толғанша ит"),
+                    new LessonStep("seal3", "Окклюзионная наклейка", "Окклюзиялық жапсырма", "t_chest_1").Show("ChestSeal", "Wound3", "seal")
+                        .Act("Ранение груди: вскрой пакет, сними подложку", "Кеуде жарасы: пакетті аш, қабатын алып таста", "seal_open")
+                        .Act("Ладонью на рану, прижми края по кругу", "Алақанмен жараға, шеттерін басып шық")
+                        .Watch("wrong_tool"),
+                    new LessonStep("blanket", "Гипотермия", "Гипотермия", "h_blanket").Show("Blanket", "Body", "blanket")
+                        .Act("Достань спасательное одеяло, разверни двумя руками", "Құтқару көрпесін ал, екі қолмен жай")
+                        .Act("Укрой Ерлана целиком", "Ерланды толық жап"),
+                    new LessonStep("card", "Карточка раненого", "Жаралы карточкасы", "h_card").Show("Card", "Body", "card")
+                        .Act("Заполни карточку маркером", "Карточканы маркермен толтыр")
+                        .Act("Положи её Ерлану на грудь", "Оны Ерланның кеудесіне қой"),
+                    new LessonStep("medevac", "Вызов эвакуации", "Эвакуацияны шақыру", "h_radio").In("TACEVAC").Show("Radio", null, "radio")
+                        .Act("Рация на левом плече — нажми кнопку пальцем", "Сол иықтағы рация — түймені саусақпен бас"),
+                    new LessonStep("loaded", "Погрузка в вертолёт", "Тікұшаққа тиеу", "h_load").In("TACEVAC").Show(null, "Stretcher", "heli")
+                        .Act("Дождись посадки вертолёта", "Тікұшақтың қонуын күт", "heli_landed")
+                        .Act("Нажми «ПОГРУЗИТЬ» у носилок", "Зембіл жанындағы «ТИЕУ» түймесін бас"),
+                },
+            },
             // ------------------------------------------------------------------ full TCCC run in the open
             new TrainingLesson
             {

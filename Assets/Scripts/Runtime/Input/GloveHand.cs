@@ -147,7 +147,17 @@ namespace FieldMedic.Input
             Renderer.updateWhenOffscreen = true;
             Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Renderer.sharedMaterial = material != null ? material : FieldMedic.UI.WorldUI.Lit(new Color(0.12f, 0.12f, 0.1f), 0.2f);
+
+            // GDD_V2 §4: Kazakhstan flag on the left sleeve, Satbayev military department patch on the right one
+            // (on top of the sleeve = back of the hand side, texture top toward the fingers)
+            bool left = side < 0f;
+            var patch = FieldMedic.UI.Insignia.Patch(transform, left ? FieldMedic.UI.Insignia.KzFlag : FieldMedic.UI.Insignia.Satbayev,
+                transform.TransformPoint(new Vector3(0f, 0.0352f, -0.1f)), transform.up, transform.forward,
+                left ? new Vector2(0.044f, 0.022f) : new Vector2(0.028f, 0.035f));
+            _patch = patch.GetComponent<Renderer>();
         }
+
+        Renderer _patch;
 
         static readonly Dictionary<PrimitiveType, Mesh> _prims = new Dictionary<PrimitiveType, Mesh>();
 
@@ -165,7 +175,7 @@ namespace FieldMedic.Input
             if (Renderer == null) return;
             var input = _rig != null ? _rig.Input : null;
             bool tracked = _rig != null && _rig.ActiveMode == HandRig.Mode.OVR && _rig.ovrHand != null && _rig.ovrHand.IsTracked;
-            if (Renderer.enabled == tracked) Renderer.enabled = !tracked;
+            if (Renderer.enabled == tracked) { Renderer.enabled = !tracked; if (_patch != null) _patch.enabled = !tracked; }
             if (driveFromInput && input != null)
             {
                 bool holding = _grabber != null && _grabber.Held != null;
