@@ -531,6 +531,15 @@ namespace FieldMedic.Scenarios.Bots
                 yield return Move(h, top + Vector3.up * 0.01f + (ctr - top).normalized * 0.0f + c.rig.BodyUp * 0.06f, false, 0.4f);
                 yield return Move(h, top + Vector3.up * 0.01f - c.rig.BodyUp * 0.06f, false, 0.4f);
             }
+            // a wet patch under the glove: stroke slowly over it (the palm finds what the overview stroke missed)
+            foreach (var s in c.WoundSites)
+            {
+                if (s == null || s.Wound == null || s.Wound.discovered || (s.Wound.posterior && !c.rolledOnSide)) continue;
+                Vector3 p = s.transform.position;
+                yield return Move(h, p + Vector3.up * 0.05f, false, 2f);
+                yield return Move(h, p + Vector3.up * 0.01f + c.rig.BodyUp * 0.05f, false, 0.4f);
+                yield return Move(h, p + Vector3.up * 0.01f - c.rig.BodyUp * 0.05f, false, 0.4f);
+            }
         }
 
         public IEnumerator CheckPulse(CasualtyController c, PulseSite site, float seconds, HandGrabber h = null)
