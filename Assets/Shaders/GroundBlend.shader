@@ -56,6 +56,12 @@ Shader "FieldMedic/GroundBlend"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
 
+            // the ground does not receive realtime shadows: on the overcast steppe they were barely visible, and the
+            // shadow lookup on this huge grazing-angle receiver produced the black/tan "pixel noise" over the whole
+            // field (supervisor 15.10 03:55 #1; noise stayed even with an empty shadow map). Contact darkening comes
+            // from the vertex AO channel instead. Also saves the shadow sample on the largest surface on screen.
+            #define _RECEIVE_SHADOWS_OFF 1
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             TEXTURE2D(_GrassMap); SAMPLER(sampler_GrassMap);
@@ -171,7 +177,7 @@ Shader "FieldMedic/GroundBlend"
             ENDHLSL
         }
 
-        UsePass "Universal Render Pipeline/Lit/ShadowCaster"
+        // no ShadowCaster: a flat steppe casting into the 32 m shadow map only costs 51k triangles per frame
         UsePass "Universal Render Pipeline/Lit/DepthOnly"
     }
     FallBack "Universal Render Pipeline/Lit"

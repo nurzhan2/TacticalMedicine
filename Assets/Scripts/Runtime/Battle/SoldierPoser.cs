@@ -16,10 +16,12 @@ namespace FieldMedic.Battle
     public sealed class SoldierPoser : MonoBehaviour
     {
         public Animator animator;
-        [Tooltip("Rifle grip→muzzle axis in right-hand space (baked by the battle asset builder).")]
+        [Tooltip("Rifle grip→muzzle axis in weapon-hand space (baked by the battle asset builder).")]
         public Vector3 rifleAxisLocal = Vector3.forward;
-        [Tooltip("Muzzle point in right-hand space.")]
+        [Tooltip("Muzzle point in weapon-hand space.")]
         public Vector3 muzzleLocal = new Vector3(0f, 0f, 0.8f);
+        [Tooltip("The rifle is skinned to the left hand bone (this model): that hand grips and aims, the other supports.")]
+        public bool rifleInLeftHand;
         [Tooltip("Run stride length per full cycle (m).")]
         public float strideLength = 2.3f;
 
@@ -32,7 +34,14 @@ namespace FieldMedic.Battle
         SoldierPose _last = SoldierPose.None;
         Quaternion[] _cur;
 
-        public Vector3 Muzzle => rig != null && rig.rHand != null ? rig.rHand.TransformPoint(muzzleLocal) : transform.position + Vector3.up * 1.4f + transform.forward * 0.7f;
+        public Vector3 Muzzle
+        {
+            get
+            {
+                var h = rig == null ? null : rifleInLeftHand ? rig.lHand : rig.rHand;
+                return h != null ? h.TransformPoint(muzzleLocal) : transform.position + Vector3.up * 1.4f + transform.forward * 0.7f;
+            }
+        }
         public float Weight => _w;
 
         void Awake()
@@ -55,7 +64,7 @@ namespace FieldMedic.Battle
             if (_phase > Mathf.PI * 200f) _phase -= Mathf.PI * 200f;
             for (int i = 0; i < rig.bones.Length; i++) _cur[i] = rig.bones[i] != null ? rig.bones[i].localRotation : Quaternion.identity;
             Vector3 hipsCur = rig.hips.localPosition;
-            Apply(rig, _last, _phase, transform, rifleAxisLocal, aimPitch);
+            Apply(rig, _last, _phase, transform, rifleAxisLocal, aimPitch, rifleInLeftHand);
             if (_w < 0.999f)
             {
                 for (int i = 0; i < rig.bones.Length; i++)
@@ -89,6 +98,7 @@ namespace FieldMedic.Battle
                 r.lArm = B(HumanBodyBones.LeftUpperArm); r.lFore = B(HumanBodyBones.LeftLowerArm); r.lHand = B(HumanBodyBones.LeftHand);
                 r.rArm = B(HumanBodyBones.RightUpperArm); r.rFore = B(HumanBodyBones.RightLowerArm); r.rHand = B(HumanBodyBones.RightHand);
                 if (r.hips == null || r.rHand == null || r.lFoot == null) return null;
+                StandUp(a, root, r);
                 // upper body first (kneel aim applies only these), then legs + hips
                 r.bones = new[] { r.spine, r.chest, r.neck, r.head, r.lArm, r.lFore, r.lHand, r.rArm, r.rFore, r.rHand, r.hips, r.lUp, r.lLow, r.lFoot, r.rUp, r.rLow, r.rFoot };
                 r.legStart = 10;
@@ -103,6 +113,27 @@ namespace FieldMedic.Battle
                 return r;
             }
 
+            /// <summary>The imported bone transforms are the DCC rest pose (may lie on the floor): put the skeleton in
+            /// the humanoid zero-muscle pose (standing, facing the root's forward, feet on the root plane).</summary>
+            static void StandUp(Animator a, Transform root, Rig r)
+            {
+                if (a.avatar == null || !a.avatar.isHuman) return;
+                var h = new HumanPoseHandler(a.avatar, a.transform);
+                try
+                {
+                    var hp = new HumanPose();
+                    h.GetHumanPose(ref hp);
+                    for (int i = 0; i < hp.muscles.Length; i++) hp.muscles[i] = 0f;
+                    hp.bodyRotation = Quaternion.identity;
+                    hp.bodyPosition = new Vector3(0f, 1f, 0f);
+                    h.SetHumanPose(ref hp);
+                }
+                finally { h.Dispose(); }
+                Vector3 U = root.up;
+                float minFoot = Mathf.Min(Vector3.Dot(r.lFoot.position - root.position, U), Vector3.Dot(r.rFoot.position - root.position, U));
+                r.hips.position += U * (0.09f - minFoot);
+            }
+
             public void ResetToBind(bool upperOnly)
             {
                 int n = upperOnly ? legStart : bones.Length;
@@ -114,7 +145,7 @@ namespace FieldMedic.Battle
         static void Rotate(Transform t, Vector3 axis, float deg) { if (t != null) t.rotation = Quaternion.AngleAxis(deg, axis) * t.rotation; }
 
         /// <summary>Poses the rig (world-space construction from the bind pose). Pure function of its inputs.</summary>
-        public static void Apply(Rig r, SoldierPose p, float phase, Transform root, Vector3 rifleAxisLocal, float aimPitch = 0f)
+        public static void Apply(Rig r, SoldierPose p, float phase, Transform root, Vector3 rifleAxisLocal, float aimPitch = 0f, bool leftGrip = false)
         {
             if (r == null || p == SoldierPose.None) return;
             bool kneel = p == SoldierPose.KneelAim;
@@ -163,20 +194,22 @@ namespace FieldMedic.Battle
                 }
             }
 
-            // ---- arms + rifle
+            // ---- arms + rifle (the weapon hand grips at the shoulder pocket, the other hand holds the handguard)
+            Transform gArm = leftGrip ? r.lArm : r.rArm, gFore = leftGrip ? r.lFore : r.rFore, gHand = leftGrip ? r.lHand : r.rHand;
+            Transform sArm = leftGrip ? r.rArm : r.lArm, sFore = leftGrip ? r.rFore : r.lFore, sHand = leftGrip ? r.rHand : r.lHand;
+            Vector3 S = leftGrip ? -R : R; // toward the grip side
             Vector3 D;
-            if (p == SoldierPose.Run) D = (F * 0.55f + U * 0.5f - R * 0.4f).normalized;
+            if (p == SoldierPose.Run) D = (F * 0.55f + U * 0.5f - S * 0.4f).normalized;
             else D = Quaternion.AngleAxis(-aimPitch, R) * F;
-            Vector3 shoulder = r.rArm.position;
+            Vector3 shoulder = gArm.position;
             Vector3 grip = p == SoldierPose.Run
-                ? shoulder + F * 0.22f - U * 0.28f - R * 0.1f
-                : shoulder + D * 0.16f - U * 0.07f - R * 0.06f;
-            TwoBoneIK.Solve(r.rArm, r.rFore, r.rHand, grip, r.rArm.position + R * 0.35f - U * 0.45f, 1f);
-            Vector3 axisNow = r.rHand.rotation * rifleAxisLocal;
-            r.rHand.rotation = Quaternion.FromToRotation(axisNow, D) * r.rHand.rotation;
-            Vector3 support = r.rHand.position + D * (p == SoldierPose.Run ? 0.3f : 0.34f) - U * 0.03f;
-            TwoBoneIK.Solve(r.lArm, r.lFore, r.lHand, support, r.lArm.position - U * 0.45f + F * 0.1f - R * 0.1f, 1f);
-            r.lHand.rotation = Quaternion.LookRotation(D, U) * Quaternion.Inverse(Quaternion.LookRotation(F, U)) * rootRot * r.lHandRel;
+                ? shoulder + F * 0.22f - U * 0.28f - S * 0.1f
+                : shoulder + D * 0.16f - U * 0.07f - S * 0.06f;
+            TwoBoneIK.Solve(gArm, gFore, gHand, grip, gArm.position + S * 0.35f - U * 0.45f, 1f);
+            Vector3 axisNow = gHand.rotation * rifleAxisLocal;
+            gHand.rotation = Quaternion.FromToRotation(axisNow, D) * gHand.rotation;
+            Vector3 support = gHand.position + D * (p == SoldierPose.Run ? 0.3f : 0.34f) - U * 0.03f;
+            TwoBoneIK.Solve(sArm, sFore, sHand, support, sArm.position - U * 0.45f + F * 0.1f + S * 0.1f, 1f);
 
             // ---- head looks along the aim
             if (r.head != null)

@@ -50,7 +50,7 @@ Re-create the licensed folder with `python tools/bk_fetch.py get <assetBaseId> -
 | soldiers | Special Sniper Soldier-Rigged-Game Ready | bab061a6-ed60-4c1d-9465-d501700264b7 | Silent Wolf | royalty_free | 5182 | Assets/_Licensed/BlenderKit/soldiers/soldier_agent |
 | soldiers | Special Sniper Soldier-Rigged-Game Ready | bab061a6-ed60-4c1d-9465-d501700264b7 | Silent Wolf | royalty_free | 1282 | Assets/_Licensed/BlenderKit/soldiers/soldier_crowd |
 | soldiers | Special Sniper Soldier-Rigged-Game Ready | bab061a6-ed60-4c1d-9465-d501700264b7 | Silent Wolf | royalty_free | 1082 | Assets/_Licensed/BlenderKit/soldiers/soldier_far |
-| props | Flashbang | 718de840-4cab-4663-9bc7-99e778b77039 | Blaž Mraz | royalty_free | 2995 | Assets/_Licensed/BlenderKit/props/smoke_grenade |
+| props | Flashbang | 718de840-4cab-4663-9bc7-99e778b77039 | Blaž Mraz | royalty_free | 7628 | Assets/_Licensed/BlenderKit/props/smoke_grenade |
 
 ## Poly Haven (CC0, committed: Assets/ThirdParty/PolyHaven, fetched by tools/ph_fetch.py)
 | category | name | id | author | license | faces | path |

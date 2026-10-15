@@ -237,8 +237,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
         {
             var layer = new GameObject("Vehicles").AddComponent<VehicleLayer>();
             layer.transform.SetParent(root, false);
-            var tank = BattleAssets.SplitVehicle("vehicles", "m1a2_tank", "EnemyTank", 1, 0.5f, new Color(0.58f, 0.6f, 0.52f), "barrel", 3.2f);
-            var ifv = BattleAssets.SplitVehicle("vehicles", "arx_apc", "EnemyIFV", 1, 0.62f, new Color(0.6f, 0.6f, 0.54f), "barrel", 1.6f);
+            var tank = BattleAssets.SplitVehicle("vehicles", "m1a2_tank", "EnemyTank", 1, 0.5f, new Color(0.58f, 0.6f, 0.52f), "barrel");
+            var ifv = BattleAssets.SplitVehicle("vehicles", "arx_apc", "EnemyIFV", 1, 0.62f, new Color(0.6f, 0.6f, 0.54f), "barrel");
             var engine = BattleAudio.Pick(audio.tankEngine);
             void Add(BattleAssets.SplitResult res, string name, Vector3[] path, float speed, bool autocannon)
             {
@@ -355,7 +355,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 air.jetAudio = Loop3D(j.transform, "JetAudio", null, 40f, 2500f, 1f, 1f);
                 air.jetAudio.loop = false;
             }
-            var heli = BattleAssets.SplitVehicle("aircraft", "utility_helicopter", "AttackHeli", 1, 0.86f, new Color(0.5f, 0.55f, 0.45f), "mast");
+            var heli = BattleAssets.SplitVehicle("aircraft", "utility_helicopter", "AttackHeli", 1, 0.74f, new Color(0.5f, 0.55f, 0.45f), "mast");
             if (heli != null && heli.prefab != null)
             {
                 var h = (GameObject)PrefabUtility.InstantiatePrefab(heli.prefab, air.transform);

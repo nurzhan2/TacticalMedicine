@@ -48,6 +48,10 @@ namespace FieldMedic.Battle
         RenderParams _rp;
 
         public int Detonations { get; private set; }
+        /// <summary>Closest blast to the player so far (m) and the last blast position (tests, debug).</summary>
+        public float ClosestBlast { get; private set; } = float.MaxValue;
+        public Vector3 LastBlast { get; private set; }
+        public void ResetStats() { ClosestBlast = float.MaxValue; Detonations = 0; }
         public int ActiveProjectiles { get; private set; }
 
         void Awake()
@@ -145,6 +149,8 @@ namespace FieldMedic.Battle
             if (amb != null) amb.Detonate(at, charge);
             else CombatVfx.Instance?.ExplosionNear(at, charge);
             float d = head != null ? Vector3.Distance(head.position, at) : 999f;
+            LastBlast = at;
+            if (d < ClosestBlast) ClosestBlast = d;
             int chunks = (int)(Mathf.Lerp(20f, 70f, Mathf.Clamp01(charge)) * (d < 150f ? 1f : 0.3f));
             Emit(_chunks, at + Vector3.up * 0.3f, chunks, new Color(0.13f, 0.1f, 0.075f, 1f));
             Emit(_ring, at + Vector3.up * 0.4f, (int)(14 * Mathf.Clamp(charge, 0.5f, 2.5f)), new Color(0.46f, 0.4f, 0.32f, 0.55f));

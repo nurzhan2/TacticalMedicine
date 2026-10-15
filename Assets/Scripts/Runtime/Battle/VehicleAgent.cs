@@ -39,6 +39,7 @@ namespace FieldMedic.Battle
 
         void Awake()
         {
+            if (turret == null) turret = transform.Find("Model/Part");
             if (turret != null) { _turretRest = turret.localRotation; _turretRestPos = turret.localPosition; }
             _len = Mathf.Max(1f, Spline.LoopLength(path));
             _u = Random.Range(0f, path.Length);
@@ -152,41 +153,6 @@ namespace FieldMedic.Battle
             // muzzle blast kicks dust around the hull
             if (fx != null) fx.GroundDust(transform.position + transform.forward * 3f, 1.2f);
             _recoil = 0.25f; // recoil jerk (springs back in Step)
-        }
-    }
-
-    /// <summary>Owns the vehicles: steps them, hands out shots requested by the battle director.</summary>
-    public sealed class VehicleLayer : MonoBehaviour
-    {
-        public static VehicleLayer Instance { get; private set; }
-        public List<VehicleAgent> vehicles = new List<VehicleAgent>();
-        int _rr;
-
-        void Awake() => Instance = this;
-        void OnDestroy() { if (Instance == this) Instance = null; }
-
-        void Update()
-        {
-            float now = Time.time, dt = Time.deltaTime;
-            for (int i = 0; i < vehicles.Count; i++) if (vehicles[i] != null) vehicles[i].Step(now, dt);
-        }
-
-        public int TotalShots
-        {
-            get { int n = 0; for (int i = 0; i < vehicles.Count; i++) if (vehicles[i] != null) n += vehicles[i].ShotsFired; return n; }
-        }
-
-        /// <summary>The next idle vehicle fires at <paramref name="target"/>.</summary>
-        public bool RequestShot(Vector3 target, bool preferCannon = true)
-        {
-            for (int k = 0; k < vehicles.Count; k++)
-            {
-                var v = vehicles[(_rr + k) % vehicles.Count];
-                if (v == null || v.Busy || (preferCannon && v.autocannon && k < vehicles.Count - 1)) continue;
-                _rr = (_rr + k + 1) % vehicles.Count;
-                return v.RequestShot(target);
-            }
-            return false;
         }
     }
 }

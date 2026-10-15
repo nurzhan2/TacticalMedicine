@@ -47,6 +47,12 @@ namespace FieldMedic.Battle
         {
             Instance = this;
             if (head == null && Camera.main != null) head = Camera.main.transform;
+            // prefab-instance references can be lost when the builder re-saves the prefabs: find them by name
+            if (jet == null) jet = transform.Find("AttackJet");
+            if (heli == null) heli = transform.Find("AttackHeli");
+            if (heliRotor == null && heli != null) heliRotor = heli.Find("Model/Part");
+            if (jetAudio == null && jet != null) jetAudio = jet.GetComponentInChildren<AudioSource>(true);
+            if (heliAudio == null && heli != null) heliAudio = heli.GetComponentInChildren<AudioSource>(true);
             if (jet != null) jet.gameObject.SetActive(false);
             if (heli != null) heli.gameObject.SetActive(false);
         }

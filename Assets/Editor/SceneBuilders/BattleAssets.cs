@@ -85,34 +85,57 @@ namespace FieldMedic.EditorTools.SceneBuilders
         // ================================================================== rifle calibration
         /// <summary>Finds the weapon vertices (material "Weapon") in the bind pose and expresses the grip→muzzle axis
         /// and the muzzle point in right-hand space.</summary>
-        public static bool CalibrateRifle(GameObject inst, out Vector3 axisLocal, out Vector3 muzzleLocal)
+        public static bool CalibrateRifle(GameObject inst, out Vector3 axisLocal, out Vector3 muzzleLocal) => CalibrateRifle(inst, out axisLocal, out muzzleLocal, out _);
+
+        public static bool CalibrateRifle(GameObject inst, out Vector3 axisLocal, out Vector3 muzzleLocal, out bool leftHand)
         {
-            axisLocal = Vector3.forward; muzzleLocal = new Vector3(0f, 0f, 0.8f);
+            axisLocal = Vector3.forward; muzzleLocal = new Vector3(0f, 0f, 0.8f); leftHand = false;
             var anim = inst.GetComponentInChildren<Animator>();
-            var hand = anim != null ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
-            if (hand == null) return false;
-            var pts = new List<Vector3>();
+            var rightHand = anim != null ? anim.GetBoneTransform(HumanBodyBones.RightHand) : null;
+            var leftHandT = anim != null ? anim.GetBoneTransform(HumanBodyBones.LeftHand) : null;
+            if (rightHand == null || leftHandT == null) return false;
+            var world = new List<Vector3>();
+            // exact: skin the weapon vertices by hand (Σ w·bone·bindpose·v) in the current pose, then express them in
+            // right-hand space (the rifle is rigid with the hand whatever bones it is weighted to)
+            var weights = new Dictionary<string, int>();
             foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
+                var mesh = smr.sharedMesh;
+                if (mesh == null) continue;
+                var bones = smr.bones;
+                var bps = mesh.bindposes;
+                var bw = mesh.boneWeights;
                 var mats = smr.sharedMaterials;
-                var baked = new Mesh();
-                smr.BakeMesh(baked, true);
-                var v = baked.vertices;
-                for (int s = 0; s < baked.subMeshCount && s < mats.Length; s++)
+                var v = mesh.vertices;
+                var l2w = new Matrix4x4[bones.Length];
+                for (int b = 0; b < bones.Length; b++) l2w[b] = bones[b] != null ? bones[b].localToWorldMatrix * bps[b] : Matrix4x4.identity;
+                for (int s = 0; s < mesh.subMeshCount && s < mats.Length; s++)
                 {
                     if (mats[s] == null || !mats[s].name.ToLowerInvariant().Contains("weapon")) continue;
-                    foreach (int i in baked.GetIndices(s).Distinct())
-                        pts.Add(hand.InverseTransformPoint(smr.transform.position + smr.transform.rotation * v[i]));
+                    foreach (int i in mesh.GetIndices(s).Distinct())
+                    {
+                        var w = bw[i];
+                        Vector3 p = l2w[w.boneIndex0].MultiplyPoint3x4(v[i]) * w.weight0 + l2w[w.boneIndex1].MultiplyPoint3x4(v[i]) * w.weight1
+                                  + l2w[w.boneIndex2].MultiplyPoint3x4(v[i]) * w.weight2 + l2w[w.boneIndex3].MultiplyPoint3x4(v[i]) * w.weight3;
+                        world.Add(p);
+                        string bn = bones[w.boneIndex0] != null ? bones[w.boneIndex0].name : "?";
+                        weights[bn] = weights.TryGetValue(bn, out int c) ? c + 1 : 1;
+                    }
                 }
-                Object.DestroyImmediate(baked);
             }
+            Debug.Log("[FMVR] battle: weapon weighted to " + string.Join(", ", weights.Select(kv => kv.Key + ":" + kv.Value)));
+            // the weapon hand = whichever hand bone carries the rifle (by name of the dominant bone)
+            string top = weights.Count > 0 ? weights.OrderByDescending(kv => kv.Value).First().Key : "";
+            leftHand = top == leftHandT.name || (top != rightHand.name && (top.EndsWith(".l") || top.ToLowerInvariant().Contains("left")));
+            var hand = leftHand ? leftHandT : rightHand;
+            var pts = world.Select(w => hand.InverseTransformPoint(w)).ToList();
             if (pts.Count < 10) { Debug.LogWarning("[FMVR] battle: no weapon vertices found"); return false; }
             // muzzle = farthest from the hand; butt = farthest from the muzzle
             Vector3 muzzle = pts.OrderByDescending(p => p.sqrMagnitude).First();
             Vector3 butt = pts.OrderByDescending(p => (p - muzzle).sqrMagnitude).First();
             axisLocal = (muzzle - butt).normalized;
             muzzleLocal = muzzle;
-            Debug.Log($"[FMVR] battle: rifle length {(muzzle - butt).magnitude:F2} m, muzzle {muzzle} (hand space), axis {axisLocal}");
+            Debug.Log($"[FMVR] battle: rifle length {hand.TransformVector(muzzle - butt).magnitude:F2} m (world), muzzle {muzzle} (hand space), axis {axisLocal}, hand scale {hand.lossyScale}");
             return true;
         }
 
@@ -157,11 +180,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
                     smr.receiveShadows = true;
                     smr.sharedMaterials = smr.sharedMaterials.Select(m => m == null ? null : m.name.ToLowerInvariant().Contains("weapon") ? m : Tinted(m, team.ToString(), TeamTint(team))).ToArray();
                 }
-                CalibrateRifle(inst, out var axis, out var muzzle);
+                CalibrateRifle(inst, out var axis, out var muzzle, out bool left);
                 var poser = inst.AddComponent<SoldierPoser>();
                 poser.animator = anim;
                 poser.rifleAxisLocal = axis;
                 poser.muzzleLocal = muzzle;
+                poser.rifleInLeftHand = left;
                 var agent = inst.AddComponent<SoldierAgent>();
                 agent.team = team;
                 agent.animator = anim;
@@ -204,6 +228,19 @@ namespace FieldMedic.EditorTools.SceneBuilders
             var b = new Bounds(pv[0], Vector3.zero);
             foreach (var p in pv) b.Encapsulate(p);
             float cut = b.min.y + splitFrac * b.size.y;
+            {
+                var hist = new int[10];
+                for (int s0 = 0; s0 < src.subMeshCount; s0++)
+                {
+                    var idx0 = src.GetTriangles(s0);
+                    for (int t = 0; t < idx0.Length; t += 3)
+                    {
+                        float cy = (pv[idx0[t]].y + pv[idx0[t + 1]].y + pv[idx0[t + 2]].y) / 3f;
+                        hist[Mathf.Clamp((int)((cy - b.min.y) / b.size.y * 10f), 0, 9)]++;
+                    }
+                }
+                Debug.Log($"[FMVR] battle: {slug} height histogram (10 bins, {b.size.y:F2} m): {string.Join(",", hist)}; size {b.size}");
+            }
 
             // first pass: centre of the top part (for the radial limit)
             Vector3 topC = Vector3.zero; int topN = 0;
@@ -239,7 +276,10 @@ namespace FieldMedic.EditorTools.SceneBuilders
             // part pivot: horizontal centre of its vertices at the cut height
             var pb = new Bounds(pv[partVerts.First()], Vector3.zero);
             foreach (int i in partVerts) pb.Encapsulate(pv[i]);
-            Vector3 pivot = new Vector3(topC.x, cut, topC.z);
+            // median of the part's vertices: the turret ring / rotor mast, not pulled forward by a long barrel
+            var xs = partVerts.Select(i => pv[i].x).OrderBy(x => x).ToList();
+            var zs = partVerts.Select(i => pv[i].z).OrderBy(z => z).ToList();
+            Vector3 pivot = new Vector3(xs[xs.Count / 2], cut, zs[zs.Count / 2]);
 
             // forward: the barrel sticks out of the turret's front; the tail fin is the jet's highest point at the
             // back; a helicopter's mast sits ahead of the bounds centre (the tail boom is long)
@@ -371,20 +411,22 @@ namespace FieldMedic.EditorTools.SceneBuilders
             foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 var baked = new Mesh();
-                smr.BakeMesh(baked, true);
+                smr.BakeMesh(baked, false);
                 var v = baked.vertices; var n = baked.normals;
+                var l2w = smr.transform.localToWorldMatrix;
                 var mats = smr.sharedMaterials;
                 for (int s = 0; s < baked.subMeshCount; s++)
                 {
                     var mat = s < mats.Length ? mats[s] : null;
-                    Color col = Color.gray;
-                    if (mat != null && !colorCache.TryGetValue(mat, out col))
-                    {
-                        col = AverageColor(mat);
-                        colorCache[mat] = col;
-                    }
+                    // fixed palette by part (texture averaging is unreliable on the editor GPU): dark, neutral uniform
+                    string mn = mat != null ? mat.name.ToLowerInvariant() : "";
+                    Color col = mn.Contains("weapon") ? new Color(0.12f, 0.12f, 0.12f)
+                              : mn.Contains("upper") ? new Color(0.36f, 0.36f, 0.32f)
+                              : mn.Contains("bottom") ? new Color(0.3f, 0.3f, 0.27f)
+                              : new Color(0.26f, 0.26f, 0.24f);
                     bool weapon = mat != null && mat.name.ToLowerInvariant().Contains("weapon");
-                    Color vc = weapon ? col * 0.8f : new Color(col.r * tint.r, col.g * tint.g, col.b * tint.b, 1f);
+                    // palette is in sRGB; vertex colours are used as linear values by the shader
+                    Color vc = (weapon ? col * 0.8f : new Color(col.r * tint.r, col.g * tint.g, col.b * tint.b, 1f)).linear;
                     var idx = baked.GetIndices(s);
                     var map = new Dictionary<int, int>();
                     foreach (int i in idx)
@@ -393,9 +435,9 @@ namespace FieldMedic.EditorTools.SceneBuilders
                         {
                             ni = verts.Count;
                             map[i] = ni;
-                            Vector3 w = smr.transform.position + smr.transform.rotation * v[i];
+                            Vector3 w = l2w.MultiplyPoint3x4(v[i]);
                             verts.Add(toRoot.MultiplyPoint3x4(w));
-                            norms.Add(toRoot.MultiplyVector(smr.transform.rotation * (n.Length > i ? n[i] : Vector3.up)).normalized);
+                            norms.Add(toRoot.MultiplyVector(l2w.MultiplyVector(n.Length > i ? n[i] : Vector3.up)).normalized);
                             cols.Add(vc);
                         }
                         tris.Add(ni);
@@ -427,7 +469,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
             {
                 inst.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
                 var anim = inst.GetComponentInChildren<Animator>();
-                CalibrateRifle(inst, out var axis, out _);
+                CalibrateRifle(inst, out var axis, out _, out bool left);
                 var rig = SoldierPoser.Rig.Capture(anim, inst.transform);
                 var cache = new Dictionary<Material, Color>();
                 var tint = TeamTint(Team.Enemy);
@@ -440,12 +482,12 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 }
                 for (int f = 0; f < 8; f++)
                 {
-                    SoldierPoser.Apply(rig, SoldierPose.Run, f / 8f * Mathf.PI * 2f, inst.transform, axis);
+                    SoldierPoser.Apply(rig, SoldierPose.Run, f / 8f * Mathf.PI * 2f, inst.transform, axis, 0f, left);
                     result.Add(Save(BakeColoured(inst, $"Crowd_Run{f}", tint, cache)));
                 }
                 rig.ResetToBind(false);
                 SampleClip(inst, "Rifle_Kneel_Idle", 0.3f);
-                SoldierPoser.Apply(rig, SoldierPose.KneelAim, 0f, inst.transform, axis);
+                SoldierPoser.Apply(rig, SoldierPose.KneelAim, 0f, inst.transform, axis, 0f, left);
                 result.Add(Save(BakeColoured(inst, "Crowd_Kneel", tint, cache)));
                 rig.ResetToBind(false);
                 SampleClip(inst, "Knocked_Out_Fall_Back", 1f);
@@ -475,7 +517,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>(true))
                     smr.sharedMaterials = smr.sharedMaterials.Select(m => m == null ? null : m.name.ToLowerInvariant().Contains("weapon") ? m : Tinted(m, "Enemy", TeamTint(Team.Enemy))).ToArray();
                 var anim = inst.GetComponentInChildren<Animator>();
-                CalibrateRifle(inst, out var axis, out _);
+                CalibrateRifle(inst, out var axis, out _, out bool left);
                 var rig = SoldierPoser.Rig.Capture(anim, inst.transform);
                 var cam = camGo.AddComponent<Camera>();
                 cam.orthographic = true;
@@ -494,7 +536,7 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 RenderSettings.fog = false;
                 for (int f = 0; f < Frames; f++)
                 {
-                    SoldierPoser.Apply(rig, SoldierPose.Run, f / (float)Frames * Mathf.PI * 2f, inst.transform, axis);
+                    SoldierPoser.Apply(rig, SoldierPose.Run, f / (float)Frames * Mathf.PI * 2f, inst.transform, axis, 0f, left);
                     cam.Render();
                     var prev = RenderTexture.active;
                     RenderTexture.active = rt;

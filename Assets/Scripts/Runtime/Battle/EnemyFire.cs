@@ -23,6 +23,8 @@ namespace FieldMedic.Battle
         public Transform head;
         [Tooltip("Dug-in enemy machine-gun positions (always manned).")]
         public Vector3[] mgNests = new Vector3[0];
+        [Tooltip("Near infantry in firing positions count as shooters (tests switch it off for determinism).")]
+        public bool useInfantry = true;
         [Tooltip("When no scenario director exists: whether the player can be targeted (tests, sandbox).")]
         public bool armedWithoutScenario = true;
         public SuppressionFx suppressionFx;
@@ -112,7 +114,7 @@ namespace FieldMedic.Battle
             _hasShooter = false;
             Vector3 h = head.position, t = Torso;
             bool exposed = false;
-            var inf = NearInfantry.Instance;
+            var inf = useInfantry ? NearInfantry.Instance : null;
             if (inf != null)
             {
                 for (int i = 0; i < inf.enemies.Count; i++)
@@ -146,7 +148,7 @@ namespace FieldMedic.Battle
         void PickCoverShooter()
         {
             // the nearest active shooter keeps firing at the player's cover
-            var inf = NearInfantry.Instance;
+            var inf = useInfantry ? NearInfantry.Instance : null;
             if (inf != null)
                 for (int i = 0; i < inf.enemies.Count; i++)
                 {

@@ -680,13 +680,13 @@
   "assetBaseId": "718de840-4cab-4663-9bc7-99e778b77039",
   "author": "Blaž Mraz",
   "license": "royalty_free",
-  "tris": 2995,
+  "tris": 7628,
   "size_m": [
    0.06,
    0.065,
    0.135
   ],
   "path": "Assets/_Licensed/BlenderKit/props/smoke_grenade",
-  "cmd": "python tools/bk_fetch.py get 718de840-4cab-4663-9bc7-99e778b77039 --category props --slug smoke_grenade --max-faces 3000 --tex 512 --size H=0.135"
+  "cmd": "python tools/bk_fetch.py get 718de840-4cab-4663-9bc7-99e778b77039 --category props --slug smoke_grenade --max-faces 9000 --tex 512 --size H=0.135"
  }
 }

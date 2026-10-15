@@ -4,36 +4,6 @@ using UnityEngine;
 namespace FieldMedic.Battle
 {
     /// <summary>
-    /// Body-locked chest rig on the player's vest (follows the torso yaw lazily, like the IFAK) holding the smoke
-    /// grenades in their pouch slots.
-    /// </summary>
-    public sealed class VestMount : MonoBehaviour
-    {
-        public Transform head;
-        public float belowHead = 0.42f;
-        public float forward = 0.2f;
-        public float side = -0.16f;   // left chest
-        float _yaw;
-        bool _init;
-
-        void LateUpdate() => Follow(false);
-
-        public void Follow(bool snap)
-        {
-            if (head == null && Camera.main != null) head = Camera.main.transform;
-            if (head == null) return;
-            float headYaw = head.eulerAngles.y;
-            if (!_init || snap) { _yaw = headYaw; _init = true; }
-            float diff = Mathf.DeltaAngle(_yaw, headYaw);
-            if (Mathf.Abs(diff) > 35f) _yaw = Mathf.MoveTowardsAngle(_yaw, headYaw, (Mathf.Abs(diff) - 35f) * Time.deltaTime * 4f + 0.5f);
-            var rot = Quaternion.Euler(0f, _yaw, 0f);
-            Vector3 p = head.position + rot * new Vector3(side, 0f, forward);
-            p.y = head.position.y - belowHead;
-            transform.SetPositionAndRotation(p, rot);
-        }
-    }
-
-    /// <summary>
     /// Smoke grenade (RDG-2 / M18 class) — all by hand: grab it from the vest pouch, hook the ring with the other
     /// hand and pull the pin (≥ 6 cm), throw; the lever flies off on release and after a 1.2 s fuse a dense white
     /// cloud pours out for 20 s, drifting with the wind. The cloud registers <see cref="SmokeScreens"/> spheres
@@ -188,74 +158,6 @@ namespace FieldMedic.Battle
         void OnDestroy()
         {
             if (smoke != null && smoke.transform.parent == null) Destroy(smoke.gameObject);
-        }
-    }
-
-    /// <summary>
-    /// The pull ring + pin. Grabbable only while the grenade is held by the other hand; pulling the ring 6 cm away
-    /// from its socket frees the pin (it stays in that hand and can be dropped).
-    /// </summary>
-    [RequireComponent(typeof(Rigidbody))]
-    public sealed class SmokePin : Grabbable
-    {
-        public SmokeGrenade grenade;
-        public float pullDistance = 0.06f;
-        public bool Pulled { get; private set; }
-
-        Vector3 _socketLocal;
-        Quaternion _socketRot;
-        Vector3 _grabHandStart;
-        HandGrabber _hand;
-
-        protected override void Awake()
-        {
-            base.Awake();
-            priority = 5;
-            allowTwoHands = false;
-            _socketLocal = transform.localPosition;
-            _socketRot = transform.localRotation;
-            if (Body != null) Body.isKinematic = true;
-            if (grenade != null)
-                foreach (var a in GetComponentsInChildren<Collider>())
-                    foreach (var b in grenade.GetComponents<Collider>()) Physics.IgnoreCollision(a, b);
-        }
-
-        public override bool CanBeGrabbedBy(HandGrabber hand)
-        {
-            if (Pulled) return base.CanBeGrabbedBy(hand);
-            // the ring is hooked with the free hand while the other hand holds the grenade
-            return grenade != null && grenade.IsGrabbed && !grenade.IsHeldBy(hand) && base.CanBeGrabbedBy(hand);
-        }
-
-        protected override void OnGrabbed(HandGrabber hand, GrabPoint point)
-        {
-            _hand = hand;
-            _grabHandStart = grenade != null ? grenade.transform.InverseTransformPoint(hand.PalmPosition) : hand.PalmPosition;
-        }
-
-        protected override void OnReleased(HandGrabber hand) { _hand = null; }
-
-        protected override void FixedUpdate()
-        {
-            if (Pulled) { base.FixedUpdate(); return; }
-            if (_hand == null || grenade == null) return;
-            // stay in the socket until the hand has moved far enough from the grenade
-            transform.localPosition = _socketLocal;
-            transform.localRotation = _socketRot;
-            Vector3 now = grenade.transform.InverseTransformPoint(_hand.PalmPosition);
-            if ((now - _grabHandStart).magnitude >= pullDistance) Pull();
-        }
-
-        /// <summary>Frees the pin from the grenade.</summary>
-        public void Pull()
-        {
-            if (Pulled) return;
-            Pulled = true;
-            transform.SetParent(null, true);
-            if (Body != null) { Body.isKinematic = false; Body.mass = 0.02f; }
-            var ba = BattleAudio.Instance;
-            if (ba != null) ba.Play(BattleAudio.Pick(ba.pinPull), transform.position, 0.8f, 0.5f, 10f);
-            if (_hand != null) Haptics.Play(_hand.Input, Haptics.PressClick);
         }
     }
 }

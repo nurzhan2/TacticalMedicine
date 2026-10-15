@@ -72,6 +72,10 @@ namespace FieldMedic.EditorTools
             android.maxTextureSize = ti.maxTextureSize;
             android.format = ti.textureType == TextureImporterType.NormalMap ? TextureImporterFormat.ASTC_5x5 : TextureImporterFormat.ASTC_6x6;
             if (assetPath.EndsWith(".hdr") || assetPath.EndsWith(".exr")) android.format = TextureImporterFormat.ASTC_HDR_6x6;
+            // ground albedos (the most-seen surface, minified at grazing angles): uncompressed, so the editor GPU
+            // (no ASTC: software decode shows mip aliasing = the "pixel noise", supervisor 15.10 #1) and the Quest
+            // render the same; ~16 MB GPU memory for the three layers
+            if (System.Array.IndexOf(GroundTextureFix.Ground, assetPath) >= 0) { android.format = TextureImporterFormat.RGB24; ti.anisoLevel = 4; }
             ti.SetPlatformTextureSettings(android);
         }
 
