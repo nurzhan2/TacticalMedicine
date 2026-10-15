@@ -196,6 +196,7 @@ BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where not
 | props/radio_r311 | Military Radio R311 Omega | Demycs | https://www.blenderkit.com/get-blenderkit/06155894-2673-4a98-b56f-e648793f7924/ | BlenderKit Royalty Free |
 | props/smoke_grenade | Flashbang | Blaž Mraz | https://www.blenderkit.com/get-blenderkit/718de840-4cab-4663-9bc7-99e778b77039/ | BlenderKit Royalty Free |
 | props/stretcher | Ambulance strechers | Dovydas Alytas | https://www.blenderkit.com/get-blenderkit/0e53d37b-e72e-46d7-8670-121925c19563/ | BlenderKit Royalty Free |
+| ruins/bombed_apartment | Abandoned House | PBRPX | https://www.blenderkit.com/get-blenderkit/94e53774-84d7-430e-89bd-12cf7b2ef828/ | CC0 1.0 |
 | ruins/brick_block_wall | Brick and Concrete Block Wall | GL3D Gabriela Linhares | https://www.blenderkit.com/get-blenderkit/818e29a3-d812-402d-a10c-5ee71d85f2fc/ | BlenderKit Royalty Free |
 | ruins/brick_ruins_a | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/80cd0314-d86c-4c92-8186-4151a07e9522/ | CC0 1.0 |
 | ruins/brick_ruins_b | Brick Ruins | PBRPX | https://www.blenderkit.com/get-blenderkit/f0a80792-ff43-4dce-a369-b2db68360937/ | CC0 1.0 |
@@ -208,6 +209,7 @@ BlenderKit models: free plan, BlenderKit licence (Royalty Free, or CC0 where not
 | ruins/junk_slab_pile | Pile of Junk (rubbish, debris) Photoscan | Tedd Šámal | https://www.blenderkit.com/get-blenderkit/029d6806-b86b-47ef-8a87-16b868219c7e/ | BlenderKit Royalty Free |
 | ruins/pillar_bullet_holes | Pillar scan | REAL SCANS | https://www.blenderkit.com/get-blenderkit/21d82a38-02f6-43d7-b145-ca9309c13d4b/ | BlenderKit Royalty Free |
 | ruins/rubble_pile | Rubble Pile | Guinter Ramos | https://www.blenderkit.com/get-blenderkit/68d9a4ac-5bc0-46f1-8175-42ac843c37b8/ | BlenderKit Royalty Free |
+| ruins/ruined_farmhouse | Ruined Farmhouse | paddy gaunt | https://www.blenderkit.com/get-blenderkit/cb1506a0-040e-4998-8b65-fd2c4b3f50c7/ | BlenderKit Royalty Free |
 | ruins/ruined_masonry_wall | Ruined Masonry Wall | REAL SCANS | https://www.blenderkit.com/get-blenderkit/858d9662-d036-4d93-80c1-d0e1e06143ab/ | BlenderKit Royalty Free |
 | ruins/unfinished_building | Unfinished Building | AIR3D | https://www.blenderkit.com/get-blenderkit/694baa4b-b62c-459b-b5d3-6429c8ceff76/ | BlenderKit Royalty Free |
 | soldiers/sniper_soldier | Special Sniper Soldier-Rigged-Game Ready | Silent Wolf | https://www.blenderkit.com/get-blenderkit/bab061a6-ed60-4c1d-9465-d501700264b7/ | BlenderKit Royalty Free |
@@ -243,3 +245,10 @@ Poly Haven (CC0 1.0, committed in Assets/ThirdParty/PolyHaven):
 | model (props) | Old Tyre (old_tyre) | MP | https://polyhaven.com/a/old_tyre | CC0 1.0 |
 | texture 1k | Hessian 230 (hessian_230) | colormass, Rico Cilliers | https://polyhaven.com/a/hessian_230 | CC0 1.0 |
 <!-- V2-ASSETS-END -->
+
+## w4 (modes) — fonts, UI, voice
+| asset | author | source | license |
+|---|---|---|---|
+| Liberation Sans (hint card / menu SDF font, Cyrillic + Kazakh) | Red Hat / Liberation Fonts project, shipped with Unity TextMesh Pro Essentials | https://github.com/liberationfonts/liberation-fonts | SIL Open Font License 1.1 (`Assets/TextMesh Pro/Fonts/LiberationSans - OFL.txt`) |
+| Hint card pictograms, check/warn icons, glow, UI chimes (`Assets/Resources/HintIcons`, `Assets/Resources/UI/hint_*.wav`) | own work (tools/make_hint_icons.py) | — | CC0 1.0 |
+| Instructor hint lines `h_*` (`Assets/Resources/Radio`) | Windows TTS placeholder (tools/tts_radio.ps1) | — | own work, replace with recordings |

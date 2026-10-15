@@ -169,7 +169,7 @@ namespace FieldMedic.UI
 
         public void SetChecks(bool[] states)
         {
-            if (states == null) return;
+            if (states == null || CurrentMood == Mood.Done) return;
             for (int i = 0; i < Checks.Length && i < states.Length; i++)
             {
                 if (states[i] && !Checks[i]) Play("hint_show", 0.5f);

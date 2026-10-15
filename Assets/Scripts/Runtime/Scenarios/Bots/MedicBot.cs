@@ -188,12 +188,20 @@ namespace FieldMedic.Scenarios.Bots
             // past the end of the foot/hand, then along the limb axis
             LimbMath.Points(rig, limb, out _, out _, out var tipJ, out var end);
             Vector3 endDir = (end - tipJ).normalized;
+            // uneven ground (crater rims on the steppe): never aim the loop into the soil
+            Vector3 Lift(Vector3 q) { if (CasualtyDrag.FloorAt(q, out float fl)) q.y = Mathf.Max(q.y, fl + 0.06f); return q; }
             lastStep = "tq: over the end";
-            yield return MoveHeld(h, cat.transform, cat.transform.position, end + endDir * 0.12f + Vector3.up * 0.03f);
+            yield return MoveHeld(h, cat.transform, cat.transform.position, Lift(end + endDir * 0.12f + Vector3.up * 0.03f));
             for (float p = 2.55f; p >= Mathf.Max(limbPos, 2.0f); p -= 0.1f)
-                yield return MoveHeld(h, cat.transform, cat.transform.position, LimbMath.PointAt(rig, limb, p), 0.8f);
+                yield return MoveHeld(h, cat.transform, cat.transform.position, Lift(LimbMath.PointAt(rig, limb, p)), 0.8f);
             for (int k = 0; k < 20 && !cat.State.OnLimb; k++) yield return Frame();
-            if (!cat.State.OnLimb) { lastStep = "tq: wrap failed"; yield break; }
+            if (!cat.State.OnLimb)
+            {
+                lastStep = "tq: wrap failed";
+                CasualtyDrag.FloorAt(end, out float floorY);
+                Debug.Log($"[FMVR] bot: wrap failed — cat {cat.transform.position:F2}, limb end {end:F2} (floor {floorY:F2}), tip joint {tipJ:F2}, down {c.IsDown}, held {cat.IsHeld}");
+                yield break;
+            }
             lastStep = "tq: slide";
             float cur = cat.State.limbPosition;
             for (float p = cur; p > limbPos; p = Mathf.Max(limbPos, p - 0.05f))

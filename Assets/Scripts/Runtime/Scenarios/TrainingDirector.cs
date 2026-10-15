@@ -247,7 +247,8 @@ namespace FieldMedic.Scenarios
         {
             var head = director.head;
             if (head == null || Panel == null) return;
-            float d = Vector3.Distance(head.position, Chest);
+            // horizontal distance: a trainee standing 1.5 m from him (head 1.4 m above his chest) is "within 2 m"
+            float d = Vector3.Distance(Flat(head.position), Flat(Chest));
             if (!Panel.Shown && d < showDistance) { Panel.SetVisible(true); }
             else if (Panel.Shown && d > hideDistance) Panel.SetVisible(false);
             Panel.Follow(Chest, head.position, WoundPoint(TargetWound()), dt);
@@ -274,7 +275,8 @@ namespace FieldMedic.Scenarios
             switch (id)
             {
                 case "reach":
-                    return director.head != null && Vector3.Distance(Flat(director.head.position), Flat(Chest)) < 1.4f;
+                    return director.head != null && Mathf.Min(Vector3.Distance(Flat(director.head.position), Flat(Chest)),
+                        Vector3.Distance(Flat(director.head.position), Flat(C.transform.position))) < 1.8f;
                 case "tq_grab": return cat != null && (cat.IsHeld || cat.State.OnLimb);
                 case "tq_on_limb": return cat != null && cat.State.OnLimb;
                 case "tq_high": return cat != null && cat.State.OnLimb && !cat.State.OnJoint && cat.State.limbId == _wound.LimbId && cat.State.limbPosition < _wound.LimbPos - 0.05f;
@@ -345,7 +347,7 @@ namespace FieldMedic.Scenarios
                 if (kv.Value > seen)
                 {
                     _seenPenalties[kv.Key] = kv.Value;
-                    if (kv.Key is "big_blood_loss" or "tq_slow" or "no_medevac") continue; // run-level, not an action
+                    if (!step.watch.Contains(kv.Key) && !ActionMistakes.Contains(kv.Key)) continue; // run-level (blood loss, timing…), not this action
                     _penaltyWrong = TrainingCatalog.Reason(kv.Key, kz) ?? (CareProtocol.Penalty.TryGetValue(kv.Key, out var pen) ? pen.text : kv.Key);
                     _penaltyWrongUntil = Time.time + 5f;
                 }
@@ -354,6 +356,14 @@ namespace FieldMedic.Scenarios
             _penaltyWrong = null;
             return null;
         }
+
+        /// <summary>Protocol penalties that are a wrong ACTION (shown on the card in any step); the rest are run-level.</summary>
+        static readonly HashSet<string> ActionMistakes = new HashSet<string>
+        {
+            "fire_non_tq", "tq_on_joint", "tq_below_wound", "tq_junctional", "march_order", "wrong_tool", "needle_no_signs", "needle_wrong_site",
+            "needle_through_seal", "needle_angle", "needle_shallow", "npa_technique", "seal_no_wipe", "elevation", "not_exposed", "pressure_released",
+            "blanket_early", "tq_unneeded",
+        };
 
         // ------------------------------------------------------------------ guides: ghost glove, item + target glow
         void Guides()

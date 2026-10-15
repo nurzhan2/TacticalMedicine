@@ -236,7 +236,7 @@ namespace FieldMedic.Tests
             MakeBot();
             yield return HandsTo(Hips);
             yield return _bot.ApplyTourniquet(Pouch.Find<TourniquetCAT>(), C, Limb.RightLeg, 0.12f, 4, Pouch.Find<MarkerItem>());
-            yield return _bot.CheckPulse(C, PulseSite.PedalR, 3f);
+            yield return _bot.CheckPulse(C, PulseSite.PedalR, 5.5f);
             float t0 = Time.time;
             while (!t.LessonComplete && Time.time - t0 < 20f) yield return null;
             Assert.IsTrue(t.LessonComplete, $"lesson complete; stuck at {t.Progress.Step?.id}, wrong={t.CurrentWrong}, bot={_bot.lastStep}");
@@ -275,7 +275,7 @@ namespace FieldMedic.Tests
             // 4) MARCH in cover
             yield return _bot.Gloves(Pouch.Find<GlovesItem>());
             yield return WaitStep(t, "pulse_foot");
-            yield return _bot.CheckPulse(C, PulseSite.PedalR, 3f);
+            yield return _bot.CheckPulse(C, PulseSite.PedalR, 5.5f);
             yield return WaitStep(t, "tq_time");
             var cat = C.Interaction.Tourniquets.First();
             yield return _bot.Write(Pouch.Find<MarkerItem>(), cat.TimeLabelPoint);
@@ -324,8 +324,12 @@ namespace FieldMedic.Tests
         IEnumerator DragIntoHouseA()
         {
             var door = BattlefieldLayout.DoorwayCentre;
-            yield return _bot.DragTo(C, new Vector3(door.x + 1.3f, 0f, door.z), 40f);
-            yield return _bot.DragTo(C, new Vector3(-1.0f, 0f, door.z + 0.1f), 30f);
+            Vector3 h0 = Hips;
+            float t0 = Time.time;
+            yield return _bot.DragTo(C, new Vector3(door.x + 1.3f, 0f, door.z), 150f);
+            Debug.Log($"[FMVR] w4 drag leg 1: {Vector3.Distance(h0, Hips):F1} m in {Time.time - t0:F1} s, hips {Hips:F2}");
+            yield return _bot.DragTo(C, new Vector3(-1.0f, 0f, door.z + 0.1f), 60f);
+            Debug.Log($"[FMVR] w4 drag done: hips {Hips:F2} after {Time.time - t0:F1} s, distance dragged {C.Interaction.Drag.DraggedDistance:F1} m");
         }
 
         IEnumerator WaitStep(TrainingDirector t, string id, float timeout = 8f)
