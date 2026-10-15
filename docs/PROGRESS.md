@@ -382,3 +382,4 @@
   - FieldMedicVR_SAFE.apk 81.7 MB (Boot + Main_Core).
   README.txt (RU), video and screens are in the same folder. The headset was not connected → no on-device check (run tools\quest_check.ps1 -Apk ...).
 - **Next**: on-device run of the DEMO flow (tab grab on the body-locked pouch, drag around the barriers to the doorway); a real IFAK pouch model; loading by dragging Erlan onto the litter instead of the «ПОГРУЗИТЬ» button.
+- Git push: still "Repository not found" (remote/credentials, unchanged since w0); all w7 commits are local.
