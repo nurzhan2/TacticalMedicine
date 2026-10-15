@@ -13,6 +13,9 @@ namespace FieldMedic.Tests
     {
         readonly List<GameObject> _spawned = new List<GameObject>();
 
+        [SetUp]
+        public void LogState() => Debug.Log("[FMVR] grab test state: " + GlobalStateGuard.Describe());
+
         [TearDown]
         public void TearDown()
         {

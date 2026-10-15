@@ -22,6 +22,12 @@ namespace FieldMedic.Tests
     [Category("Screenshots")]
     public class BattleScreenshots
     {
+        GlobalStateGuard _guard;
+
+        [SetUp] public void Save() => _guard = new GlobalStateGuard();
+
+        [TearDown] public void Restore() { _guard?.Restore(); SmokeScreens.Clear(); BattleDirector.PlayerArmed = null; BattleDirector.Mode = BattleMode.Combat; }
+
         const string Dir = "docs/screens";
 
         static IEnumerator Seconds(float s) { for (float t = 0f; t < s; t += Time.deltaTime) yield return null; }

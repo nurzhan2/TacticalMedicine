@@ -22,10 +22,12 @@ namespace FieldMedic.Tests
     public class BattleTests
     {
         readonly List<GameObject> _spawned = new List<GameObject>();
+        GlobalStateGuard _guard;
 
         [UnitySetUp]
         public IEnumerator Load()
         {
+            _guard = new GlobalStateGuard();
             BattleDirector.Mode = BattleMode.Combat;
             BattleDirector.PlayerArmed = null;
             SmokeScreens.Clear();
@@ -45,7 +47,7 @@ namespace FieldMedic.Tests
         {
             foreach (var go in _spawned) if (go != null) Object.Destroy(go);
             _spawned.Clear();
-            Time.timeScale = 1f;
+            _guard?.Restore();
             BattleDirector.Mode = BattleMode.Combat;
             BattleDirector.PlayerArmed = null;
             SmokeScreens.Clear();
@@ -275,13 +277,17 @@ namespace FieldMedic.Tests
             rin.Grip = 1f;
             Assert.IsTrue(right.TryGrab(sg));
             yield return new WaitForFixedUpdate();
-            right.Release();
-            yield return new WaitForFixedUpdate();
+            yield return null;
+            Assert.AreEqual(SmokeGrenade.GState.Held, sg.State);
+            MovePalm(right, rin, sg.slot.position + Vector3.up * 0.06f); // keep the hand at the pouch
+            rin.Grip = 0f; // open the hand
+            for (int i = 0; i < 3; i++) { yield return new WaitForFixedUpdate(); yield return null; }
             Assert.AreEqual(SmokeGrenade.GState.OnVest, sg.State, "released at the pouch → back on the vest");
+            rin.Grip = 1f;
             Assert.IsTrue(right.TryGrab(sg));
             Vector3 p0 = right.PalmPosition;
             for (int i = 1; i <= 8; i++) { MovePalm(right, rin, p0 + Vector3.forward * 0.07f * i); yield return new WaitForFixedUpdate(); yield return null; }
-            right.Release();
+            rin.Grip = 0f;
             yield return new WaitForSeconds(2f);
             Assert.AreEqual(SmokeGrenade.GState.Dropped, sg.State, "pin in, away from the vest → a dud on the ground, no smoke");
             Assert.IsFalse(sg.pin.Pulled);
