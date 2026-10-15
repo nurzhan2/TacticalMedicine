@@ -87,7 +87,7 @@ namespace FieldMedic.Treatment
             Pull = 1f;
             if (byHand != null) { Haptics.Play(byHand.Input, Haptics.PressClick, 1.3f); Tab.ForceRelease(); }
             TreatmentAudio.Velcro(Tab != null ? Tab.transform.position : transform.position, 0.9f);
-            if (Tab != null) Tab.gameObject.SetActive(false);
+            if (Tab != null) { foreach (var c in Tab.GetComponents<Collider>()) c.enabled = false; Tab.enabled = false; } // no SetActive inside a release callback
             Debug.Log("[FMVR] IFAK opened " + (byHand != null ? "by pulling the tab" : "(setup)"));
         }
     }

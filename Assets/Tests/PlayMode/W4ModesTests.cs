@@ -245,6 +245,7 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
+        [Timeout(600000)]
         public IEnumerator Training_FullTccc_BotRunsCufTfcTacevac()
         {
             yield return Load(() => ScenarioLaunch.Training("full"));
@@ -326,6 +327,8 @@ namespace FieldMedic.Tests
             var door = BattlefieldLayout.DoorwayCentre;
             Vector3 h0 = Hips;
             float t0 = Time.time;
+            // w7: the body no longer slides through the concrete barriers east of house A: pass west of their end
+            if (Hips.z > door.z + 7f) yield return _bot.DragTo(C, new Vector3(door.x + 1.05f, 0f, door.z + 5.6f), 60f);
             yield return _bot.DragTo(C, new Vector3(door.x + 1.3f, 0f, door.z), 150f);
             Debug.Log($"[FMVR] w4 drag leg 1: {Vector3.Distance(h0, Hips):F1} m in {Time.time - t0:F1} s, hips {Hips:F2}");
             yield return _bot.DragTo(C, new Vector3(-1.0f, 0f, door.z + 0.1f), 60f);
@@ -340,6 +343,7 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
+        [Timeout(600000)]
         public IEnumerator Combat_S1_Bot_UnderFire_Drag_Tacevac_Debrief()
         {
             yield return Load(() => ScenarioLaunch.Scenario("S1", ScenarioVariant.Default));

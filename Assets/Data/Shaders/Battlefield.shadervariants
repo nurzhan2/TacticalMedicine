@@ -48,11 +48,6 @@ ShaderVariantCollection:
       variants:
       - keywords: 
         passType: 0
-  - first: {fileID: 4800000, guid: 93446b5c5339d4f00b85c159e1159b7c, type: 3}
-    second:
-      variants:
-      - keywords: 
-        passType: 0
   - first: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
     second:
       variants:
@@ -60,18 +55,63 @@ ShaderVariantCollection:
         passType: 8
       - keywords: INSTANCING_ON
         passType: 8
+      - keywords: INSTANCING_ON _ALPHATEST_ON
+        passType: 8
       - keywords: _ALPHATEST_ON
         passType: 8
-      - keywords: EVALUATE_SH_VERTEX FOG_EXP2 REFLECTION_PROBE_ROTATION _ADDITIONAL_LIGHTS
-          _ALPHATEST_ON _LIGHT_LAYERS _MAIN_LIGHT_SHADOWS _METALLICSPECGLOSSMAP _REFLECTION_PROBE_BLENDING
+      - keywords: EVALUATE_SH_VERTEX FOG_EXP2 INSTANCING_ON REFLECTION_PROBE_ROTATION
+          _ADDITIONAL_LIGHTS _LIGHT_LAYERS _MAIN_LIGHT_SHADOWS _REFLECTION_PROBE_BLENDING
           _REFLECTION_PROBE_BOX_PROJECTION
         passType: 13
-  - first: {fileID: 4800000, guid: 69fe41151d8034c4892e370b65ac590f, type: 3}
+      - keywords: EVALUATE_SH_VERTEX FOG_EXP2 REFLECTION_PROBE_ROTATION _ADDITIONAL_LIGHTS
+          _ALPHATEST_ON _LIGHT_LAYERS _MAIN_LIGHT_SHADOWS _NORMALMAP _REFLECTION_PROBE_BLENDING
+          _REFLECTION_PROBE_BOX_PROJECTION
+        passType: 13
+      - keywords: EVALUATE_SH_VERTEX FOG_EXP2 REFLECTION_PROBE_ROTATION _ADDITIONAL_LIGHTS
+          _LIGHT_LAYERS _MAIN_LIGHT_SHADOWS _METALLICSPECGLOSSMAP _NORMALMAP _REFLECTION_PROBE_BLENDING
+          _REFLECTION_PROBE_BOX_PROJECTION
+        passType: 13
+      - keywords: EVALUATE_SH_VERTEX FOG_EXP2 REFLECTION_PROBE_ROTATION _ADDITIONAL_LIGHTS
+          _LIGHT_LAYERS _MAIN_LIGHT_SHADOWS _REFLECTION_PROBE_BLENDING _REFLECTION_PROBE_BOX_PROJECTION
+        passType: 13
+  - first: {fileID: 4800000, guid: 0406db5a14f94604a8c57ccfbc9f3b46, type: 3}
+    second:
+      variants:
+      - keywords: FOG_EXP2 _SURFACE_TYPE_TRANSPARENT
+        passType: 0
+  - first: {fileID: 4800000, guid: c9abe92f1d11cc449bb8a738610f6725, type: 3}
     second:
       variants:
       - keywords: FOG_EXP2 _ADDITIONAL_LIGHTS _MAIN_LIGHT_SHADOWS
         passType: 13
+  - first: {fileID: 4800000, guid: da621d778fd1da74282041e80dcbddba, type: 3}
+    second:
+      variants:
+      - keywords: FOG_EXP2
+        passType: 13
+      - keywords: FOG_EXP2 INSTANCING_ON
+        passType: 13
+  - first: {fileID: 4800000, guid: 2b73ff1fe975698429b554f398d68d4c, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 8
   - first: {fileID: 4800000, guid: 95c10bf0a51d66540b1dd312118f56f6, type: 3}
+    second:
+      variants:
+      - keywords: 
+        passType: 0
+  - first: {fileID: 4800000, guid: 31e019ce41a5be4448e336d5323c18d0, type: 3}
+    second:
+      variants:
+      - keywords: FOG_EXP2 _ADDITIONAL_LIGHTS _MAIN_LIGHT_SHADOWS
+        passType: 13
+  - first: {fileID: 4800000, guid: a271744901254b54d9831e7dd662b380, type: 3}
+    second:
+      variants:
+      - keywords: FOG_EXP2 INSTANCING_ON
+        passType: 13
+  - first: {fileID: 4800000, guid: 8fa4a4f26577a9e44be863fc22f459ed, type: 3}
     second:
       variants:
       - keywords: 

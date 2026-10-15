@@ -125,7 +125,7 @@ namespace FieldMedic.Treatment
         protected override void OnReleased(HandGrabber hand)
         {
             if (IsGrabbed) return;
-            if (Attached || Consumed) { OnItemReleased(hand); return; }
+            if (Attached || Consumed || !isActiveAndEnabled) { OnItemReleased(hand); return; } // released by OnDisable: no re-parenting while deactivating
             if (homeSlot != null && Vector3.Distance(transform.position, homeSlot.position) < returnDistance)
             {
                 ReturnToSlot();
