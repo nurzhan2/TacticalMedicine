@@ -19,6 +19,7 @@ namespace FieldMedic.EditorTools
     public static class AndroidAssetOptimizer
     {
         const string Android = "Android";
+        static readonly string[] ContentFolders = { "Assets/_Licensed", "Assets/ThirdParty", "Assets/Art", "Assets/Audio", "Assets/Resources", "Assets/_MeshyTest", "Assets/Data" };
 
         public static void ApplyBatch()
         {
@@ -36,7 +37,8 @@ namespace FieldMedic.EditorTools
             if (p.EndsWith(".hdr") || p.EndsWith(".exr")) return 1024;
             if (Regex.IsMatch(p, @"(casing|bullet|shell|grenade|flashbang|jerrycan|fuel_drum|oil_drum|crate|tire|bucket|bottle|can_|debris_small|helmet)")) return 512;
             if (p.Contains("/aircraft/") || p.Contains("farfield") || p.Contains("/far_")) return 512;
-            if (p.Contains("/_licensed/") || p.Contains("/thirdparty/")) return 1024;
+            if (p.Contains("/_licensed/")) return normalMap ? 512 : 1024;
+            if (p.Contains("/thirdparty/")) return 1024;
             return 1024;
         }
 
@@ -56,6 +58,9 @@ namespace FieldMedic.EditorTools
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 if (path.Contains("/Resources/") && !path.Contains("/Editor/")) foreach (var d in AssetDatabase.GetDependencies(path, true)) deps.Add(d);
             }
+            // scene dependencies miss textures reached through model-embedded / remapped materials → every content folder
+            foreach (var guid in AssetDatabase.FindAssets("t:Texture t:Model t:AudioClip", ContentFolders.Where(AssetDatabase.IsValidFolder).ToArray()))
+                deps.Add(AssetDatabase.GUIDToAssetPath(guid));
             int tex = 0, models = 0, audio = 0, meshes = 0;
             AssetDatabase.StartAssetEditing();
             try
@@ -103,7 +108,6 @@ namespace FieldMedic.EditorTools
             if (!s.overridden) { s.overridden = true; changed = true; }
             if (s.maxTextureSize != max) { s.maxTextureSize = max; changed = true; }
             if (s.format != fmt) { s.format = fmt; changed = true; }
-            if (s.compressionQuality != 50) { s.compressionQuality = 50; changed = true; }
             if (changed) ti.SetPlatformTextureSettings(s);
             if (ti.isReadable && !path.Contains("/Resources/")) { ti.isReadable = false; changed = true; }
             if (!ui && !ti.mipmapEnabled) { ti.mipmapEnabled = true; changed = true; }

@@ -121,7 +121,8 @@ namespace FieldMedic.Tests
             Assert.AreEqual(2048, AndroidAssetOptimizer.MaxSizeFor("Assets/ThirdParty/PolyHaven/Textures/dry_ground_01/dry_ground_01_diff.jpg", false));
             Assert.AreEqual(1024, AndroidAssetOptimizer.MaxSizeFor("Assets/ThirdParty/PolyHaven/Textures/dry_ground_01/dry_ground_01_nor_gl.jpg", true));
             Assert.AreEqual(2048, AndroidAssetOptimizer.MaxSizeFor("Assets/Art/Characters/Erlan/Textures/Erlan_Body1_Albedo.jpg", false));
-            Assert.AreEqual(1024, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/ruins/brick_ruins_a/Textures/PX_Brick_Ruins_10_LOD0_normal.jpg", true));
+            Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/ruins/brick_ruins_a/Textures/PX_Brick_Ruins_10_LOD0_normal.jpg", true));
+            Assert.AreEqual(1024, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/ruins/brick_ruins_a/Textures/PX_Brick_Ruins_10_LOD0_albedo.jpg", false));
             Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/props/fuel_drums/Textures/Oil_Drum_200L_normal.jpg", true));
             Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/aircraft/f16_jet/Textures/x.jpg", false));
             Assert.IsTrue(AndroidAssetOptimizer.NeedsReadable("Assets/Art/Characters/Erlan/Erlan.fbx"));

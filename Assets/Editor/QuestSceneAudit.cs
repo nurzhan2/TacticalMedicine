@@ -24,7 +24,8 @@ namespace FieldMedic.EditorTools
         public const float ApkBudgetMB = 150f;
         public const float ApkHardLimitMB = 200f;
         public static readonly string[] RequiredShaders =
-            { "TextMeshPro/Distance Field", "TextMeshPro/Mobile/Distance Field", "GUI/Text Shader", "FieldMedic/BloodDecal", "FieldMedic/UiCard" };
+            { "TextMeshPro/Distance Field", "TextMeshPro/Mobile/Distance Field", "FieldMedic/BloodDecal", "FieldMedic/UiCard" };
+        // (GUI/Text Shader for TextMesh comes with the built-in font material; the editor copy is DontSave and breaks the build)
         public static readonly string[] BootForbidden = { "Assets/_Licensed/", "Assets/Art/Battlefield/", "Assets/Art/Characters/", "Assets/Audio/", "Assets/ThirdParty/" };
 
         // ------------------------------------------------------------------ pure rules (EditMode tests)
@@ -114,6 +115,7 @@ namespace FieldMedic.EditorTools
             {
                 var sh = Shader.Find(n);
                 if (sh == null) { p.Add("shader missing: " + n); continue; }
+                if ((sh.hideFlags & HideFlags.DontSave) != 0) { p.Add("editor-only shader would be built: " + n); continue; }
                 if (!always.Contains(sh)) p.Add("shader not in Always Included (stripped if only created at runtime): " + n);
             }
             return p;
@@ -135,8 +137,16 @@ namespace FieldMedic.EditorTools
             var gs = AssetDatabase.LoadAssetAtPath<Object>("ProjectSettings/GraphicsSettings.asset");
             var so = new SerializedObject(gs);
             var arr = so.FindProperty("m_AlwaysIncludedShaders");
-            var have = AlwaysIncluded();
             int added = 0;
+            for (int i = arr.arraySize - 1; i >= 0; i--)
+                if (arr.GetArrayElementAtIndex(i).objectReferenceValue is Shader bad && (bad.hideFlags & HideFlags.DontSave) != 0)
+                {
+                    arr.GetArrayElementAtIndex(i).objectReferenceValue = null;
+                    arr.DeleteArrayElementAtIndex(i);
+                    added++;
+                }
+            if (added > 0) so.ApplyModifiedPropertiesWithoutUndo();
+            var have = AlwaysIncluded();
             foreach (var n in RequiredShaders)
             {
                 var sh = Shader.Find(n);
