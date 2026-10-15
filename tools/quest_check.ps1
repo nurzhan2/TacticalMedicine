@@ -93,6 +93,11 @@ $header = @("quest_check $stamp device=$serial model=$model package=$Package pid
             "apk=$Apk", '----')
 ($header + $filtered) | Set-Content -Encoding UTF8 $txt
 
+# w0b: the game's own log (persistentDataPath/fmvr_log.txt: launch mode, XR status, first frame, scene timings)
+$flog = Join-Path $logDir "quest_${stamp}_fmvr_log.txt"
+Invoke-Adb @('-s', $serial, 'pull', "/sdcard/Android/data/$Package/files/fmvr_log.txt", $flog) | Out-Null
+if (Test-Path $flog) { Write-Host "[quest_check] game log: $flog"; Get-Content $flog -Encoding UTF8 | Where-Object { $_ -match 'launch mode|XR status|XR FAILED|first frame|gameplay ready|STALL|ERROR|EXCEPTION' } | Select-Object -First 15 | ForEach-Object { Write-Host "  $_" } }
+
 Invoke-Adb @('-s', $serial, 'shell', 'screencap', '-p', '/sdcard/fmvr_check.png') | Out-Null
 Invoke-Adb @('-s', $serial, 'pull', '/sdcard/fmvr_check.png', $png) | Out-Null
 Invoke-Adb @('-s', $serial, 'shell', 'rm', '/sdcard/fmvr_check.png') | Out-Null

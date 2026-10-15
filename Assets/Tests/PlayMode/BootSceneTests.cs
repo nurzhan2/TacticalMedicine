@@ -29,11 +29,11 @@ namespace FieldMedic.Tests
                 Assert.IsNotNull(boot.status, "status text");
                 Assert.IsNotNull(boot.head, "head (CenterEyeAnchor)");
                 Assert.IsNotNull(GameObject.Find("Title"), "title text");
-                Assert.AreEqual(BattlefieldLayout.SceneName, boot.nextScene);
+                Assert.AreEqual(FieldMedic.Startup.GameplayScenes.CoreScene, boot.nextScene);
 
                 float t = 0f;
-                while (SceneManager.GetActiveScene().name != BattlefieldLayout.SceneName && t < 120f) { t += Time.unscaledDeltaTime; yield return null; }
-                Assert.AreEqual(BattlefieldLayout.SceneName, SceneManager.GetActiveScene().name, "the Battlefield was not loaded by the boot scene");
+                while (SceneManager.GetActiveScene().name != FieldMedic.Startup.GameplayScenes.CoreScene && t < 120f) { t += Time.unscaledDeltaTime; yield return null; }
+                Assert.AreEqual(FieldMedic.Startup.GameplayScenes.CoreScene, SceneManager.GetActiveScene().name, "Main_Core was not loaded by the boot scene");
                 yield return null;
                 yield return null;
                 Assert.IsNull(Object.FindAnyObjectByType<BootLoader>(), "boot scene must be unloaded");

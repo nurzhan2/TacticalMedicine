@@ -91,6 +91,29 @@ namespace FieldMedic.EditorTools
             if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
+        /// <summary>w0b pipeline before the APKs: import overrides → shader variants → Boot (with the warm-up
+        /// collection) → Hello → launch settings → scene audit. -executeMethod FieldMedic.EditorTools.W0bDiag.Prepare</summary>
+        public static void Prepare()
+        {
+            bool ok = true;
+            try
+            {
+                QuestLaunchSetup.Apply();
+                AndroidAssetOptimizer.Apply(SceneBuilders.SceneSplitter.AllPaths.Concat(new[] { SceneBuilders.BootSceneBuilder.ScenePath }).ToArray());
+                int v = SceneBuilders.ShaderWarmupBuilder.Collect();
+                if (v == 0) Debug.LogWarning("[FMVR] Prepare: shader variant collection is empty");
+                SceneBuilders.BootSceneBuilder.Build();
+                SceneBuilders.HelloSceneBuilder.Build();
+                QuestLaunchSetup.Apply();
+                AssetDatabase.SaveAssets();
+                ok = QuestSceneAudit.Run(SceneBuilders.SceneSplitter.AllPaths, out var rep);
+                Debug.Log("[FMVR] Prepare audit: " + rep);
+                Debug.Log($"[FMVR] Boot deps {DepMB(SceneBuilders.BootSceneBuilder.ScenePath):F2} MB, core {DepMB(SceneBuilders.SceneSplitter.CorePath):F1} MB");
+            }
+            catch (System.Exception e) { Debug.LogError("[FMVR] Prepare: " + e); ok = false; }
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 3);
+        }
+
         public static int Tris(Mesh m)
         {
             int n = 0;
