@@ -69,8 +69,11 @@ namespace FieldMedic.EditorTools
             ti.textureCompression = TextureImporterCompression.Compressed;
             var android = ti.GetPlatformTextureSettings("Android");
             android.overridden = true;
-            android.maxTextureSize = ti.maxTextureSize;
-            android.format = ti.textureType == TextureImporterType.NormalMap ? TextureImporterFormat.ASTC_5x5 : TextureImporterFormat.ASTC_6x6;
+            // w0b: Android size/format come from AndroidAssetOptimizer (one rule set; this preprocessor used to reset
+            // every licensed map to 1024 / ASTC 5×5 on import → 168 MB of textures in the APK)
+            bool normal = ti.textureType == TextureImporterType.NormalMap;
+            android.maxTextureSize = AndroidAssetOptimizer.MaxSizeFor(assetPath, normal);
+            android.format = AndroidAssetOptimizer.FormatFor(assetPath, normal, true);
             if (assetPath.EndsWith(".hdr") || assetPath.EndsWith(".exr")) android.format = TextureImporterFormat.ASTC_HDR_6x6;
             // ground albedos: anisotropic filtering for the grazing angles of the open steppe
             if (System.Array.IndexOf(GroundTextureFix.Ground, assetPath) >= 0) ti.anisoLevel = 4;

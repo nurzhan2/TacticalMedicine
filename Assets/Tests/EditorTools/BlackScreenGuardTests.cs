@@ -125,6 +125,9 @@ namespace FieldMedic.Tests
             Assert.AreEqual(1024, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/ruins/brick_ruins_a/Textures/PX_Brick_Ruins_10_LOD0_albedo.jpg", false));
             Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/props/fuel_drums/Textures/Oil_Drum_200L_normal.jpg", true));
             Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/aircraft/f16_jet/Textures/x.jpg", false));
+            Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/vehicles/m1a2_tank/Textures/Main_tank_ms.png", false), "mask maps at half");
+            Assert.AreEqual(1024, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/vehicles/m1a2_tank/Textures/Main_tank_albedo.jpg", false));
+            Assert.AreEqual(512, AndroidAssetOptimizer.MaxSizeFor("Assets/_Licensed/BlenderKit/soldiers/sniper_soldier/Textures/Body_albedo.jpg", false));
             Assert.IsTrue(AndroidAssetOptimizer.NeedsReadable("Assets/Art/Characters/Erlan/Erlan.fbx"));
             Assert.IsFalse(AndroidAssetOptimizer.NeedsReadable("Assets/_Licensed/BlenderKit/ruins/bombed_apartment/bombed_apartment.fbx"));
         }

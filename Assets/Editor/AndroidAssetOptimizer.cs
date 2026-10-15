@@ -30,6 +30,15 @@ namespace FieldMedic.EditorTools
         /// <summary>Max texture size for a project texture path (pure rule, EditMode-tested).</summary>
         public static int MaxSizeFor(string path, bool normalMap)
         {
+            int cap = BaseMaxSizeFor(path, normalMap);
+            // metallic/smoothness, roughness, AO masks: half the albedo resolution is invisible on a headset
+            string n = System.IO.Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
+            if (!normalMap && Regex.IsMatch(n, @"(_ms|_rough|_roughness|_arm|_ao|_metallic|_mask)$")) cap = Mathf.Max(256, cap / 2);
+            return cap;
+        }
+
+        static int BaseMaxSizeFor(string path, bool normalMap)
+        {
             string p = path.Replace('\\', '/').ToLowerInvariant();
             if (p.Contains("/resources/ui/") || p.Contains("hinticons") || p.Contains("/fonts/")) return 1024;
             if (p.Contains("/characters/erlan/")) return normalMap ? 1024 : 2048;
@@ -37,6 +46,8 @@ namespace FieldMedic.EditorTools
             if (p.EndsWith(".hdr") || p.EndsWith(".exr")) return 1024;
             if (Regex.IsMatch(p, @"(casing|bullet|shell|grenade|flashbang|jerrycan|fuel_drum|oil_drum|crate|tire|bucket|bottle|can_|debris_small|helmet)")) return 512;
             if (p.Contains("/aircraft/") || p.Contains("farfield") || p.Contains("/far_")) return 512;
+            // soldiers are seen at 5+ m, props are small, aircraft fly by: 512; ruins, cover and vehicles keep 1024
+            if (p.Contains("/blenderkit/props/") || p.Contains("/blenderkit/soldiers/")) return 512;
             if (p.Contains("/_licensed/")) return normalMap ? 512 : 1024;
             if (p.Contains("/thirdparty/")) return 1024;
             return 1024;

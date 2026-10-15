@@ -42,6 +42,16 @@ namespace FieldMedic.EditorTools
             BatchExit(new[] { code, c1, c2, c3 }.FirstOrDefault(c => c != 0));
         }
 
+        /// <summary>Rebuild only the game APKs (after content/import changes): FULL then FULL_DEV.</summary>
+        public static void BuildFullAndDev()
+        {
+            int code = Build(Variant.Full, "Builds/3_FULL.apk", "3_FULL.apk");
+            if (code == 0 || code == 4) File.Copy("Builds/3_FULL.apk", ApkPath, true);
+            int c3 = Build(Variant.FullDev, "Builds/3_FULL_DEV.apk", "3_FULL_DEV.apk");
+            Debug.Log($"[FMVR] w0b full+dev: FULL {code} DEV {c3}");
+            BatchExit(code != 0 ? code : c3);
+        }
+
         static void BatchExit(int code) { if (Application.isBatchMode) EditorApplication.Exit(code); }
 
         public static string[] ScenesFor(Variant v)
@@ -117,7 +127,7 @@ namespace FieldMedic.EditorTools
             var sizeProblems = QuestSceneAudit.ApkRules(Path.GetFileName(apk), mb, v == Variant.Full);
             foreach (var p in sizeProblems) Debug.LogWarning("[FMVR] " + p);
             CopyToDesktop(apk, testName);
-            return mb > QuestSceneAudit.ApkHardLimitMB ? 4 : 0;
+            return mb > QuestSceneAudit.ApkHardLimitMB && v != Variant.FullDev ? 4 : 0; // DEV carries debug symbols
         }
 
         /// <summary>Top 50 assets by packed size + per-type totals → logs/apk_report_&lt;variant&gt;.txt.</summary>
@@ -125,6 +135,8 @@ namespace FieldMedic.EditorTools
         {
             var byAsset = new Dictionary<string, ulong>();
             var byType = new Dictionary<string, ulong>();
+            var texByFolder = new Dictionary<string, ulong>();
+            var texList = new Dictionary<string, ulong>();
             foreach (var pa in report.packedAssets)
             foreach (var c in pa.contents)
             {
@@ -132,11 +144,22 @@ namespace FieldMedic.EditorTools
                 byAsset.TryGetValue(key, out var a); byAsset[key] = a + c.packedSize;
                 string t = c.type != null ? c.type.Name : "?";
                 byType.TryGetValue(t, out var b); byType[t] = b + c.packedSize;
+                if (t == "Texture2D" || t == "Cubemap")
+                {
+                    var parts = key.Split('/');
+                    string folder = parts.Length > 3 ? string.Join("/", parts.Take(4)) : key;
+                    texByFolder.TryGetValue(folder, out var f); texByFolder[folder] = f + c.packedSize;
+                    texList.TryGetValue(key, out var x); texList[key] = x + c.packedSize;
+                }
             }
             var sb = new StringBuilder();
             sb.AppendLine($"{v} {apk} {mb:F1} MB (APK, compressed) — {DateTime.Now:dd.MM HH:mm}");
             sb.AppendLine("== packed size by type (uncompressed in the data files)");
             foreach (var kv in byType.OrderByDescending(k => k.Value).Take(12)) sb.AppendLine($"{kv.Value / 1048576f,8:F1} MB  {kv.Key}");
+            sb.AppendLine("== textures by folder");
+            foreach (var kv in texByFolder.OrderByDescending(k => k.Value).Take(25)) sb.AppendLine($"{kv.Value / 1048576f,8:F1} MB  {kv.Key}");
+            sb.AppendLine("== top 30 textures");
+            foreach (var kv in texList.OrderByDescending(k => k.Value).Take(30)) sb.AppendLine($"{kv.Value / 1048576f,8:F2} MB  {kv.Key}");
             sb.AppendLine("== top 50 assets");
             foreach (var kv in byAsset.OrderByDescending(k => k.Value).Take(50)) sb.AppendLine($"{kv.Value / 1048576f,8:F2} MB  {kv.Key}");
             Directory.CreateDirectory("logs");
