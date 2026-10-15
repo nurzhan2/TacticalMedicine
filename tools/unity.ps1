@@ -3,6 +3,9 @@
 #         Invoke-UnityTests -Platform EditMode
 $Global:UnityExe = 'C:\Program Files\Unity\Hub\Editor\6000.3.26f1\Editor\Unity.exe'
 $Global:FmvrProject = 'C:\TacticalMedicine'
+# w4: the editor's D3D11 path on this laptop's Iris Xe renders nondeterministic speckle/block noise (driver);
+# Vulkan renders clean and matches the Quest's API. Every batch run uses it.
+$Global:FmvrGfx = @('-force-vulkan')
 
 function Test-UnityProjectFree {
     $lock = Join-Path $Global:FmvrProject 'Temp\UnityLockfile'
@@ -56,7 +59,7 @@ function Invoke-UnityBatch {
     New-Item -ItemType Directory -Force (Join-Path $Global:FmvrProject 'Logs') | Out-Null
     $a = @('-batchmode', '-quit', '-projectPath', $Global:FmvrProject, '-buildTarget', 'Android',
            '-executeMethod', $Method, '-logFile', $log)
-    if ($NoGraphics) { $a += '-nographics' }
+    if ($NoGraphics) { $a += '-nographics' } else { $a += $Global:FmvrGfx }
     $a += $ExtraArgs
     $t0 = Get-Date
     $code = Start-UnityProcess $a $TimeoutMin
@@ -81,6 +84,7 @@ function Invoke-UnityTests {
     if (Test-Path $xml) { Remove-Item $xml -Force }
     $a = @('-batchmode', '-projectPath', $Global:FmvrProject, '-buildTarget', 'Android', '-runTests',
            '-testPlatform', $Platform, '-testResults', $xml, '-logFile', $log)
+    $a += $Global:FmvrGfx
     if ($Filter -ne '') { $a += @('-testFilter', $Filter) }
     if ($Category -ne '') { $a += @('-testCategory', $Category) }
     $t0 = Get-Date
