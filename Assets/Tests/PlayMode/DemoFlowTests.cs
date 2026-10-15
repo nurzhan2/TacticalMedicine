@@ -481,6 +481,9 @@ namespace FieldMedic.Tests
         public IEnumerator Pouch_Items_Visible_After_Opening()
         {
             var run = new DemoFlowRunner();
+            // the headset path: menu first, then ДЕМО reloads the scene
+            yield return DemoFlowRunner.Load(() => ScenarioLaunch.Menu());
+            yield return DemoFlowRunner.Seconds(0.5f);
             yield return DemoFlowRunner.Load(() => ScenarioLaunch.Training(TrainingCatalog.DemoId));
             AudioListener.volume = 0f;
             yield return DemoFlowRunner.Seconds(1f);
@@ -504,6 +507,9 @@ namespace FieldMedic.Tests
             foreach (Transform ch in pt) Debug.Log($"[FMVR] pouch child {ch.name} active={ch.gameObject.activeInHierarchy} local={ch.localPosition:F3} rot={ch.localEulerAngles:F0}");
             var vis = pt.Find("PouchVisual");
             if (vis != null) foreach (var r in vis.GetComponentsInChildren<Renderer>()) Debug.Log($"[FMVR] pouch visual {r.name} bounds {r.bounds.center:F3} {r.bounds.size:F3}");
+            int q0 = QualitySettings.GetQualityLevel();
+            QualitySettings.SetQualityLevel(0, true); // the Quest pipeline asset (as DemoCapture / the headset)
+            yield return null;
             var cam = new GameObject("~DiagCam").AddComponent<Camera>();
             cam.enabled = false; cam.fieldOfView = 50f; cam.nearClipPlane = 0.02f;
             cam.transform.SetPositionAndRotation(pt.position + new Vector3(0f, 0.55f, -0.3f), Quaternion.LookRotation(pt.position - (pt.position + new Vector3(0f, 0.55f, -0.3f))));
@@ -515,6 +521,7 @@ namespace FieldMedic.Tests
             System.IO.Directory.CreateDirectory(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "w7"));
             System.IO.File.WriteAllBytes(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "w7", "pouch_diag.jpg"), tex.EncodeToJPG(85));
             Object.Destroy(rt); Object.Destroy(tex); Object.Destroy(cam.gameObject);
+            QualitySettings.SetQualityLevel(q0, true);
             Assert.Greater(visible, pouch.Items.Count / 2, "items visible in the opened pouch");
         }
     }
