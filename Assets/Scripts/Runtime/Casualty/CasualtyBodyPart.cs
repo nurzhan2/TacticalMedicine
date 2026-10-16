@@ -9,5 +9,7 @@ namespace FieldMedic.Casualty
         public BodyRegion region;
         public Transform bone;
         public CasualtyRig rig;
+        Collider _col;
+        public Collider Collider { get { if (_col == null) _col = GetComponent<Collider>(); return _col; } }
     }
 }

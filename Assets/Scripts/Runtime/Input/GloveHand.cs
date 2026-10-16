@@ -18,6 +18,12 @@ namespace FieldMedic.Input
         public float side = 1f;
         public Material material;
         [Range(0f, 1f)] public float gripCurl, indexCurl, thumbCurl;
+        /// <summary>Pose applied while holding (or near a button): per finger 0 index … 3 little, 4 thumb.</summary>
+        public HandPose ActivePose { get; private set; }
+        readonly float[] _curl = new float[5];
+        float _opp = 0.5f;
+        bool _perFinger;
+        public float Curl(int finger) => _perFinger ? _curl[finger] : finger == 0 ? indexCurl : finger == 4 ? thumbCurl : gripCurl;
         [Tooltip("Drive curls from the hand input (off in tests that set curls directly).")]
         public bool driveFromInput = true;
 
@@ -43,7 +49,13 @@ namespace FieldMedic.Input
         }
 
         // built lazily (Start, or earlier by BloodOnHands.Awake) so code that adds the component can set side first
-        void Start() { if (Renderer == null) Build(); }
+        void Start()
+        {
+            if (Renderer == null) Build();
+            // w8 physical hands: the player's glove stops at surfaces (not the training ghost glove)
+            if (_rig != null && GetComponent<HandPhysicalVisual>() == null && transform.parent != null && transform.parent.GetComponent<HandRig>() != null)
+                gameObject.AddComponent<HandPhysicalVisual>();
+        }
 
         public void Build()
         {
@@ -181,28 +193,62 @@ namespace FieldMedic.Input
             {
                 bool holding = _grabber != null && _grabber.Held != null;
                 float k = 1f - Mathf.Exp(-Time.deltaTime * 18f);
+                // w8: the held item's pose wraps the fingers; near a button the index points
+                var pose = holding ? _grabber.Held.Pose : NearButton() ? HandPoseLibrary.Get("poke") : null;
+                ActivePose = pose;
                 float g = Mathf.Max(input.Grip, holding ? 0.65f : 0f);
                 float t = Mathf.Max(input.Trigger, holding ? 0.55f : 0f, input.Grip * 0.35f);
                 gripCurl = Mathf.Lerp(gripCurl, g, k);
                 indexCurl = Mathf.Lerp(indexCurl, t, k);
                 thumbCurl = Mathf.Lerp(thumbCurl, Mathf.Max(g, t) * 0.85f, k);
+                for (int f = 0; f < 5; f++)
+                {
+                    float want = pose != null ? pose.Finger(f) : f == 0 ? t : f == 4 ? Mathf.Max(g, t) * 0.85f : g;
+                    // a closed fist on top of a pose closes it further (squeezing the strap harder)
+                    if (pose != null && f > 0 && f < 4) want = Mathf.Max(want, Mathf.Min(1f, input.Grip * 0.95f) * (pose.Finger(f) > 0.3f ? 1f : 0f));
+                    _curl[f] = Mathf.Lerp(_curl[f], want, k);
+                }
+                _opp = Mathf.Lerp(_opp, pose != null ? pose.thumbOpposition : 0.5f, k);
+                _perFinger = true;
             }
+            else if (ActivePose == null) _perFinger = false;
             Pose();
         }
 
         /// <summary>Apply the curls to the bones (also callable from tests).</summary>
+        bool NearButton()
+        {
+            if (_grabber == null) return false;
+            Vector3 tip = _grabber.FingertipPosition;
+            var all = FieldMedic.UI.RoundButton.All;
+            for (int i = 0; i < all.Count; i++)
+                if (all[i] != null && all[i].isActiveAndEnabled && (all[i].transform.position - tip).sqrMagnitude < 0.07f * 0.07f) return true;
+            return false;
+        }
+
+        /// <summary>Apply a pose directly (tests, ghost hands).</summary>
+        public void ApplyPose(HandPose p)
+        {
+            ActivePose = p;
+            for (int f = 0; f < 5; f++) _curl[f] = p != null ? p.Finger(f) : 0f;
+            _opp = p != null ? p.thumbOpposition : 0.5f;
+            _perFinger = true;
+            Pose();
+        }
+
         public void Pose()
         {
             for (int f = 0; f < 4; f++)
             {
-                float c = f == 0 ? indexCurl : gripCurl;
-                if (f == 3) c = Mathf.Min(1f, c * 1.08f);
+                float c = _perFinger ? _curl[f] : f == 0 ? indexCurl : gripCurl;
+                if (f == 3 && !_perFinger) c = Mathf.Min(1f, c * 1.08f);
                 _fingers[f][0].localRotation = _rest[f][0] * Quaternion.Euler(c * 68f, 0f, 0f);
                 _fingers[f][1].localRotation = _rest[f][1] * Quaternion.Euler(c * 88f, 0f, 0f);
                 _fingers[f][2].localRotation = _rest[f][2] * Quaternion.Euler(c * 58f, 0f, 0f);
             }
-            float th = thumbCurl;
-            _fingers[4][0].localRotation = _rest[4][0] * Quaternion.Euler(th * 18f, th * 32f * side, 0f);
+            float th = _perFinger ? _curl[4] : thumbCurl;
+            float opp = _perFinger ? _opp : 0.5f;
+            _fingers[4][0].localRotation = _rest[4][0] * Quaternion.Euler(th * 18f, th * (12f + 40f * opp) * side, 0f);
             _fingers[4][1].localRotation = _rest[4][1] * Quaternion.Euler(th * 35f, 0f, 0f);
             _fingers[4][2].localRotation = _rest[4][2] * Quaternion.Euler(th * 45f, 0f, 0f);
         }

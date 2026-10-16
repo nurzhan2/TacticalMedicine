@@ -148,6 +148,37 @@ namespace FieldMedic.EditorTools
             Debug.Log("[FMVR] w8 goggles probe -> " + Tmp);
         }
 
+
+        /// <summary>w8 data assets: HandPose per item/handle + the library, the haptics profile, tutorial props.</summary>
+        [MenuItem("FieldMedic/W8/Build Assets")]
+        public static void BuildAssets()
+        {
+            const string dir = "Assets/Data/HandPoses";
+            Directory.CreateDirectory(dir);
+            var lib = AssetDatabase.LoadAssetAtPath<FieldMedic.Interaction.HandPoseLibrary>("Assets/Resources/HandPoseLibrary.asset");
+            if (lib == null) { lib = ScriptableObject.CreateInstance<FieldMedic.Interaction.HandPoseLibrary>(); AssetDatabase.CreateAsset(lib, "Assets/Resources/HandPoseLibrary.asset"); }
+            lib.poses.Clear();
+            foreach (var d in FieldMedic.Interaction.HandPoseLibrary.Defaults())
+            {
+                string path = $"{dir}/HandPose_{d.key}.asset";
+                var a = AssetDatabase.LoadAssetAtPath<FieldMedic.Interaction.HandPose>(path);
+                if (a == null) { AssetDatabase.CreateAsset(d, path); a = d; }
+                else { EditorUtility.CopySerialized(d, a); a.name = "HandPose_" + d.key; }
+                EditorUtility.SetDirty(a);
+                lib.poses.Add(a);
+            }
+            EditorUtility.SetDirty(lib);
+            if (AssetDatabase.LoadAssetAtPath<FieldMedic.Interaction.HapticsProfile>("Assets/Resources/HapticsProfile.asset") == null)
+                AssetDatabase.CreateAsset(ScriptableObject.CreateInstance<FieldMedic.Interaction.HapticsProfile>(), "Assets/Resources/HapticsProfile.asset");
+            var tp = AssetDatabase.LoadAssetAtPath<FieldMedic.Scenarios.TutorialProps>("Assets/Resources/TutorialProps.asset");
+            if (tp == null) { tp = ScriptableObject.CreateInstance<FieldMedic.Scenarios.TutorialProps>(); AssetDatabase.CreateAsset(tp, "Assets/Resources/TutorialProps.asset"); }
+            tp.crate = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Licensed/BlenderKit/props/military_crate/military_crate.prefab");
+            tp.ammoCan = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Licensed/BlenderKit/props/ammo_box/ammo_box.prefab");
+            EditorUtility.SetDirty(tp);
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[FMVR] w8 assets: {lib.poses.Count} hand poses, haptics profile, tutorial props (crate {(tp.crate != null)}, can {(tp.ammoCan != null)})");
+        }
+
         [MenuItem("FieldMedic/W8/Render Face Preview")]
         public static void FacePreview()
         {

@@ -199,6 +199,12 @@ namespace FieldMedic.UI
                     full ? 0.045f : 0.05f, WorldUI.Wrap(l.Title(GameSettings.KZ), 18), full ? 0.024f : 0.018f);
                 if (full) Txt(GameSettings.T("под огнём → укрытие → эвакуация", "оқ астында → баспана → эвакуация"), x, y - 0.2f, 0.013f, Dim, TextAnchor.UpperCenter, TextAlignment.Center);
             }
+            // w8: the 60-second hands tutorial (grab, pull, twist, pinch, two-hand drag) — runs once by itself
+            bool tutDone = FieldMedic.Scenarios.TutorialDirector.Done;
+            var tut = Btn(GameSettings.T("РУКИ", "ҚОЛ"), -0.44f, -0.335f, 0.11f, tutDone ? Steel : Amber * 0.8f,
+                () => Go("lesson:" + FieldMedic.Scenarios.TutorialDirector.LessonId, () => ScenarioLaunch.Training(FieldMedic.Scenarios.TutorialDirector.LessonId)),
+                0.022f, GameSettings.T("Управление", "Басқару") + (tutDone ? GameSettings.T(" (пройдено)", " (өтті)") : ""), 0.015f);
+            tut.name = "Btn_Tutorial";
             Back(ShowMain);
         }
 
@@ -286,6 +292,19 @@ namespace FieldMedic.UI
             string ctl = r.bleedControlSeconds >= 0f ? $"{r.bleedControlSeconds:0} с" : "—";
             Txt(GameSettings.T("Остановка кровотечения: ", "Қан тоқтатылды: ") + ctl + "\n" + GameSettings.T("Кровопотеря: ", "Қан жоғалту: ") + $"{r.lossPercent:0}%",
                 lx, H / 2 - 0.47f, 0.016f, Dim);
+
+            // w8: hands-on checks ("Пульс проверен (на шее) в 0:42 — 128, слабый")
+            if (r.checks.Count > 0)
+            {
+                Txt(GameSettings.T("Осмотр:", "Тексеру:"), lx, H / 2 - 0.545f, 0.016f, Amber);
+                float cy2 = H / 2 - 0.572f;
+                foreach (var line in r.checks.Take(4))
+                {
+                    var t = Txt(WorldUI.Wrap(line, 52), lx, cy2, 0.0118f, Ink);
+                    cy2 -= 0.019f * t.text.Split('\n').Length + 0.003f;
+                    if (cy2 < -0.25f) break;
+                }
+            }
 
             // middle column: numbered mistakes (same numbers as on the map and the timeline) with the TCCC step
             float rx = -0.2f;

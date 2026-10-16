@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c112e670975abf54ca6ed9c6ff9cfb6b, type: 3}
+  m_Name: TutorialProps
+  m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Scenarios.TutorialProps
+  crate: {fileID: 2374211959613314252, guid: b0608574ace76bd469fe173d1f8ac15c, type: 3}
+  crateScale: 0.75
+  ammoCan: {fileID: 1833143205155045797, guid: 9aa115203d1d2b24bb5d8d577d068c31, type: 3}
+  ammoCanScale: 1

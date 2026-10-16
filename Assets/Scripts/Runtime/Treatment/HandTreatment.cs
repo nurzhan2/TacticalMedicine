@@ -25,7 +25,7 @@ namespace FieldMedic.Treatment
 
         public float sweepContact = 0.05f;
         public float discoverRadius = 0.11f;
-        public float pulseRadius = 0.035f;
+        public float pulseRadius = 0.03f;
         public Renderer[] gloveRenderers;
 
         public HandGrabber Grabber { get; private set; }
@@ -167,18 +167,26 @@ namespace FieldMedic.Treatment
         static readonly PulseSite[] Sites =
             { PulseSite.Carotid, PulseSite.RadialL, PulseSite.RadialR, PulseSite.PedalL, PulseSite.PedalR, PulseSite.FemoralL, PulseSite.FemoralR };
 
+        [Tooltip("Seconds two fingertips must rest on a pulse point before the result counts (w8).")]
+        public float pulseHoldSeconds = 2f;
+        bool _pulseReported;
+
         void Pulse(CasualtyController c, FieldMedic.Input.IHandInput input, float dt)
         {
-            Vector3 f = Grabber.FingertipPosition;
+            // index AND middle fingertips on the point (a tracked fist does not palpate; controllers: any grip pose)
+            Vector3 fi = Grabber.IndexTipPosition, fm = Grabber.MiddleTipPosition;
+            bool fingersOk = input.Source != FieldMedic.Input.HandSource.TrackedHand || input.Grip < 0.8f;
             PulseSite? found = null;
             float best = pulseRadius;
-            foreach (var s in Sites)
-            {
-                float d = Vector3.Distance(f, PulsePoint(c.rig, s));
-                if (d < best) { best = d; found = s; }
-            }
-            if (found == null) { PalpatingSite = null; _pulseContact = 0f; return; }
-            if (PalpatingSite != found) { _pulseContact = 0f; _beatTimer = 0f; }
+            if (fingersOk)
+                for (int i = 0; i < Sites.Length; i++)
+                {
+                    Vector3 sp = PulsePoint(c.rig, Sites[i]);
+                    float d = Mathf.Max(Vector3.Distance(fi, sp), Vector3.Distance(fm, sp));
+                    if (d < best) { best = d; found = Sites[i]; }
+                }
+            if (found == null) { PalpatingSite = null; _pulseContact = 0f; _pulseReported = false; return; }
+            if (PalpatingSite != found) { _pulseContact = 0f; _beatTimer = 0f; _pulseReported = false; }
             PalpatingSite = found;
             _pulseSite = found.Value;
             _pulseContact += dt;
@@ -197,10 +205,15 @@ namespace FieldMedic.Treatment
                     PulseBeats++;
                 }
             }
-            if (_pulseContact > 4f && (!_lastLogged.TryGetValue(_pulseSite, out float t) || Time.time - t > 30f))
+            if (_pulseContact >= pulseHoldSeconds && !_pulseReported)
             {
-                _lastLogged[_pulseSite] = Time.time;
-                c.Protocol.Perform(MedAction.PulseCheck, site: SiteRegion(_pulseSite));
+                _pulseReported = true;
+                if (!_lastLogged.TryGetValue(_pulseSite, out float t) || Time.time - t > 30f)
+                {
+                    _lastLogged[_pulseSite] = Time.time;
+                    c.Protocol.Perform(MedAction.PulseCheck, site: SiteRegion(_pulseSite));
+                }
+                if (c.Checks != null) c.Checks.PulseFelt(_pulseSite, PulsePoint(c.rig, _pulseSite));
             }
         }
 

@@ -20,6 +20,9 @@ namespace FieldMedic.Scenarios.Bots
         public float twistSpeed = 360f;      // deg/s
         public int fallbackGrabs;            // grabs the proximity search did not resolve by itself
         public string lastStep;
+        /// <summary>w8: hands without controllers — pinch (index trigger) for small items, a full grip for handles.</summary>
+        public bool handTracking;
+        public int pinchGrabs, gripGrabs;
 
         ScriptedHandInput _l, _r;
 
@@ -28,7 +31,10 @@ namespace FieldMedic.Scenarios.Bots
             left = l; right = r;
             _l = l.Rig.Input as ScriptedHandInput ?? l.Rig.UseScripted();
             _r = r.Rig.Input as ScriptedHandInput ?? r.Rig.UseScripted();
+            _l.SimulateTrackedHand = _r.SimulateTrackedHand = handTracking;
         }
+
+        public ScriptedHandInput InputOf(HandGrabber h) => In(h);
 
         ScriptedHandInput In(HandGrabber h) => h == left ? _l : _r;
         public HandGrabber Other(HandGrabber h) => h == left ? right : left;
@@ -140,7 +146,9 @@ namespace FieldMedic.Scenarios.Bots
             }
             if (Vector3.Distance(h.PalmPosition, g.transform.position) > 0.05f)
                 Debug.Log($"[FMVR] bot grab drift: aim {aim:F2} palm {h.PalmPosition:F2} input {In(h).Position:F2} hand {h.transform.position:F2} target now {g.transform.position:F2}");
-            In(h).Grip = 1f;
+            // controllers: the grip button; tracked hands: pinch the small things, fist the handles
+            if (handTracking && g.Style == GrabStyle.Pinch) { In(h).Trigger = 1f; pinchGrabs++; }
+            else { In(h).Grip = 1f; if (handTracking) gripGrabs++; }
             yield return Frame();
             yield return Frame();
             if (h.Held != g)
@@ -161,6 +169,7 @@ namespace FieldMedic.Scenarios.Bots
         public IEnumerator Release(HandGrabber h)
         {
             In(h).Grip = 0f;
+            if (handTracking) In(h).Trigger = 0f;
             yield return Frame();
             yield return Frame();
         }
@@ -552,6 +561,52 @@ namespace FieldMedic.Scenarios.Bots
             float t = 0f;
             while (t < seconds) { SetFingertip(h, HandTreatment.PulsePoint(c.rig, site)); t += Time.deltaTime; yield return null; }
             yield return Move(h, p + Vector3.up * 0.15f, true);
+        }
+
+        /// <summary>w8: put the head (HMD) next to his mouth for `seconds` (breathing check: listen and look).</summary>
+        public IEnumerator ListenBreath(CasualtyController c, Transform head, float seconds)
+        {
+            lastStep = "listen breath";
+            float t = 0f;
+            while (t < seconds)
+            {
+                Vector3 mouth = c.Face != null && c.Face.Built ? c.Face.MouthPosition : c.rig.Bone(HumanBodyBones.Head).position;
+                Vector3 up = c.Face != null && c.Face.Built ? c.Face.FaceForward : Vector3.up;
+                head.position = mouth + up * 0.14f + Vector3.up * 0.03f;
+                head.rotation = Quaternion.LookRotation(c.rig.ChestBone.position - head.position, Vector3.up);
+                t += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        /// <summary>w8: grab his shoulder and shake it (pain stimulus, AVPU P).</summary>
+        public IEnumerator ShakeShoulder(CasualtyController c, HandGrabber h = null, float seconds = 1.6f)
+        {
+            h ??= right;
+            lastStep = "shake shoulder";
+            var sh = c.Interaction.Roll.shoulderR ?? c.Interaction.Roll.shoulderL;
+            yield return Grab(h, sh, sh.transform.position);
+            Vector3 p0 = h.PalmPosition;
+            Vector3 axis = c.rig.BodyRight;
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                SetPalm(h, p0 + axis * (0.05f * Mathf.Sin(t * Mathf.PI * 2f * 2.5f)));
+                yield return null;
+            }
+            yield return Release(h);
+            yield return Move(h, h.PalmPosition + Vector3.up * 0.15f);
+        }
+
+        /// <summary>w8: press a nail bed with the fingertip for `seconds`, then lift the finger and watch.</summary>
+        public IEnumerator PressNail(CasualtyFace.NailBed nail, HandGrabber h = null, float seconds = 1.3f)
+        {
+            h ??= left;
+            lastStep = "press nail";
+            In(h).Grip = 0f; In(h).Trigger = 0f;
+            yield return Move(h, nail.Position + Vector3.up * 0.05f, true);
+            yield return Move(h, nail.Position, true, 0.2f);
+            for (float t = 0f; t < seconds; t += Time.deltaTime) { SetFingertip(h, nail.Position); yield return null; }
+            yield return Move(h, nail.Position + Vector3.up * 0.08f, true, 0.5f);
         }
 
         /// <summary>Two-hand log roll: shoulder + hip of one side lifted up and across.</summary>

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8e21101e72c6514ea3619e6551785b7, type: 3}
+  m_Name: HandPose_radio
+  m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Interaction.HandPose
+  key: radio
+  index: 0.05
+  middle: 0.8
+  ring: 0.86
+  little: 0.9
+  thumb: 0.6
+  thumbOpposition: 0.6
+  style: 0
+  note: 'press-to-talk: index out, the rest closed'

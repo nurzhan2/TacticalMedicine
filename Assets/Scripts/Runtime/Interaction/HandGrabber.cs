@@ -20,6 +20,9 @@ namespace FieldMedic.Interaction
         public float grabRadius = 0.07f;
         [Range(0f, 1f)] public float gripOn = 0.6f;
         [Range(0f, 1f)] public float gripOff = 0.35f;
+        [Tooltip("Hand tracking: index pinch strength that grabs small items / lets go.")]
+        [Range(0f, 1f)] public float pinchOn = 0.7f;
+        [Range(0f, 1f)] public float pinchOff = 0.35f;
         public LayerMask grabMask = ~0;
 
         public static readonly List<HandGrabber> All = new List<HandGrabber>();
@@ -32,9 +35,21 @@ namespace FieldMedic.Interaction
         public Grabbable Held { get; private set; }
         public GrabPoint HeldPoint { get; private set; }
         public bool IsGripping { get; private set; }
+        /// <summary>Hand tracking: index pinch closed.</summary>
+        public bool IsPinching { get; private set; }
+        /// <summary>Gesture that holds the current item (controllers: always Grip).</summary>
+        public GrabStyle HeldWith { get; private set; } = GrabStyle.Grip;
+        public bool TrackedHand => Input != null && Input.Source == HandSource.TrackedHand;
 
         public Vector3 PalmPosition => transform.TransformPoint(palmOffset);
         public Vector3 FingertipPosition => transform.TransformPoint(fingertipOffset);
+        [Tooltip("Half the spacing of the index and middle fingertips across the hand (m).")]
+        public float fingerSpread = 0.0095f;
+        float Side => Handedness == Handedness.Left ? -1f : 1f;
+        /// <summary>Index fingertip (thumb side of the fingertip point).</summary>
+        public Vector3 IndexTipPosition => transform.TransformPoint(fingertipOffset + new Vector3(-fingerSpread * Side, 0f, 0f));
+        /// <summary>Middle fingertip (two-finger pulse checks).</summary>
+        public Vector3 MiddleTipPosition => transform.TransformPoint(fingertipOffset + new Vector3(fingerSpread * Side, 0f, -0.002f));
 
         public event Action<HandGrabber, Grabbable> GrabStarted;
         public event Action<HandGrabber, Grabbable> GrabEnded;
@@ -57,23 +72,36 @@ namespace FieldMedic.Interaction
             var input = Input;
             if (input == null) return;
 
-            bool wasGripping = IsGripping;
+            bool tracked = input.Source == HandSource.TrackedHand;
+            bool wasGripping = IsGripping, wasPinching = IsPinching;
             IsGripping = IsGripping ? input.Grip > gripOff : input.Grip >= gripOn;
+            IsPinching = tracked && (IsPinching ? input.Trigger > pinchOff : input.Trigger >= pinchOn);
             bool gripPressed = IsGripping && !wasGripping;
+            bool pinchPressed = IsPinching && !wasPinching;
 
             if (Held != null)
             {
-                if (!IsGripping || !input.IsTracked) Release();
+                // hands: a pinched item stays while the pinch (or a fist) holds; a gripped handle needs the fist
+                bool keep = HeldWith == GrabStyle.Pinch ? (IsPinching || IsGripping) : IsGripping;
+                if (!keep || !input.IsTracked) Release();
                 return;
             }
 
-            FindBest(out var best, out var bestPoint);
+            // controllers: the grip button takes everything. Hands: a full grip takes anything, a pinch only
+            // what is held by a pinch (small items, tabs) — never a drag handle or the strap.
+            var gesture = !tracked ? GrabStyle.Any : gripPressed ? GrabStyle.Grip : pinchPressed ? GrabStyle.Pinch : GrabStyle.Any;
+            FindBest(out var best, out var bestPoint, gesture);
             SetHover(best, bestPoint);
-            if (gripPressed && best != null) TryGrab(best, bestPoint);
+            if (best == null) return;
+            if ((!tracked && gripPressed) || (tracked && (gripPressed || pinchPressed))) TryGrab(best, bestPoint);
         }
 
+        /// <summary>Does a hand-tracking gesture hold this object? (Any = no filter.)</summary>
+        public static bool Accepts(GrabStyle gesture, GrabStyle itemStyle) =>
+            gesture == GrabStyle.Any || gesture == GrabStyle.Grip || itemStyle != GrabStyle.Grip;
+
         /// <summary>Best grab candidate near the palm (null if none).</summary>
-        public void FindBest(out Grabbable best, out GrabPoint bestPoint)
+        public void FindBest(out Grabbable best, out GrabPoint bestPoint, GrabStyle gesture = GrabStyle.Any)
         {
             best = null; bestPoint = null;
             Vector3 palm = PalmPosition;
@@ -84,7 +112,7 @@ namespace FieldMedic.Interaction
             {
                 var col = _buffer[i];
                 var g = col.GetComponentInParent<Grabbable>();
-                if (g == null || !g.CanBeGrabbedBy(this)) continue;
+                if (g == null || !g.CanBeGrabbedBy(this) || !Accepts(gesture, g.Style)) continue;
 
                 // inside several handles at once: the one whose centre is nearest wins
                 float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm) + 0.1f * Vector3.Distance(col.bounds.center, palm);
@@ -120,6 +148,8 @@ namespace FieldMedic.Interaction
             if (g == null) return false;
             if (Held != null) Release();
             if (!g.BeginGrab(this, point)) return false;
+            // which gesture holds it (tracked hands): a fist wins over a pinch
+            HeldWith = !TrackedHand || IsGripping || !IsPinching ? GrabStyle.Grip : GrabStyle.Pinch;
             SetHover(null, null);
             Held = g;
             HeldPoint = point;

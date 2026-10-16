@@ -64,15 +64,24 @@ namespace FieldMedic.Casualty
         int _pulls;
         float _maxStretch;
 
-        void AddPull(Vector3 at, Vector3 palm, float free, IHandInput input)
+        [Tooltip("Grip quality (w8 weight): plate-carrier handle 1, shoulder strap, ankle, wrist.")]
+        public float handleFactor = 1f, strapFactor = 0.8f, ankleFactor = 0.68f, wristFactor = 0.58f;
+        float _factorSum;
+        /// <summary>Speed limit of the current grips (m/s): one wrist is slow, two hands faster, the handle best.</summary>
+        public float SpeedLimit { get; private set; }
+
+        public override float VisualLoad => PullingHands <= 0 ? 0f : PullingHands == 1 ? 1f : 0.55f;
+
+        void AddPull(Vector3 at, Vector3 palm, float free, IHandInput input, float factor = 1f)
         {
             Vector3 d = palm - at;
             d.y = 0f;
             float stretch = d.magnitude - free;
-            if (stretch > 0f) _wantSum += d.normalized * Mathf.Min(dragMaxSpeed, stretch / 0.12f);
+            if (stretch > 0f) _wantSum += d.normalized * Mathf.Min(dragMaxSpeed * factor, stretch / 0.12f);
             _maxStretch = Mathf.Max(_maxStretch, stretch);
             _pivotSum += at;
             _pulls++;
+            _factorSum += factor;
             HapticsProfile.Current.DragRumble(input, Mathf.Clamp01(stretch / 0.25f) * Mathf.Clamp01(massKg / 95f));
         }
 
@@ -85,12 +94,12 @@ namespace FieldMedic.Casualty
             if (!_yawInit) { _yaw = root.eulerAngles.y; _yawInit = true; }
 
             Vector3 want = Vector3.zero;
-            _wantSum = _pivotSum = Vector3.zero; _pulls = 0; _maxStretch = float.MinValue;
+            _wantSum = _pivotSum = Vector3.zero; _pulls = 0; _maxStretch = float.MinValue; _factorSum = 0f;
             if (casualty.IsDown && !casualty.IsFalling)
             {
-                if (Held) { Crawl(dt); AddPull(transform.position, Hand.PalmPosition, slack, Input); }
+                if (Held) { Crawl(dt); AddPull(transform.position, Hand.PalmPosition, slack, Input, handleFactor); }
                 foreach (var sh in strapHandles)
-                    if (sh != null && sh.Hand != null) AddPull(sh.transform.position, sh.Hand.PalmPosition, slack, sh.Input);
+                    if (sh != null && sh.Hand != null) AddPull(sh.transform.position, sh.Hand.PalmPosition, slack, sh.Input, strapFactor);
                 // wrist / ankle: the limb straightens toward the hand first, then the whole body follows
                 var ci = casualty.Interaction;
                 if (ci != null && casualty.rig != null)
@@ -99,14 +108,15 @@ namespace FieldMedic.Casualty
                         if (lh == null || !lh.Held || lh.grip == LimbHandle.Grip.Knee) continue;
                         if (!LimbMath.Points(casualty.rig, lh.limb, out var lr, out var lm, out var lt, out _)) continue;
                         float reach = Vector3.Distance(lr, lm) + Vector3.Distance(lm, lt);
-                        AddPull(lr, lh.Hand.PalmPosition, reach * 0.92f + limbSlack, lh.Input);
+                        AddPull(lr, lh.Hand.PalmPosition, reach * 0.92f + limbSlack, lh.Input, lh.grip == LimbHandle.Grip.Wrist ? wristFactor : ankleFactor);
                     }
             }
             PullingHands = _pulls;
             if (_pulls > 0)
             {
                 float boost = 1f + extraHandBoost * (_pulls - 1);
-                want = Vector3.ClampMagnitude(_wantSum / _pulls * boost, dragMaxSpeed * boost);
+                SpeedLimit = dragMaxSpeed * (_factorSum / _pulls) * boost;
+                want = Vector3.ClampMagnitude(_wantSum / _pulls * boost, SpeedLimit);
                 if (_vel.magnitude < 0.05f && _maxStretch < staticBreak) want = Vector3.zero; // stiction
             }
             // heavier = slower to respond; ground friction brakes quickly once the pull stops

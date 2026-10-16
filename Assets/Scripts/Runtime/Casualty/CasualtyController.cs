@@ -64,7 +64,11 @@ namespace FieldMedic.Casualty
         /// <summary>Hands-on checks: pulse, breathing, AVPU, capillary refill (w8).</summary>
         public VitalsChecks Checks { get; private set; }
 
-        float _poseTimer, _fallTimer;
+        float _poseTimer, _fallTimer, _attendUntil;
+
+        /// <summary>He turns his head to the medic for a while (answered a stimulus) — if conscious enough.</summary>
+        public void Attend(float seconds) => _attendUntil = Mathf.Max(_attendUntil, Time.time + seconds);
+        public bool Attending => Time.time < _attendUntil;
         bool _sawFallState;
         float _lastSpikeFlinch;
 
@@ -416,7 +420,7 @@ namespace FieldMedic.Casualty
             rig.breathDepth = dead ? 0f : Mathf.Clamp01(0.35f + 0.5f * p.LossFraction + 0.4f * p.tensionSeverity - (p.pneumo == PneumoState.Tension ? 0.2f : 0f));
             rig.agonal = !dead && (loss > 0.42f || (p.airwayObstructed && !p.airwayAdjunct));
             var avpu = p.AVPU;
-            rig.lookWeight = dead || IsFalling ? 0f : avpu == Consciousness.Alert ? 1f : avpu == Consciousness.Voice ? 0.45f : 0f;
+            rig.lookWeight = dead || IsFalling ? 0f : avpu == Consciousness.Alert ? 1f : avpu == Consciousness.Voice ? (Attending ? 0.9f : 0.45f) : 0f;
         }
 
         public void SetPose(CasualtyPose pose, bool force = false)

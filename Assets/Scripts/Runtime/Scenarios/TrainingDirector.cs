@@ -73,7 +73,34 @@ namespace FieldMedic.Scenarios
         }
 
         // ------------------------------------------------------------------ begin
+        /// <summary>The hands tutorial running before the lesson (w8), if any.</summary>
+        public TutorialDirector Tutorial { get; private set; }
+
+        /// <summary>
+        /// Training launch: the 60-second hands tutorial first (first Training run, or the «Управление» menu entry),
+        /// then the lesson. The demo never waits for the tutorial.
+        /// </summary>
         public void Begin(string lessonId)
+        {
+            if (TutorialDirector.ShouldRun(lessonId))
+            {
+                FieldMedic.Battle.BattleDirector.Mode = FieldMedic.Battle.BattleMode.Training;
+                FieldMedic.Battle.BattleDirector.PlayerArmed = false;
+                if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.enableHits = false; }
+                if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.25f;
+                if (director.board != null) director.board.gameObject.SetActive(false);
+                Tutorial = TutorialDirector.Begin(director, () =>
+                {
+                    Tutorial = null;
+                    if (lessonId == TutorialDirector.LessonId) ScenarioDirector.Launch(() => ScenarioLaunch.Menu());
+                    else BeginLesson(lessonId);
+                });
+                return;
+            }
+            BeginLesson(lessonId);
+        }
+
+        public void BeginLesson(string lessonId)
         {
             HintTable.EnsureLoaded();
             FieldMedic.Battle.BattleDirector.Mode = FieldMedic.Battle.BattleMode.Training; // battle far away, nobody targets the player
@@ -126,6 +153,7 @@ namespace FieldMedic.Scenarios
                 _exit.posterior = true;
             }
             if (l.unconscious) C.Patient.tbiUnconscious = true;
+            if (l.startLossFraction > 0f) C.Patient.bloodLostMl = Mathf.Max(C.Patient.bloodLostMl, C.Patient.BloodVolumeMl * l.startLossFraction);
             if (l.id != "drag") _wound.discovered = true;
             C.StartDown();
             C.Protocol.phase = l.inTheOpen ? Phase.CareUnderFire : Phase.TacticalFieldCare;
@@ -333,6 +361,13 @@ namespace FieldMedic.Scenarios
                 case "medevac": return C.Protocol.medevacRequested;
                 case "heli_landed": return tac != null && tac.Landed;
                 case "loaded": return tac != null ? tac.Loaded : C.Protocol.medevacRequested;
+                // w8 hands-on assessment
+                case "avpu": return C.Protocol.Assessed(AssessmentKind.Avpu);
+                case "avpu_voice": return C.Protocol.assessments.Exists(a => a.kind == AssessmentKind.Avpu && a.site == "голос");
+                case "pulse_neck": return C.Protocol.assessments.Exists(a => a.kind == AssessmentKind.Pulse && a.site == VitalsAssessment.SiteName(PulseSite.Carotid, false));
+                case "pulse_wrist": return C.Protocol.assessments.Exists(a => a.kind == AssessmentKind.Pulse && a.site == VitalsAssessment.SiteName(PulseSite.RadialR, false));
+                case "breath": return C.Protocol.Assessed(AssessmentKind.Breathing);
+                case "cap_refill": return C.Protocol.Assessed(AssessmentKind.CapillaryRefill);
             }
             return false;
         }
@@ -437,6 +472,11 @@ namespace FieldMedic.Scenarios
                 case "ChestBack": return _exit != null ? WoundPoint(_exit) : (Vector3?)null;
                 case "Nose": return rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.08f;
                 case "Body": return Chest;
+                case "Head": return rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.06f;
+                case "Neck": return HandTreatment.PulsePoint(rig, PulseSite.Carotid);
+                case "Wrist": return HandTreatment.PulsePoint(rig, PulseSite.RadialR);
+                case "Mouth": return C.Face != null && C.Face.Built ? C.Face.MouthPosition : rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.04f;
+                case "Nail": return C.Face != null && C.Face.Nails.Count > 0 ? C.Face.Nails[C.Face.Nails.Count - 2].Position : (Vector3?)null;
                 case "Stretcher": return TacevacController.Instance != null && TacevacController.Instance.Landed ? TacevacController.Instance.StretcherPoint : (Vector3?)null;
             }
             return null;
@@ -498,6 +538,10 @@ namespace FieldMedic.Scenarios
                 case "npa_grab": from = hand; to = Item<NpaItem>(); return true;
                 case "npa_in": from = Item<NpaItem>(); to = rig.Bone(HumanBodyBones.Head).position; return true;
                 case "blanket": from = Item<BlanketItem>(); to = Chest; return true;
+                case "avpu": from = hand; to = C.Interaction != null && C.Interaction.Roll != null && C.Interaction.Roll.shoulderR != null ? C.Interaction.Roll.shoulderR.transform.position : Chest; return true;
+                case "pulse_neck": from = hand; to = HandTreatment.PulsePoint(rig, PulseSite.Carotid); return true;
+                case "pulse_wrist": from = hand; to = HandTreatment.PulsePoint(rig, PulseSite.RadialR); return true;
+                case "cap_refill": if (C.Face == null || C.Face.Nails.Count == 0) return false; from = hand; to = C.Face.Nails[C.Face.Nails.Count - 2].Position; return true;
                 case "card": from = Item<CardItem>(); to = Chest; return true;
                 case "loaded": if (TacevacController.Instance == null || !TacevacController.Instance.Landed) return false; from = hand; to = TacevacController.Instance.ButtonPoint; return true;
             }

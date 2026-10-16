@@ -18,6 +18,25 @@ namespace FieldMedic.Interaction
         public bool allowTwoHands = true;
         [Tooltip("Only grabbable at its GrabPoints (handles), not anywhere on the collider.")]
         public bool requireGrabPoint = false;
+        [Tooltip("Hand pose key (HandPoseLibrary); empty = by item kind / handle type.")]
+        public string poseKey;
+
+        bool _poseResolved;
+        HandPose _pose;
+        /// <summary>How the fingers wrap this object, and which hand-tracking gesture holds it (resolved once).</summary>
+        public HandPose Pose
+        {
+            get
+            {
+                if (!_poseResolved) { _pose = HandPoseLibrary.Get(HandPoses.KeyFor(this)); _poseResolved = true; }
+                return _pose;
+            }
+        }
+        public GrabStyle Style => Pose != null ? Pose.style : GrabStyle.Any;
+        /// <summary>0..1 how much this load drags the visual hand down (heavy things, w8 weight feel).</summary>
+        public virtual float VisualLoad => loadWhileHeld >= 0f ? loadWhileHeld : Body == null || Body.isKinematic ? 0f : Mathf.Clamp01(Body.mass / 6f);
+        [Tooltip("Visual weight 0..1 while held (−1 = from the rigidbody mass). Body handles of the casualty set it.")]
+        public float loadWhileHeld = -1f;
 
         [Header("Follow feel")]
         [Range(0.05f, 1f)] public float stiffness = 0.85f;

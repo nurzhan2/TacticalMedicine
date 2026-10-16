@@ -81,7 +81,9 @@ namespace FieldMedic.Casualty
             for (int side = -1; side <= 1; side += 2)
             {
                 Vector3 sp = chest.position + rig.BodyUp * 0.17f + rig.BodyRight * side * 0.11f + rig.BodyForward * 0.07f;
-                Drag.strapHandles.Add(ProxyHandle.Create<ProxyHandle>(side < 0 ? "Grab_StrapL" : "Grab_StrapR", chest, sp, 0.055f, 2));
+                var strap = ProxyHandle.Create<ProxyHandle>(side < 0 ? "Grab_StrapL" : "Grab_StrapR", chest, sp, 0.055f, 2);
+                strap.loadWhileHeld = 0.6f;
+                Drag.strapHandles.Add(strap);
             }
 
             // log roll: shoulder + hip on each side
@@ -128,6 +130,7 @@ namespace FieldMedic.Casualty
             h.casualty = casualty;
             h.limb = limb;
             h.grip = grip;
+            h.loadWhileHeld = grip == LimbHandle.Grip.Knee ? 0.3f : 0.5f;
             LimbHandles.Add(h);
         }
 
