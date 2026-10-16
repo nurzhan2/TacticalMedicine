@@ -43,6 +43,13 @@ namespace FieldMedic.Treatment
         float _yaw;
         bool _yawInit;
 
+        /// <summary>Pouches with a tray (the player's kit): the physical hand rests on the tray bottom (w8).</summary>
+        public static readonly List<IfakPouch> All = new List<IfakPouch>();
+        void OnEnable() { if (!All.Contains(this)) All.Add(this); }
+        void OnDisable() => All.Remove(this);
+        /// <summary>Tray bottom (pouch-local): top at y = 0, half extents x 0.21, z 0.12.</summary>
+        public bool HasTray => buildVisual;
+
         void Start() { if (buildOnStart) Build(); }
 
         public void Build()

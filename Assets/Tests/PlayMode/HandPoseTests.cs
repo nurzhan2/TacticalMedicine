@@ -102,6 +102,27 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
+        public IEnumerator Hands_RestOn_The_IfakTray()
+        {
+            yield return LoadLesson("tq");
+            yield return Ready(1.3f);
+            var bot = run.bot;
+            var h = bot.left;
+            var phys = Phys(h);
+            var pouch = run.Pouch;
+            Vector3 top = pouch.transform.TransformPoint(new Vector3(0.12f, 0f, 0.02f));
+            yield return bot.Move(h, top + pouch.transform.up * 0.15f, false, 1.5f);
+            yield return bot.Move(h, top - pouch.transform.up * 0.08f, false, 0.4f);   // tracked 8 cm under the tray bottom
+            yield return DemoFlowRunner.Seconds(0.2f);
+            float visual = Vector3.Dot(phys.VisualPalm - top, pouch.transform.up), tracked = Vector3.Dot(phys.TrackedPalm - top, pouch.transform.up);
+            Debug.Log($"[FMVR] w8 test tray: tracked {tracked * 100f:F1} cm, visual palm {visual * 100f:F1} cm above the tray bottom");
+            Assert.Less(tracked, -0.06f);
+            Assert.Greater(visual, 0f, "the glove rests on the tray bottom, not through it");
+            Assert.IsTrue(phys.GhostVisible);
+            yield return bot.Move(h, top + pouch.transform.up * 0.2f, false, 1f);
+        }
+
+        [UnityTest]
         public IEnumerator Drag_Speed_ByGrip_Wrist_Slow_Handle_Best_TwoHands_Faster()
         {
             yield return LoadLesson("tq");

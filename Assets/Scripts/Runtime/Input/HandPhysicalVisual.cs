@@ -148,6 +148,7 @@ namespace FieldMedic.Input
 
         bool InsideBody(Vector3 p)
         {
+            if (InsideTray(p, out _)) return true;
             for (int ci = 0; ci < CasualtyController.All.Count; ci++)
             {
                 var c = CasualtyController.All[ci];
@@ -168,8 +169,28 @@ namespace FieldMedic.Input
         }
 
         /// <summary>Erlan's body parts are triggers: treat their capsules/spheres as solid for the glove.</summary>
+        /// <summary>The IFAK tray bottom: the glove rests on it (reaches the items from above, never through it).</summary>
+        bool InsideTray(Vector3 p, out Vector3 pushed)
+        {
+            pushed = p;
+            var all = FieldMedic.Treatment.IfakPouch.All;
+            for (int i = 0; i < all.Count; i++)
+            {
+                var pouch = all[i];
+                if (pouch == null || !pouch.HasTray) continue;
+                Vector3 l = pouch.transform.InverseTransformPoint(p);
+                if (Mathf.Abs(l.x) < 0.22f && Mathf.Abs(l.z) < 0.13f && l.y < bodyRadius && l.y > -0.07f)
+                {
+                    pushed = pouch.transform.TransformPoint(new Vector3(l.x, bodyRadius, l.z));
+                    return true;
+                }
+            }
+            return false;
+        }
+
         Vector3 PushOutOfBodies(Vector3 p)
         {
+            if (InsideTray(p, out var up)) p = up;
             for (int ci = 0; ci < CasualtyController.All.Count; ci++)
             {
                 var c = CasualtyController.All[ci];
@@ -229,7 +250,12 @@ namespace FieldMedic.Input
             if (_glove == null || _glove.Renderer == null) return;
             if (_ghostMesh == null) _ghostMesh = new Mesh { name = "GhostGlove" };
             _glove.Renderer.BakeMesh(_ghostMesh, true);
-            if (_ghostMat == null) _ghostMat = FieldMedic.UI.UiMesh.Mat(new Color(0.78f, 0.9f, 1f, 0.22f), 3050);
+            if (_ghostMat == null)
+            {
+                // faint x-ray: visible through the wall / his body that stops the glove
+                _ghostMat = FieldMedic.UI.UiMesh.Mat(new Color(0.8f, 0.92f, 1f, 0.16f), 3050);
+                _ghostMat.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
+            }
             // the baked mesh is in the renderer's space at the VISUAL pose: draw it shifted back to the tracked pose
             var m = Matrix4x4.Translate(-Offset) * _glove.Renderer.transform.localToWorldMatrix;
             Graphics.DrawMesh(_ghostMesh, m, _ghostMat, gameObject.layer);

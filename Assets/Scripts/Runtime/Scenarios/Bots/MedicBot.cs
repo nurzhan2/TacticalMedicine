@@ -551,6 +551,15 @@ namespace FieldMedic.Scenarios.Bots
             }
         }
 
+        /// <summary>Point the fingers along `fingers` (back of the hand toward `backOfHand`) — natural approach angles.</summary>
+        public void Orient(HandGrabber h, Vector3 fingers, Vector3 backOfHand)
+        {
+            var i = In(h);
+            Vector3 palm = h.PalmPosition;
+            i.Rotation = Quaternion.LookRotation(fingers, backOfHand);
+            i.Position = palm - i.Rotation * h.palmOffset;
+        }
+
         public IEnumerator CheckPulse(CasualtyController c, PulseSite site, float seconds, HandGrabber h = null)
         {
             h ??= left;

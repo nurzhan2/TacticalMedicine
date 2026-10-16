@@ -121,8 +121,11 @@ namespace FieldMedic.Tests
         }
 
         /// <summary>Camera target (smoothed); `snap` cuts.</summary>
+        System.Func<Vector3> _posFn, _lookFn;
+
         void Aim(Vector3 pos, Vector3 look, bool snap = false, float smooth = 0.6f)
         {
+            _posFn = _lookFn = null;
             _wantPos = pos; _wantLook = look; _smooth = smooth;
             if (snap) { _camPos = pos; _look = look; _camVel = _lookVel = Vector3.zero; Apply(); }
         }
@@ -134,6 +137,7 @@ namespace FieldMedic.Tests
             while (true)
             {
                 float dt = Time.deltaTime;
+                if (_posFn != null) { try { _wantPos = _posFn(); _wantLook = _lookFn != null ? _lookFn() : _wantLook; } catch (System.Exception) { _posFn = null; } }
                 _camPos = Vector3.SmoothDamp(_camPos, _wantPos, ref _camVel, _smooth, 4f, dt);
                 _look = Vector3.SmoothDamp(_look, _wantLook, ref _lookVel, _smooth * 0.7f, 6f, dt);
                 Apply();
@@ -179,7 +183,7 @@ namespace FieldMedic.Tests
             Vector3 dummy = tut.Root.position;
             Vector3 toward = tut.Root.forward;   // the dummy faces the player
             Vector3 side = Vector3.Cross(Vector3.up, toward);
-            Aim(dummy + toward * 1.5f + side * 0.5f + Vector3.up * 1.45f, dummy + Vector3.up * 0.3f, true);
+            Aim(dummy + toward * 1.75f + side * 0.55f + Vector3.up * 1.75f, dummy + Vector3.up * 0.55f - toward * 0.2f, true);
             run.MakeBot();
             var bot = run.bot;
             bot.handSpeed = 0.8f;
@@ -226,6 +230,8 @@ namespace FieldMedic.Tests
             run.KitNear();
             Vector3 hips = run.Hips, chest = run.Chest;
             var rig = C.rig;
+            run.Pouch.transform.position = hips + rig.BodyRight * 0.75f - rig.BodyUp * 0.25f;   // beside him, away from the camera
+            Physics.SyncTransforms();
             Aim(hips + rig.BodyRight * -1.5f + rig.BodyUp * 0.2f + Vector3.up * 1.2f, Vector3.Lerp(hips, chest, 0.4f), true);
             yield return run.HandsTo(hips);
             bool shotGrab = false;
@@ -254,85 +260,113 @@ namespace FieldMedic.Tests
             run.headFollowsCamera = true;
             D.head = run.head;
             C.Checks.head = run.head;
-            run.KitNear();
             run.MakeBot();
             bot = run.bot;
+            bot.handSpeed = 0.7f;
             rig = C.rig;
             var face = C.Face;
-            var headBone = rig.Bone(HumanBodyBones.Head);
-            Vector3 faceFwd = face.FaceForward;
-            Vector3 facePos = headBone.position + rig.BodyUp * 0.06f;
-            Aim(facePos + faceFwd * 0.55f + rig.BodyRight * 0.25f + Vector3.up * 0.05f, facePos, true);
+            // the player's kit out of the close-ups: on the ground beyond his feet
+            var kit = run.Pouch;
+            kit.bodyLocked = false;
+            kit.transform.position = rig.Bone(HumanBodyBones.Hips).position - rig.BodyUp * 0.9f + rig.BodyRight * 0.5f;
+            kit.transform.rotation = Quaternion.LookRotation(Vector3.ProjectOnPlane(rig.BodyUp, Vector3.up), Vector3.up);
+            // hands parked out of view (above and beside him, on the medic's side)
+            Vector3 Park(float side) => run.Chest + rig.BodyForward * 0.55f + rig.BodyRight * (0.45f * side) - rig.BodyUp * 0.3f;
+            bot.Orient(bot.left, -rig.BodyForward, rig.BodyUp);
+            bot.Orient(bot.right, -rig.BodyForward, rig.BodyUp);
+            yield return bot.Move(bot.left, Park(1f), false, 4f);
+            yield return bot.Move(bot.right, Park(1.3f), false, 4f);
+
+            Vector3 HeadC() => rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.06f;
+            // over his face, looking down at it (he lies on his back: BodyForward points to the sky)
+            Vector3 FaceCam() => HeadC() + rig.BodyForward * 0.5f + rig.BodyUp * 0.22f + rig.BodyRight * 0.12f;
+            Aim(FaceCam(), HeadC(), true);
+            _posFn = FaceCam; _lookFn = HeadC;
             StartRec();
             Mark("voice");
-            yield return Hold(1.5f);
+            yield return Hold(1.6f);
             Shot("03a_face_drowsy");
             PlayerVoice.Override = 0.9f;                       // "Ерлан, слышишь меня?"
             yield return Hold(0.9f);
             PlayerVoice.Override = 0f;
-            yield return Hold(1.3f);
+            yield return Hold(1.2f);
             Shot("03_voice_eyes_open");
-            yield return Hold(1.5f);
+            yield return Hold(1.6f);
 
-            // pulse at the neck, then the wrist
+            // pulse at the neck: medic kneeling at his right, two fingers across the neck; camera from his left
             Mark("pulse");
-            Vector3 neck = HandTreatment.PulsePoint(rig, PulseSite.Carotid);
-            Aim(neck + faceFwd * 0.25f + rig.BodyRight * 0.35f + Vector3.up * 0.25f, neck, false, 0.5f);
-            yield return run.HandsTo(run.Hips);
+            Vector3 Neck() => HandTreatment.PulsePoint(rig, PulseSite.Carotid);
+            _posFn = () => Neck() + rig.BodyForward * 0.42f - rig.BodyRight * 0.3f + rig.BodyUp * 0.12f;
+            _lookFn = () => Neck() + rig.BodyRight * 0.04f;
+            yield return Hold(0.8f);
+            bot.Orient(bot.left, (-rig.BodyRight * 0.8f - rig.BodyForward * 0.6f).normalized, (rig.BodyForward - rig.BodyRight * 0.2f).normalized);
+            yield return bot.Move(bot.left, Neck() + rig.BodyRight * 0.12f + rig.BodyForward * 0.1f, true, 0.6f);
             yield return bot.CheckPulse(C, PulseSite.Carotid, 3.4f, bot.left);
             Shot("06_pulse_neck_label");
-            Vector3 wrist = HandTreatment.PulsePoint(rig, PulseSite.RadialR);
-            Aim(wrist + Vector3.up * 0.45f + rig.BodyRight * 0.3f, wrist, false, 0.5f);
+            yield return bot.Move(bot.left, Park(1f), false, 1.2f);
+            // the wrist: his right forearm by his side, fingers along the radial artery; camera from his feet side
+            Vector3 Wrist() => HandTreatment.PulsePoint(rig, PulseSite.RadialR);
+            _posFn = () => Wrist() + rig.BodyForward * 0.42f - rig.BodyUp * 0.32f - rig.BodyRight * 0.12f;
+            _lookFn = Wrist;
+            yield return Hold(0.8f);
+            bot.Orient(bot.right, (-rig.BodyRight * 0.5f - rig.BodyForward * 0.5f + rig.BodyUp * 0.3f).normalized, (rig.BodyForward + rig.BodyRight * 0.3f).normalized);
+            yield return bot.Move(bot.right, Wrist() + rig.BodyRight * 0.12f + rig.BodyForward * 0.1f, true, 0.6f);
             yield return bot.CheckPulse(C, PulseSite.RadialR, 3.4f, bot.right);
             Shot("07_pulse_wrist_label");
+            yield return bot.Move(bot.right, Park(1.3f), false, 1.2f);
 
-            // breathing: the ear at his mouth (first-person view)
+            // breathing: the medic's ear at his mouth (first-person view down his chest)
             Mark("breath");
             run.headFollowsCamera = false;
-            Vector3 mouth = face.MouthPosition;
-            Aim(mouth + faceFwd * 0.16f + Vector3.up * 0.04f, rig.ChestBone.position, false, 0.5f);
-            for (float t = 0f; t < 1.2f; t += Time.deltaTime) { run.head.position = _camPos; yield return null; }
-            for (float t = 0f; t < 4f; t += Time.deltaTime) { run.head.position = _camPos; yield return null; }
+            Vector3 Ear() => face.MouthPosition + face.FaceForward * 0.15f + rig.BodyRight * 0.06f + rig.BodyUp * 0.05f;
+            _posFn = Ear;
+            _lookFn = () => rig.ChestBone.position - rig.BodyUp * 0.1f;
+            for (float t = 0f; t < 5.2f; t += Time.deltaTime) { run.head.position = _camPos; yield return null; }
             Shot("08_breathing_check");
             run.headFollowsCamera = true;
 
-            // capillary refill
+            // capillary refill on his right middle finger
             Mark("refill");
             var nail = face.Nails[Mathf.Min(4, face.Nails.Count - 1)];
-            Aim(nail.Position + Vector3.up * 0.3f + rig.BodyRight * 0.12f + rig.BodyUp * -0.12f, nail.Position, false, 0.5f);
+            _posFn = () => nail.Position + rig.BodyForward * 0.26f - rig.BodyUp * 0.16f + rig.BodyRight * 0.1f;
+            _lookFn = () => nail.Position;
             yield return Hold(1f);
-            _host.StartCoroutine(ShotLater("09_capillary_pressed", 1.3f));
+            bot.Orient(bot.left, (-rig.BodyForward * 0.7f + rig.BodyUp * 0.3f - rig.BodyRight * 0.3f).normalized, (rig.BodyForward + rig.BodyUp * 0.4f).normalized);
+            _host.StartCoroutine(ShotLater("09_capillary_pressed", 1.6f));
             yield return bot.PressNail(nail, bot.left, 1.6f);
-            yield return Hold(0.4f);
+            yield return bot.Move(bot.left, nail.Position + rig.BodyForward * 0.14f + rig.BodyUp * 0.12f, false, 1f);
             Shot("10_capillary_release_white");
-            for (float t = 0f; t < 5f && C.Checks.LastRefillSeconds < 0f; t += Time.deltaTime) yield return null;
-            yield return Hold(0.8f);
+            for (float t = 0f; t < 6f && C.Checks.LastRefillSeconds < 0f; t += Time.deltaTime) yield return null;
+            Shot("10b_capillary_refilled");
+            yield return bot.Move(bot.left, Park(1f), false, 1.2f);
 
-            // shock colours: blood loss ramps up
+            // shock colours: blood loss ramps up (he turns pale, then grey, lips blue)
             Mark("shock");
-            Aim(facePos + faceFwd * 0.5f - rig.BodyRight * 0.2f + Vector3.up * 0.05f, facePos, false, 0.6f);
-            yield return Hold(1f);
+            _posFn = FaceCam; _lookFn = HeadC;
+            yield return Hold(1.2f);
             T.maxLossFraction = 0.6f;
             C.Patient.InsertAirwayAdjunct();
             float l0f = C.Patient.LossFraction;
             Shot("11_shock_before");
             for (float t = 0f; t < 7f; t += Time.deltaTime)
             {
-                C.Patient.bloodLostMl = C.Patient.BloodVolumeMl * Mathf.Lerp(l0f, 0.45f, t / 7f);
+                C.Patient.bloodLostMl = C.Patient.BloodVolumeMl * Mathf.Lerp(l0f, 0.46f, t / 7f);
                 yield return null;
             }
-            yield return Hold(1.5f);
+            yield return Hold(2f);
             Shot("12_shock_grey_blue_lips");
 
-            // physical hand: the glove stops on his chest, the ghost shows the tracked hand
+            // physical hand: the glove stops on his chest, the faint ghost shows the tracked hand inside
             Mark("ghost");
-            Vector3 cs = rig.ChestBone.position;
-            Aim(cs + rig.BodyRight * 0.6f + Vector3.up * 0.45f, cs, false, 0.5f);
-            yield return bot.Move(bot.right, cs + Vector3.up * 0.25f, false, 1.2f);
-            yield return bot.Move(bot.right, cs - Vector3.up * 0.05f, false, 0.3f);
-            yield return Hold(1.2f);
+            Vector3 Cs() => rig.ChestBone.position;
+            _posFn = () => Cs() + rig.BodyForward * 0.3f + rig.BodyRight * 0.55f - rig.BodyUp * 0.15f;
+            _lookFn = () => Cs() + rig.BodyForward * 0.12f;
+            bot.Orient(bot.right, (-rig.BodyRight * 0.3f + rig.BodyUp * 0.5f).normalized, rig.BodyForward);
+            yield return bot.Move(bot.right, Cs() + rig.BodyForward * 0.3f, false, 1.2f);
+            yield return bot.Move(bot.right, Cs() + rig.BodyForward * 0.02f, false, 0.25f);
+            yield return Hold(1.4f);
             Shot("13_physical_hand_ghost");
-            yield return bot.Move(bot.right, cs + Vector3.up * 0.3f, false, 0.8f);
+            yield return bot.Move(bot.right, Cs() + rig.BodyForward * 0.35f, false, 0.8f);
             yield return Hold(1f);
             Mark("end");
             _recording = false;
