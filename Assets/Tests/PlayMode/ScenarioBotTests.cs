@@ -31,9 +31,10 @@ namespace FieldMedic.Tests
         DebriefReport _report;
         static readonly Vector3 CoverAt = new Vector3(-3.6f, 0f, 0f);
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
+            yield return FreshScene.Make();
             GameSettings.HoldTimeScale = 60f;
             _report = null;
             _pouch = null;

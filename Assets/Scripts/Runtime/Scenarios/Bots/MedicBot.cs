@@ -404,9 +404,15 @@ namespace FieldMedic.Scenarios.Bots
             lastStep = "bandage";
             yield return Grab(h, b);
             Vector3 w = care.transform.position, n = care.Normal;
-            yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.05f);
-            yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.004f, 0.3f);
-            for (int k = 0; k < 10 && b.ApplyingTo == null; k++) yield return Frame();
+            for (int attempt = 0; attempt < 4 && b.ApplyingTo == null; attempt++)
+            {
+                w = care.transform.position; n = care.Normal; // he flinches / breathes: aim at where the wound is now
+                yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.05f);
+                w = care.transform.position; n = care.Normal;
+                yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.004f, 0.3f);
+                for (int k = 0; k < 10 && b.ApplyingTo == null; k++) yield return Frame();
+            }
+            w = care.transform.position; n = care.Normal;
             if (b.ApplyingTo == null) { lastStep = "bandage: pad not placed"; yield break; }
             Vector3 axis = care.WrapAxis(out Vector3 c, out float r);
             Vector3 start = Vector3.ProjectOnPlane(n, axis).normalized;

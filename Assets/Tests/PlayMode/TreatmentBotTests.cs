@@ -28,9 +28,10 @@ namespace FieldMedic.Tests
         MedicBot _bot;
         IfakPouch _pouch;
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
+            yield return FreshScene.Make();
             GameSettings.HoldTimeScale = 60f; // training speed-up of the 3-minute hold
             TreatmentAudio.Muted = true;
             var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);

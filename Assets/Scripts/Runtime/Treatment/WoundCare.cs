@@ -34,10 +34,11 @@ namespace FieldMedic.Treatment
 
         float _framePressure, _releasedFor;
         bool _holding;
-        readonly float[] _strokeDepth = new float[2];
-        readonly bool[] _inStroke = new bool[2];
-        readonly float[] _wipePath = new float[2];
-        readonly Vector3[] _lastPalm = new Vector3[2];
+        readonly float[] _strokeDepth = new float[MaxHands];
+        readonly bool[] _inStroke = new bool[MaxHands];
+        readonly float[] _wipePath = new float[MaxHands];
+        readonly Vector3[] _lastPalm = new Vector3[MaxHands];
+        const int MaxHands = 6; // the rig's two hands plus bot/test hands
         Transform _gauzeVis, _bandageVis, _exposedSkin;
         TextMesh _hint;
         int _wrapsShown = -1;
@@ -102,7 +103,7 @@ namespace FieldMedic.Treatment
 
         void DetectStrokesAndWipes()
         {
-            for (int i = 0; i < HandGrabber.All.Count && i < 2; i++)
+            for (int i = 0; i < HandGrabber.All.Count && i < MaxHands; i++)
             {
                 var h = HandGrabber.All[i];
                 if (h == null || h.Input == null) continue;

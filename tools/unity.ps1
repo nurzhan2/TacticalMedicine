@@ -75,6 +75,7 @@ function Invoke-UnityTests {
         [ValidateSet('EditMode', 'PlayMode')][string]$Platform = 'EditMode',
         [string]$Filter = '',
         [string]$Category = '',
+        [string[]]$ExtraArgs = @(),
         [int]$TimeoutMin = 40
     )
     if (-not (Test-UnityProjectFree)) { return $false }
@@ -87,6 +88,7 @@ function Invoke-UnityTests {
     $a += $Global:FmvrGfx
     if ($Filter -ne '') { $a += @('-testFilter', $Filter) }
     if ($Category -ne '') { $a += @('-testCategory', $Category) }
+    $a += $ExtraArgs
     $t0 = Get-Date
     $code = Start-UnityProcess $a $TimeoutMin
     $mins = [math]::Round(((Get-Date) - $t0).TotalMinutes, 1)

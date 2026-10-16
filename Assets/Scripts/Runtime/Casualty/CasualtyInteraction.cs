@@ -212,11 +212,24 @@ namespace FieldMedic.Casualty
             float dl = Vector3.Distance(rig.Bone(HumanBodyBones.LeftHand).position, hand.position);
             float dr = Vector3.Distance(rig.Bone(HumanBodyBones.RightHand).position, hand.position);
             var limb = dl < dr ? Limb.LeftArm : Limb.RightArm;
-            var held = Handle(limb, LimbHandle.Grip.Wrist);
-            if (held != null && held.Held) limb = limb == Limb.LeftArm ? Limb.RightArm : Limb.LeftArm;
+            var other = limb == Limb.LeftArm ? Limb.RightArm : Limb.LeftArm;
+            if (!ArmFree(limb)) limb = other;
+            if (!ArmFree(limb)) return; // both arms wounded or held: no grab
             _armGrabLimb = limb;
             _armGrabTarget = hand;
             _armGrabUntil = Time.time + seconds;
+        }
+
+        /// <summary>An arm that can reach for the medic: not held by the player and not wounded (a wounded arm stays still).</summary>
+        bool ArmFree(Limb limb)
+        {
+            var held = Handle(limb, LimbHandle.Grip.Wrist);
+            if (held != null && held.Held) return false;
+            string id = limb == Limb.LeftArm ? "armL" : "armR";
+            var wounds = casualty.Patient.wounds;
+            for (int i = 0; i < wounds.Count; i++)
+                if (BodyRegions.LimbId(wounds[i].region) == id) return false;
+            return true;
         }
 
         public bool GrabbingPlayer => _armGrabTarget != null && Time.time < _armGrabUntil;
