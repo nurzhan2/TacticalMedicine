@@ -10,7 +10,7 @@ namespace FieldMedic.Tests
     public class TrainingModelTests
     {
         static readonly string[] KnownIcons = { "run", "tq", "drag", "gloves", "pulse", "marker", "sweep", "bandage", "blanket", "card", "radio", "heli",
-            "shears", "gauze", "press", "roll", "seal", "lungs", "needle", "npa" };
+            "shears", "gauze", "press", "roll", "seal", "lungs", "needle", "npa", "voice", "practice" };
 
         [SetUp] public void Reset() => TrainingCatalog.ResetDefaults();
 

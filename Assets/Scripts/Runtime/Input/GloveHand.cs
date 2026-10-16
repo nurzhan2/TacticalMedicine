@@ -204,8 +204,6 @@ namespace FieldMedic.Input
                 for (int f = 0; f < 5; f++)
                 {
                     float want = pose != null ? pose.Finger(f) : f == 0 ? t : f == 4 ? Mathf.Max(g, t) * 0.85f : g;
-                    // a closed fist on top of a pose closes it further (squeezing the strap harder)
-                    if (pose != null && f > 0 && f < 4) want = Mathf.Max(want, Mathf.Min(1f, input.Grip * 0.95f) * (pose.Finger(f) > 0.3f ? 1f : 0f));
                     _curl[f] = Mathf.Lerp(_curl[f], want, k);
                 }
                 _opp = Mathf.Lerp(_opp, pose != null ? pose.thumbOpposition : 0.5f, k);

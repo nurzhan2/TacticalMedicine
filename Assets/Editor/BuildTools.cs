@@ -65,6 +65,26 @@ namespace FieldMedic.EditorTools
             BatchExit(code != 0 ? code : c2);
         }
 
+        /// <summary>w8: the next full game → Desktop\FMVR_NEXT\FieldMedicVR_v2.apk (all w0b/w7 audits).</summary>
+        public static void BuildNext()
+        {
+            const string apk = "Builds/FieldMedicVR_v2.apk";
+            int code = Build(Variant.Full, apk, null);
+            if (code == 0)
+            {
+                File.Copy(apk, ApkPath, true);
+                try
+                {
+                    var dir = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.DesktopDirectory), "FMVR_NEXT");
+                    Directory.CreateDirectory(dir);
+                    File.Copy(apk, Path.Combine(dir, "FieldMedicVR_v2.apk"), true);
+                    Debug.Log("[FMVR] APK copied to " + Path.Combine(dir, "FieldMedicVR_v2.apk"));
+                }
+                catch (Exception e) { Debug.LogWarning("[FMVR] FMVR_NEXT copy failed: " + e.Message); }
+            }
+            BatchExit(code);
+        }
+
         public static void BuildDemoSafeOnly()
         {
             int c2 = Build(Variant.Safe, "Builds/FieldMedicVR_SAFE.apk", null);

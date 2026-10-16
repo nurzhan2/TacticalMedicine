@@ -8,9 +8,9 @@ namespace FieldMedic.EditorTools
     /// <summary>
     /// Cleans the generated Gradle project's manifests so the APK installs and launches on any Quest (w0 launch fix).
     /// Runs last (callbackOrder 10000), after the Meta manifest pre-processor and the Meta Platform SDK post-processor.
-    /// - Strips permissions the trainer never uses: RECORD_AUDIO (pulled in by Meta SDK building blocks that reference
-    ///   UnityEngine.Microphone → mic prompt), USE_SCENE / USE_ANCHOR_API (spatial-data prompt; boundary + passthrough
-    ///   work without them).
+    /// - Strips permissions the trainer never uses: USE_SCENE / USE_ANCHOR_API (spatial-data prompt; boundary +
+    ///   passthrough work without them). w8: RECORD_AUDIO stays (the AVPU voice check reads the microphone level), but
+    ///   unityplayer.SkipPermissionsDialog=true keeps Unity from prompting at launch — PlayerVoice asks once, in a run.
     /// - Strips &lt;horizonos:uses-horizonos-supplement name="horizonos-supplement-hzplatformclientcore"&gt;, which the
     ///   Meta Platform SDK (part of com.meta.xr.sdk.all) injects unconditionally. It declares a dependency on an OS
     ///   supplement library the trainer never calls (no Platform SDK / app ID); headsets without that supplement may
@@ -24,10 +24,12 @@ namespace FieldMedic.EditorTools
     {
         public static readonly string[] Removed =
         {
-            "android.permission.RECORD_AUDIO",
             "com.oculus.permission.USE_SCENE",
             "com.oculus.permission.USE_ANCHOR_API",
         };
+
+        public const string Microphone = "android.permission.RECORD_AUDIO";
+        public const string SkipPermissionsDialog = "unityplayer.SkipPermissionsDialog";
 
         public const string SupportedDevices = "quest2|questpro|quest3|quest3s";
 
@@ -52,6 +54,11 @@ namespace FieldMedic.EditorTools
                 "${1}" + SupportedDevices + "${2}");
             xml = Regex.Replace(xml, "(<meta-data[^>]*android:value=\")[^\"]*(\"[^>]*android:name=\"com\\.oculus\\.supportedDevices\")",
                 "${1}" + SupportedDevices + "${2}");
+            // no permission dialog at launch (the microphone is requested later, in a run)
+            if (xml.Contains("<application") && !xml.Contains(SkipPermissionsDialog))
+                xml = Regex.Replace(xml, "(<application\\b[^>]*?)(/?>)", m => m.Groups[2].Value == "/>"
+                    ? m.Groups[1].Value + "><meta-data android:name=\"" + SkipPermissionsDialog + "\" android:value=\"true\" /></application>"
+                    : m.Value + "\n    <meta-data android:name=\"" + SkipPermissionsDialog + "\" android:value=\"true\" />", RegexOptions.None, System.TimeSpan.FromSeconds(1));
             if (!addRemoveMarkers) return xml;
             if (!xml.Contains("xmlns:tools="))
                 xml = Regex.Replace(xml, "<manifest\\b", "<manifest xmlns:tools=\"http://schemas.android.com/tools\"", RegexOptions.None, System.TimeSpan.FromSeconds(1));

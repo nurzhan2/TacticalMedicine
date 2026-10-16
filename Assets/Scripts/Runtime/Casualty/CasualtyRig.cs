@@ -273,6 +273,9 @@ namespace FieldMedic.Casualty
         }
 
         // ------------------------------------------------------------------ pain flinch
+        /// <summary>Current flinch excursion (0 at rest) — tests / debug.</summary>
+        public float FlinchAmount => Mathf.Abs(_flinch);
+
         /// <summary>Short involuntary flinch (curl, head jerk). strength 0..1.</summary>
         public void Flinch(float strength) => _flinchVel += Mathf.Clamp01(strength) * 9f;
 
@@ -374,6 +377,8 @@ namespace FieldMedic.Casualty
             if (rs != null) rs.rotation = Quaternion.AngleAxis(-sig * amp * 0.5f, fwd) * rs.rotation;
         }
 
+        static readonly HumanBodyBones[] FlinchArms = { HumanBodyBones.LeftLowerArm, HumanBodyBones.RightLowerArm };
+
         void ApplyFlinch(float dt)
         {
             // critically-damped-ish spring toward 0
@@ -388,7 +393,7 @@ namespace FieldMedic.Casualty
             if (chest != null) chest.rotation = Quaternion.AngleAxis(f * 8f, right) * chest.rotation;
             var head = Bone(HumanBodyBones.Head);
             if (head != null) head.rotation = Quaternion.AngleAxis(f * 14f, right) * head.rotation;
-            foreach (var hb in new[] { HumanBodyBones.LeftLowerArm, HumanBodyBones.RightLowerArm })
+            foreach (var hb in FlinchArms)
             {
                 var t = Bone(hb);
                 if (t != null) t.rotation = Quaternion.AngleAxis(f * 12f, right) * t.rotation;

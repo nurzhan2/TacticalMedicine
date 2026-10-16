@@ -102,6 +102,14 @@ namespace FieldMedic.EditorTools
             var perms = doc.SelectNodes("/manifest/uses-permission", ns).Cast<XmlElement>().Select(e => Attr(e, "name")).ToList();
             foreach (var p in QuestManifestCleanup.Removed)
                 if (perms.Contains(p)) problems.Add("permission " + p + " still present (prompt at first launch)");
+            if (perms.Contains(QuestManifestCleanup.Microphone))
+            {
+                var skip = doc.SelectNodes("/manifest/application/meta-data", ns).Cast<XmlElement>()
+                    .FirstOrDefault(e => Attr(e, "name") == QuestManifestCleanup.SkipPermissionsDialog);
+                if (skip == null || Attr(skip, "value") != "true")
+                    problems.Add("RECORD_AUDIO without unityplayer.SkipPermissionsDialog=true (microphone prompt at launch)");
+                else notes.Add("microphone: RECORD_AUDIO (AVPU voice check), asked in a run, not at launch");
+            }
             notes.Add("permissions: " + string.Join(", ", perms));
             return problems;
         }

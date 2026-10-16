@@ -160,9 +160,9 @@ namespace FieldMedic.Medical
         /// <summary>Hands-on checks (w8): pulse, breathing, AVPU, capillary refill — for the debrief and training steps.</summary>
         public readonly List<AssessmentRecord> assessments = new();
 
-        public AssessmentRecord RecordAssessment(AssessmentKind kind, string site, string ru, string kz)
+        public AssessmentRecord RecordAssessment(AssessmentKind kind, string site, string ru, string kz, string siteKz = null)
         {
-            var r = new AssessmentRecord { kind = kind, time = patient.secondsSinceStart, site = site, ru = ru, kz = kz };
+            var r = new AssessmentRecord { kind = kind, time = patient.secondsSinceStart, site = site, siteKz = siteKz, ru = ru, kz = kz };
             assessments.Add(r);
             log.Add(new LoggedAction { time = r.time, action = MedAction.Assessment, target = site, severity = Severity.Info,
                 code = "chk_" + kind.ToString().ToLowerInvariant(), text = VitalsAssessment.KindName(kind, false) + ": " + ru });

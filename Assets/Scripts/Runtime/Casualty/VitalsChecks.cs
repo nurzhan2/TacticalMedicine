@@ -61,6 +61,8 @@ namespace FieldMedic.Casualty
         public float VoiceHeard { get; private set; }
 
         float _breathRecordedAt = -99f, _lastStimulus = -99f;
+        bool _breathVisitRecorded;
+        public float BreathRecordedAt => _breathRecordedAt;
         float _shakeWindow, _squeeze;
         int _reversals;
         Vector3 _shakePrevVel;
@@ -90,7 +92,6 @@ namespace FieldMedic.Casualty
                 Vector3 mouth = casualty.Face != null && casualty.Face.Built ? casualty.Face.MouthPosition : h.position + casualty.rig.BodyUp * 0.03f + casualty.rig.BodyForward * 0.1f;
                 Breath = BreathSynth.Create(h, h.InverseTransformPoint(mouth));
             }
-            PlayerVoice.Ensure();
         }
 
         void OnDestroy() { if (Label != null) Destroy(Label.gameObject); }
@@ -124,8 +125,10 @@ namespace FieldMedic.Casualty
                 float d = Vector3.Distance(ph.position, Mouth());
                 Listening = d < breathDistance;
                 BreathNearSeconds = Listening ? BreathNearSeconds + dt : Mathf.Max(0f, BreathNearSeconds - dt * 2f);
-                if (Listening && BreathNearSeconds >= breathHoldSeconds && Time.time - _breathRecordedAt > 20f)
+                if (!Listening && BreathNearSeconds <= 0f) _breathVisitRecorded = false;   // head away: a new check may start
+                if (Listening && BreathNearSeconds >= breathHoldSeconds && !_breathVisitRecorded)
                 {
+                    _breathVisitRecorded = true;
                     _breathRecordedAt = Time.time;
                     var b = VitalsAssessment.ReadBreathing(p);
                     LastBreath = b;
@@ -135,6 +138,8 @@ namespace FieldMedic.Casualty
             }
 
             // ---------------------------------------------------------------- voice (AVPU V)
+            // the microphone (and its one-time permission request) only once a run has started, never in the menu
+            if (casualty.IsDown) PlayerVoice.Ensure();
             VoiceHeard = 0f;
             var headBone = casualty.rig.Bone(HumanBodyBones.Head);
             if (ph != null && headBone != null && Vector3.Distance(ph.position, headBone.position) < voiceRadius && PlayerVoice.Talking)
@@ -219,7 +224,7 @@ namespace FieldMedic.Casualty
             var r = VitalsAssessment.ReadPulse(casualty.Patient, site);
             LastPulse = r;
             Record(AssessmentKind.Pulse, VitalsAssessment.SiteName(site, false), VitalsAssessment.PulseValue(r, false), VitalsAssessment.PulseValue(r, true),
-                VitalsAssessment.PulseLabel(r, GameSettings.KZ), at);
+                VitalsAssessment.PulseLabel(r, GameSettings.KZ), at, VitalsAssessment.SiteName(site, true));
         }
 
         void Nails(float dt)
@@ -256,9 +261,9 @@ namespace FieldMedic.Casualty
             {
                 var nail = face.Nails[_measuringNail];
                 float limit = 10f;
-                if (!nail.pressed && (nail.blanch <= 0.08f || Time.time - _nailReleasedAt > limit))
+                if (!nail.pressed && (nail.blanch <= 0.03f || Time.time - _nailReleasedAt > limit))
                 {
-                    float sec = nail.blanch <= 0.08f ? Time.time - _nailReleasedAt : float.PositiveInfinity;
+                    float sec = nail.blanch <= 0.03f ? Time.time - _nailReleasedAt : float.PositiveInfinity;
                     LastRefillSeconds = sec;
                     _measuringNail = -1;
                     Record(AssessmentKind.CapillaryRefill, nail.name, VitalsAssessment.RefillValue(sec, false), VitalsAssessment.RefillValue(sec, true),
@@ -267,9 +272,9 @@ namespace FieldMedic.Casualty
             }
         }
 
-        void Record(AssessmentKind k, string site, string ru, string kz, string label, Vector3 at)
+        void Record(AssessmentKind k, string site, string ru, string kz, string label, Vector3 at, string siteKz = null)
         {
-            var rec = casualty.Protocol.RecordAssessment(k, site, ru, kz);
+            var rec = casualty.Protocol.RecordAssessment(k, site, ru, kz, siteKz);
             Debug.Log($"[FMVR] check {k}: {ru}");
             if (ShowLabels)
             {

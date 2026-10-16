@@ -31,6 +31,7 @@ namespace FieldMedic.Tests
         public Transform head;
         public Action<string> moment;   // key moments (screenshots / video markers)
         public bool headFollowsCamera;  // capture: the hint panel billboards to the video camera
+        public bool handTracking;       // w8: hands only (pinch / grip), no controllers
         public string stuck;
 
         public ScenarioDirector D => ScenarioDirector.Instance;
@@ -72,6 +73,7 @@ namespace FieldMedic.Tests
             var l = hands.FirstOrDefault(h => h.name.Contains("_L") || h.name.Contains("Left")) ?? hands[0];
             var r = hands.FirstOrDefault(h => h != l) ?? hands[1];
             bot = new GameObject("~Bot").AddComponent<MedicBot>();
+            bot.handTracking = handTracking;
             bot.Init(l, r);
             bot.handSpeed = 0.9f;
         }

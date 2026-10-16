@@ -71,8 +71,9 @@ namespace FieldMedic.Interaction
             if (string.IsNullOrEmpty(key)) return null;
             if (_map == null)
             {
+                var lib = Current;   // may reset the map: resolve first
                 _map = new Dictionary<string, HandPose>();
-                foreach (var p in Current.poses) if (p != null && !string.IsNullOrEmpty(p.key)) _map[p.key] = p;
+                foreach (var p in lib.poses) if (p != null && !string.IsNullOrEmpty(p.key)) _map[p.key] = p;
                 // keys added in code after the asset was saved stay available
                 foreach (var d in Defaults()) if (!_map.ContainsKey(d.key)) _map[d.key] = d;
             }

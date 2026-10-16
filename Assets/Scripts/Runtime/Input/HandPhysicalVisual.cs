@@ -82,7 +82,7 @@ namespace FieldMedic.Input
                     LastBlocker = hit.collider;
                     delta = Vector3.ProjectOnPlane(delta - dir * go, hit.normal);   // slide along the surface
                 }
-                pos = PushOutOfBodies(pos);
+                pos = FirstBodyContact(VisualPalm, pos);
             }
             else pos = target;
             VisualPalm = pos;
@@ -117,6 +117,53 @@ namespace FieldMedic.Input
             if (c.GetComponentInParent<Grabbable>() != null) return true;                    // items, handles
             if (c.GetComponentInParent<HandRig>() != null) return true;
             if (c is CharacterController) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Along the visual hand's path (from where it was, outside, to where it wants to be) stop at the first contact
+        /// with a body part — a hand pressed deep into his chest stays on the surface it came from. If it already
+        /// started inside (he moved onto the hand), push it out radially.
+        /// </summary>
+        Vector3 FirstBodyContact(Vector3 from, Vector3 to)
+        {
+            // he moved onto the hand (breathing chest, a flinch): first put the start back on his surface
+            if (InsideBody(from)) from = PushOutOfBodies(from);
+            if (!InsideBody(to)) return to;
+            float dist = Vector3.Distance(from, to);
+            int steps = Mathf.Clamp(Mathf.CeilToInt(dist / 0.01f), 1, 40);
+            float lo = 0f, hi = 1f;
+            for (int i = 1; i <= steps; i++)
+            {
+                float t = i / (float)steps;
+                if (InsideBody(Vector3.Lerp(from, to, t))) { hi = t; lo = (i - 1) / (float)steps; break; }
+            }
+            for (int k = 0; k < 6; k++)
+            {
+                float m = (lo + hi) * 0.5f;
+                if (InsideBody(Vector3.Lerp(from, to, m))) hi = m; else lo = m;
+            }
+            return Vector3.Lerp(from, to, lo);
+        }
+
+        bool InsideBody(Vector3 p)
+        {
+            for (int ci = 0; ci < CasualtyController.All.Count; ci++)
+            {
+                var c = CasualtyController.All[ci];
+                if (c == null || c.rig == null) continue;
+                if ((p - c.transform.position).sqrMagnitude > 3f * 3f) continue;
+                var parts = c.rig.Parts;
+                for (int i = 0; i < parts.Count; i++)
+                {
+                    var part = parts[i];
+                    if (part == null || part.Collider == null) continue;
+                    if (!Segment(part.Collider, out Vector3 a, out Vector3 b, out float r)) continue;
+                    Vector3 ab = b - a;
+                    float t = ab.sqrMagnitude > 1e-8f ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / ab.sqrMagnitude) : 0f;
+                    if ((p - (a + ab * t)).sqrMagnitude < (r * 0.85f + bodyRadius) * (r * 0.85f + bodyRadius)) { LastBlocker = part.Collider; return true; }
+                }
+            }
             return false;
         }
 

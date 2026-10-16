@@ -784,7 +784,7 @@ namespace FieldMedic.Casualty
             s = Color.Lerp(s, s * new Color(0.86f, 0.9f, 1.05f), cyan * 0.6f);
             Color l = Color.Lerp(lips, Color.Lerp(lips, palePallid, 0.6f), pallor);
             l = Color.Lerp(l, cyanoticLips, Mathf.Clamp01(cyan * 1.2f));
-            float smooth = Mathf.Lerp(0.3f, 0.5f, sweat);
+            float smooth = Mathf.Lerp(0.3f, 0.62f, sweat);
             if (!force && (s - CurrentSkin).maxColorComponent < 0.002f && (l - CurrentLips).maxColorComponent < 0.002f && Mathf.Abs(smooth - CurrentSmoothness) < 0.005f) return;
             CurrentSkin = s; CurrentLips = l; CurrentSmoothness = smooth;
             TintUpdates++;

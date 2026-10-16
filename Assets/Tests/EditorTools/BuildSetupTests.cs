@@ -18,9 +18,24 @@ namespace FieldMedic.Tests
         {
             var x = QuestManifestCleanup.CleanXml(LibManifest, false);
             StringAssert.Contains("HAND_TRACKING", x);
-            StringAssert.DoesNotContain("RECORD_AUDIO", x);
+            StringAssert.Contains("RECORD_AUDIO", x);       // w8: the AVPU voice check reads the microphone level
             StringAssert.DoesNotContain("USE_SCENE", x);
             StringAssert.EndsWith("</manifest>", x);
+        }
+
+        [Test]
+        public void ManifestCleanup_Microphone_Kept_NoLaunchPrompt()
+        {
+            var app = "<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n  <application android:label=\"x\">\n  </application>\n</manifest>";
+            var x = QuestManifestCleanup.CleanXml(app, true);
+            StringAssert.Contains("unityplayer.SkipPermissionsDialog\" android:value=\"true\"", x);
+            Assert.AreEqual(1, System.Text.RegularExpressions.Regex.Matches(QuestManifestCleanup.CleanXml(x, true), "SkipPermissionsDialog").Count, "idempotent");
+            var merged = GoodMerged.Replace("<application>", "<application>\n    <meta-data android:name=\"unityplayer.SkipPermissionsDialog\" android:value=\"true\" />")
+                .Replace("<uses-permission android:name=\"com.oculus.permission.HAND_TRACKING\" />", "<uses-permission android:name=\"com.oculus.permission.HAND_TRACKING\" />\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />");
+            var notes = new System.Collections.Generic.List<string>();
+            Assert.IsEmpty(QuestManifestAudit.Audit(merged, notes), "mic allowed with the skip flag");
+            var noSkip = GoodMerged.Replace("<uses-permission android:name=\"com.oculus.permission.HAND_TRACKING\" />", "<uses-permission android:name=\"com.oculus.permission.HAND_TRACKING\" />\n  <uses-permission android:name=\"android.permission.RECORD_AUDIO\" />");
+            Assert.IsNotEmpty(QuestManifestAudit.Audit(noSkip, notes), "mic without the skip flag = prompt at launch");
         }
 
         [Test]
@@ -28,7 +43,7 @@ namespace FieldMedic.Tests
         {
             var x = QuestManifestCleanup.CleanXml("<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\">\n</manifest>", true);
             StringAssert.Contains("xmlns:tools=\"http://schemas.android.com/tools\"", x);
-            StringAssert.Contains("android.permission.RECORD_AUDIO\" tools:node=\"remove\"", x);
+            StringAssert.DoesNotContain("android.permission.RECORD_AUDIO\" tools:node=\"remove\"", x);
             StringAssert.Contains("com.oculus.permission.USE_SCENE\" tools:node=\"remove\"", x);
             Assert.AreEqual(1, System.Text.RegularExpressions.Regex.Matches(x, "xmlns:tools=").Count);
         }

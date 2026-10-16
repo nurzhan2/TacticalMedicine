@@ -554,6 +554,8 @@ namespace FieldMedic.Scenarios.Bots
         public IEnumerator CheckPulse(CasualtyController c, PulseSite site, float seconds, HandGrabber h = null)
         {
             h ??= left;
+            if (h.Held != null) yield return Release(h);
+            In(h).Grip = 0f; In(h).Trigger = 0f;
             lastStep = "pulse " + site;
             Vector3 p = HandTreatment.PulsePoint(c.rig, site);
             yield return Move(h, p + Vector3.up * 0.06f, true);

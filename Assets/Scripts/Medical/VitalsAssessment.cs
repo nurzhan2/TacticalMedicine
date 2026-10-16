@@ -45,7 +45,8 @@ namespace FieldMedic.Medical
     {
         public AssessmentKind kind;
         public float time;         // patient seconds
-        public string site;        // pulse site / stimulus
+        public string site;        // pulse site / stimulus (RU, also the key the training steps check)
+        public string siteKz;
         public string ru, kz;      // result text ("128, слабый")
         public string Text(bool k) => k && !string.IsNullOrEmpty(kz) ? kz : ru;
     }
@@ -184,7 +185,8 @@ namespace FieldMedic.Medical
         {
             float t = Math.Max(0f, r.time - incidentAt);
             int m = (int)(t / 60f), s = (int)(t % 60f);
-            string site = r.kind == AssessmentKind.Pulse && !string.IsNullOrEmpty(r.site) ? " (" + r.site + ")" : "";
+            string s0 = kz && !string.IsNullOrEmpty(r.siteKz) ? r.siteKz : r.site;
+            string site = r.kind == AssessmentKind.Pulse && !string.IsNullOrEmpty(s0) ? " (" + s0 + ")" : "";
             string clock = m + ":" + s.ToString("00");
             return KindName(r.kind, kz) + site + (kz ? " (" + clock + ")" : " в " + clock) + " — " + r.Text(kz);
         }

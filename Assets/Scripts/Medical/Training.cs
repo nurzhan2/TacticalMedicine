@@ -414,7 +414,7 @@ namespace FieldMedic.Medical
             new TrainingLesson
             {
                 id = "assess", titleRu = "Осмотр: пульс, дыхание, сознание", titleKz = "Тексеру: пульс, тыныс, сана",
-                woundType = WoundType.Capillary, region = BodyRegion.ForearmL, visual = "Fragment", startLossFraction = 0.27f,
+                woundType = WoundType.Capillary, region = BodyRegion.ForearmL, visual = "Fragment", startLossFraction = 0.28f,
                 steps =
                 {
                     new LessonStep("avpu", "Сознание (AVPU)", "Сана (AVPU)", "h_avpu").Show(null, "Head", "voice")

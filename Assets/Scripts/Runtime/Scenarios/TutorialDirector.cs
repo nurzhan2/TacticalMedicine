@@ -155,12 +155,13 @@ namespace FieldMedic.Scenarios
             box.center = new Vector3(0f, size.y * 0.5f, 0f);
             box.size = size;
             var rb = crateGo.AddComponent<Rigidbody>();
-            rb.mass = 14f;
+            rb.mass = 10f;
             rb.linearDamping = 1.5f; rb.angularDamping = 4f;
             Crate = crateGo.AddComponent<Grabbable>();
             Crate.poseKey = "drag_handle";
             Crate.requireGrabPoint = true;
             Crate.referenceMass = 6f;
+            Crate.breakDistance = 0.9f;   // heavy: lags behind the hands, but the grip does not slip off
             Crate.loadWhileHeld = 0.8f;
             for (int s = -1; s <= 1; s += 2)
             {
