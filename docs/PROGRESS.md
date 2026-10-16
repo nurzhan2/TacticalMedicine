@@ -383,3 +383,43 @@
   README.txt (RU), video and screens are in the same folder. The headset was not connected → no on-device check (run tools\quest_check.ps1 -Apk ...).
 - **Next**: on-device run of the DEMO flow (tab grab on the body-locked pouch, drag around the barriers to the doorway); a real IFAK pouch model; loading by dragging Erlan onto the litter instead of the «ПОГРУЗИТЬ» button.
 - Git push: still "Repository not found" (remote/credentials, unchanged since w0); all w7 commits are local.
+
+## 16.10 — w8-interact1 (living Erlan + hand feel), branch `w8-interact`
+- **Living Erlan.** Full feature → mechanism → test table: docs/INTERACT1.md.
+  - `CasualtyFace`: the NVG and the balaclava face patch are removed from a runtime mesh copy, and a sculpted skin face fills the opening, with eyes (procedural iris), lids, lips, brows and stubble. The surface base is min(analytic face, measured mask), which keeps the model's V-chin.
+  - The eyes look at the player's head. Lids follow AVPU and blink, and squeeze on pain.
+  - Shock tint through MPB at ≤ 10 Hz.
+  - Fingerless-glove fingertips with nail beds for the capillary refill test.
+- **Hands-on checks** (`VitalsChecks`, `VitalsAssessment` in Medical):
+  - **Pulse:** two fingertips ≥ 2 s; haptic beats at the heart rate, amplitude from the blood pressure; radial absent below SBP 80.
+  - **Breathing:** HMD within 25 cm of the mouth ≥ 3 s; procedural 3D breath (`BreathSynth`) from the rig's chest signal; `PatientPhysiology.BreathDepth`.
+  - **AVPU:** microphone level (`PlayerVoice`) or a shake/squeeze of the shoulder; the answer follows the state.
+  - **Capillary refill:** press a nail ≥ 1 s.
+  - Results go to the protocol, a white Training label, and the debrief «Осмотр» lines ("Пульс проверен (на шее) в 0:42 — 122, слабый, частый").
+- **Pain reactions:** one `CasualtyController.PainReaction` path for the CAT half-turns, packing strokes, needle, NPA and the shake. Flinch, voice/groan by AVPU, grimace, and a wrist grab with an IK hand target on the medic's wrist (cooldown 5 s).
+- **Hand feel:**
+  - 24 `HandPose` assets plus `Resources/HandPoseLibrary`; the glove takes the per-finger pose, with a poke pose near buttons.
+  - `HandPhysicalVisual`: the glove stops at walls and the ground (sphere sweep) and at Erlan's body (first contact along the path). A ghost shows the tracked hand when they are > 5 cm apart.
+  - `HapticsProfile`: strap tension, windlass click per half turn, packing pulses, firm seal press, heartbeat, low drag rumble. `IHandInput.Haptic` got a frequency parameter.
+  - Hand tracking: pinch takes small items only, a fist takes anything (handles/strap only by fist). `ScriptedHandInput.SimulateTrackedHand` and `MedicBot.handTracking` were added for tests.
+  - Weight: drag speed limits by grip (wrist 0.87, handle 1.5, two hands 1.82 m/s); visual sag under heavy loads.
+- **Training:**
+  - New topic «Осмотр» (`assess`, RU/KZ, 5 steps, new icons voice/practice).
+  - 60 s hands tutorial (`TutorialDirector`) on the BlenderKit rifle crate + ammo can (`Resources/TutorialProps`). It runs before the first Training lesson (not the demo), is skippable by finger, remembered in PlayerPrefs, and can be replayed from the menu («РУКИ / Управление»).
+- **Assumptions / decisions:**
+  - **Microphone permission.**
+    - The w0 rule stripped RECORD_AUDIO to avoid a launch prompt. It now stays, with `unityplayer.SkipPermissionsDialog=true`, so there is still no prompt at launch.
+    - `PlayerVoice` asks once, when a run has started (Erlan is down).
+    - `QuestManifestAudit` fails the build if RECORD_AUDIO appears without the skip flag.
+  - **Tracked hands** show Meta's real hand mesh, so the item poses apply to the glove (controller mode).
+  - **The tutorial** is off by default in PlayMode tests (`W8TestSetup` SetUpFixture); `TutorialTests` switch it on.
+- **Tests:**
+  - EditMode: `VitalsAssessmentTests` (9), `W8AssetTests` (4), and updated `BuildSetupTests` / `TrainingModelTests`.
+  - PlayMode, all green:
+    - `VitalsChecksTests` 5/5
+    - `PainReactionTests` 2/2
+    - `HandPoseTests` 3/3
+    - `HandTrackingDemoTests` 2/2 (the full DEMO with pinch/grip only: 6 pinch + 11 grip grabs)
+    - `TutorialTests` 3/3
+    - `W8PerfTests` 1/1 (GC alloc/frame median identical with the w8 components on and off)
+- **Disk:** deleted the duplicate APKs from Builds/ (copies exist in Desktop\FMVR_TEST / FMVR_DEMO); 5.8 GB free.

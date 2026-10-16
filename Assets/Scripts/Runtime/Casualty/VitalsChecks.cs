@@ -111,7 +111,7 @@ namespace FieldMedic.Casualty
             if (dt <= 0f) return;
             var p = casualty.Patient;
             var ph = PlayerHead;
-            if (casualty.rig.lookTarget == null && ph != null) casualty.rig.lookTarget = ph;
+            if (ph != null) casualty.rig.lookTarget = ph;   // head + eyes follow the medic's head (HMD)
 
             // ---------------------------------------------------------------- breathing
             bool snore = p.AirwayCompromised && p.outcome != Outcome.Died;

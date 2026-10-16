@@ -86,7 +86,7 @@ namespace FieldMedic.Tests
             yield return bot.Grab(bot.left, tut.Crate, pts[0].transform.position);
             yield return bot.Grab(bot.right, tut.Crate, pts[1].transform.position);
             Assert.AreEqual(2, tut.Crate.HolderCount, "both hands on the crate");
-            Vector3 away = -tut.Root.forward;
+            Vector3 away = tut.Root.forward;   // toward the player: he walks back pulling it (the crate stands in free space in front of him)
             Vector3 l0 = bot.left.PalmPosition, r0 = bot.right.PalmPosition;
             for (float t = 0f; t < 2.6f; t += Time.deltaTime)
             {

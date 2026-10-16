@@ -177,6 +177,7 @@ namespace FieldMedic.Tests
             Assert.IsTrue(face.LookingAtPlayer, "conscious: the eyes follow the medic");
             Vector3 eyeFwd = face.LeftEye.forward, to = (run.head.position - face.LeftEye.position).normalized;
             Debug.Log($"[FMVR] w8 test gaze: {Vector3.Angle(eyeFwd, to):F0}° off the medic's head");
+            Assert.Less(Vector3.Angle(eyeFwd, to), 25f, "the eyes look at the medic's head");
         }
 
         [UnityTest]
