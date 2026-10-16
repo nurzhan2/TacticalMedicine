@@ -84,10 +84,12 @@ namespace FieldMedic.Input
             }
         }
 
-        public void Haptic(float amplitude, float duration)
+        public void Haptic(float amplitude, float duration) => Haptic(amplitude, duration, 1f);
+
+        public void Haptic(float amplitude, float duration, float frequency)
         {
             if (Source != HandSource.Controller) return; // tracked hands have no actuator
-            OVRInput.SetControllerVibration(1f, Mathf.Clamp01(amplitude), _touch);
+            OVRInput.SetControllerVibration(Mathf.Clamp01(frequency), Mathf.Clamp01(amplitude), _touch);
             _hapticUntil = Mathf.Max(_hapticUntil, Time.unscaledTime + Mathf.Max(0.01f, duration));
         }
     }

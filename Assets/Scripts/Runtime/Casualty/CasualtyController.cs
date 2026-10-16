@@ -52,6 +52,17 @@ namespace FieldMedic.Casualty
 
         public event Action<CasualtyPose> PoseChanged;
         public event Action<string> PatientEvent;
+        /// <summary>w8: a painful procedure made him react (source: tq, pack, needle, npa, shake...; strength 0..1).</summary>
+        public event Action<string, float> PainReacted;
+        public string LastPainSource { get; private set; }
+        public int PainReactionCount { get; private set; }
+        [Tooltip("Seconds between two grabs of the medic's wrist (pain reflex).")]
+        public float armGrabCooldown = 5f;
+        float _lastArmGrab = -99f;
+        /// <summary>Face, eyes, eyelids, skin tint, nail beds (w8), built at runtime.</summary>
+        public CasualtyFace Face { get; private set; }
+        /// <summary>Hands-on checks: pulse, breathing, AVPU, capillary refill (w8).</summary>
+        public VitalsChecks Checks { get; private set; }
 
         float _poseTimer, _fallTimer;
         bool _sawFallState;
@@ -75,6 +86,41 @@ namespace FieldMedic.Casualty
             if (rig != null) rig.Init();
             if (!IsDown) SetPose(standingPose, true);
             EnsureInteraction();
+            EnsureLiving();
+        }
+
+        /// <summary>w8 "living Erlan": face + checks components (runtime, so the prefab stays a pure character asset).</summary>
+        public void EnsureLiving()
+        {
+            if (rig == null || rig.Bone(HumanBodyBones.Head) == null) return;
+            if (Face == null) Face = GetComponent<CasualtyFace>() ?? gameObject.AddComponent<CasualtyFace>();
+            Face.casualty = this;
+            if (Checks == null) Checks = GetComponent<VitalsChecks>() ?? gameObject.AddComponent<VitalsChecks>();
+            Checks.casualty = this;
+        }
+
+        /// <summary>
+        /// A painful procedure (tourniquet twist, packing stroke, needle, NPA, shake): procedural flinch on the rig, a
+        /// voice line or a groan by his AVPU state, a grimace, and — conscious only — he grabs the medic's wrist with
+        /// his free hand for a moment (IK hand target on the player's hand). Unresponsive: nothing.
+        /// </summary>
+        public void PainReaction(float strength, Transform playerHand, string source)
+        {
+            EnsurePatient();
+            var avpu = Patient.AVPU;
+            if (Patient.outcome == Outcome.Died || avpu == Consciousness.Unresponsive) return;
+            strength = Mathf.Clamp01(strength);
+            if (rig != null) rig.Flinch(strength * (avpu == Consciousness.Pain ? 0.6f : 1f));
+            if (voice != null) voice.OnPainSpike(this, source == "tq");
+            if (Face != null) Face.Grimace(strength);
+            if (playerHand != null && avpu <= Consciousness.Voice && Interaction != null && Time.time - _lastArmGrab > armGrabCooldown)
+            {
+                _lastArmGrab = Time.time;
+                Interaction.GrabPlayerArm(playerHand, 1.8f);
+            }
+            LastPainSource = source;
+            PainReactionCount++;
+            PainReacted?.Invoke(source, strength);
         }
 
         /// <summary>Hands-on handles (limbs, drag, roll, wounds, his IFAK) — built at runtime from the rig.</summary>
@@ -291,8 +337,7 @@ namespace FieldMedic.Casualty
             if (limb != null && Patient.tourniquetSeconds.ContainsKey(limb))
             {
                 Pain.TourniquetTwist(limb, halfTurns);
-                if (voice != null) voice.OnPainSpike(this, true);
-                if (rig != null) rig.Flinch(0.8f);
+                PainReaction(0.8f, null, "tq");
             }
             return fb;
         }

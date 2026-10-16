@@ -322,6 +322,26 @@ def icon_glow():
     im.save(os.path.join(OUT, "glow.png"))
 
 
+def icon_voice():
+    """w8 AVPU: head in profile + sound arcs (call him by name)"""
+    im, d = canvas()
+    d.ellipse([70, 150, 270, 370], fill=INK)                       # head
+    d.polygon([(250, 270), (300, 300), (250, 315)], fill=INK)       # nose/mouth
+    for i, r in enumerate((90, 150, 210)):
+        c = (330, 290)
+        d.arc([c[0] - r, c[1] - r, c[0] + r, c[1] + r], -40, 40, fill=RED if i == 0 else INK, width=30)
+    save(im, "voice")
+
+
+def icon_practice():
+    """w8 tutorial: a gloved hand over a crate with a handle"""
+    im, d = canvas()
+    d.rounded_rectangle([90, 270, 420, 450], 18, fill=OLIVE)
+    d.rounded_rectangle([200, 220, 310, 280], 14, outline=INK, width=26)
+    hand(d, 256, 140, 0.9)
+    save(im, "practice")
+
+
 def chime(path, freqs, dur=0.42, vol=0.35):
     sr = 44100
     t = np.arange(int(sr * dur)) / sr
@@ -341,7 +361,7 @@ def chime(path, freqs, dur=0.42, vol=0.35):
 if __name__ == "__main__":
     for f in [icon_run, icon_tq, icon_drag, icon_gloves, icon_pulse, icon_marker, icon_sweep, icon_bandage, icon_blanket,
               icon_card, icon_radio, icon_heli, icon_shears, icon_gauze, icon_press, icon_roll, icon_seal, icon_lungs,
-              icon_needle, icon_npa, icon_check, icon_warn]:
+              icon_needle, icon_npa, icon_check, icon_warn, icon_voice, icon_practice]:
         f()
     icon_glow()
     chime(os.path.join(UI, "hint_done.wav"), [784.0, 1046.5])

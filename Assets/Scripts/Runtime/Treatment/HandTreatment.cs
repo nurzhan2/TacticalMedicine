@@ -193,7 +193,7 @@ namespace FieldMedic.Treatment
                 {
                     _beatTimer += 60f / hr;
                     if (_beatTimer < 0f) _beatTimer = 60f / hr;
-                    Haptics.Play(input, Haptics.Heartbeat, 0.3f + 0.7f * strength);
+                    HapticsProfile.Current.Heartbeat(input, strength);
                     PulseBeats++;
                 }
             }

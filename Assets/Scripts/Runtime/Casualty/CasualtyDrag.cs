@@ -73,7 +73,7 @@ namespace FieldMedic.Casualty
             _maxStretch = Mathf.Max(_maxStretch, stretch);
             _pivotSum += at;
             _pulls++;
-            Haptics.Tension(input, Mathf.Clamp01(stretch / 0.25f));
+            HapticsProfile.Current.DragRumble(input, Mathf.Clamp01(stretch / 0.25f) * Mathf.Clamp01(massKg / 95f));
         }
 
         void Update()

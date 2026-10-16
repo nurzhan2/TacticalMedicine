@@ -31,6 +31,8 @@ namespace FieldMedic.Input
         /// <summary>Called once per frame by HandRig before anyone reads the values.</summary>
         void Tick(float dt);
         void Haptic(float amplitude, float duration);
+        /// <summary>Haptic with a vibration frequency 0..1 (0 = low rumble, 1 = sharp buzz). Default: amplitude only.</summary>
+        void Haptic(float amplitude, float duration, float frequency) => Haptic(amplitude, duration);
     }
 
     /// <summary>Velocity estimation from successive poses (shared by all implementations).</summary>

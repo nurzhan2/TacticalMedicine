@@ -259,7 +259,7 @@ namespace FieldMedic.Treatment
                 Casualty.Pain.AddSpike(removed * 0.012f);
                 Casualty.Patient.RefreshTourniquets();
             }
-            Haptics.Tension(StrapHandle.Input, State.StrapTightness);
+            HapticsProfile.Current.StrapPull(StrapHandle.Input, State.StrapTightness);
         }
 
         void Windlass(float dt)
@@ -306,7 +306,6 @@ namespace FieldMedic.Treatment
                 {
                     State.Twist(applied);
                     Casualty.Patient.RefreshTourniquets();
-                    Haptics.Tension(RodHandle.Input, 0.25f + 0.6f * State.Occlusion);
                 }
                 if (State.HalfTurns > _lastHalfTurns) OnHalfTurn(hand);
                 _lastHalfTurns = State.HalfTurns;
@@ -329,10 +328,8 @@ namespace FieldMedic.Treatment
         void OnHalfTurn(HandGrabber hand)
         {
             Casualty.Pain.TourniquetTwist(State.limbId, State.HalfTurns);
-            if (Casualty.voice != null) Casualty.voice.OnPainSpike(Casualty, true);
-            if (Casualty.rig != null) Casualty.rig.Flinch(0.9f);
-            if (Casualty.Interaction != null) Casualty.Interaction.GrabPlayerArm(hand.transform, 2.5f);
-            Haptics.Play(hand.Input, Haptics.PressClick);
+            Casualty.PainReaction(0.9f, hand.transform, "tq");
+            HapticsProfile.Current.WindlassClick(hand.Input);
         }
 
         void Convert()

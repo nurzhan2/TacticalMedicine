@@ -68,6 +68,8 @@ namespace FieldMedic.Medical
         public bool debrief;
         /// Erlan lies in the open (care under fire + drag) instead of inside the ruins.
         public bool inTheOpen;
+        /// Blood already lost when the lesson starts (w8 assessment: visible shock, weak radial pulse).
+        public float startLossFraction;
         public List<LessonStep> steps = new();
         public string Title(bool kz) => kz ? titleKz : titleRu;
         public int IndexOf(string stepId) => steps.FindIndex(s => s.id == stepId);
@@ -153,7 +155,7 @@ namespace FieldMedic.Medical
         public static TrainingLesson Get(string id) => All.FirstOrDefault(l => l.id == id);
 
         /// Topics on the Training page, in menu order.
-        public static readonly string[] Topics = { "full", "tq", "pack", "drag", "chest", "npa" };
+        public static readonly string[] Topics = { "full", "tq", "pack", "drag", "chest", "npa", "assess" };
 
         /// Use an edited table (HintTable asset). Null/empty arguments keep the defaults.
         public static void Use(List<TrainingLesson> lessons, List<HintWrong> wrongs)
@@ -406,6 +408,32 @@ namespace FieldMedic.Medical
                         .Act("Переверни на бок", "Бүйіріне аунат")
                         .Act("Голова чуть запрокинута, рот вниз", "Басы сәл шалқайған, аузы төмен")
                         .Watch("left_supine"),
+                },
+            },
+            // ------------------------------------------------------------------ w8: hands-on assessment
+            new TrainingLesson
+            {
+                id = "assess", titleRu = "Осмотр: пульс, дыхание, сознание", titleKz = "Тексеру: пульс, тыныс, сана",
+                woundType = WoundType.Capillary, region = BodyRegion.ForearmL, visual = "Fragment", startLossFraction = 0.27f,
+                steps =
+                {
+                    new LessonStep("avpu", "Сознание (AVPU)", "Сана (AVPU)", "h_avpu").Show(null, "Head", "voice")
+                        .Act("Наклонись к голове и громко позови: «Ерлан, слышишь меня?»", "Басына еңкейіп қатты шақыр: «Ерлан, естисің бе?»", "avpu_voice")
+                        .Act("Не отвечает — сожми и потряси его за плечо", "Жауап бермесе — иығынан қысып сілкіле")
+                        .Act("A — говорит, V — на голос, P — на боль, U — нет", "A — сөйлейді, V — дауысқа, P — ауырсынуға, U — жоқ"),
+                    new LessonStep("pulse_neck", "Пульс на шее", "Мойын пульсі", "h_pulse_neck").Show(null, "Neck", "pulse")
+                        .Act("Два пальца — указательный и средний — сбоку от кадыка", "Екі саусақ — сұқ және ортаңғы — алқымның жанына")
+                        .Act("Держи 2 секунды, считай удары в вибрации", "2 секунд ұста, дірілдегі соққыларды сана"),
+                    new LessonStep("pulse_wrist", "Пульс на запястье", "Білек пульсі", "h_pulse_wrist").Show(null, "Wrist", "pulse")
+                        .Act("Два пальца на запястье со стороны большого пальца", "Екі саусақ білекке, бас бармақ жағынан")
+                        .Act("Нет пульса на запястье — давление ниже 80: шок", "Білекте пульс жоқ — қысым 80-нен төмен: шок"),
+                    new LessonStep("breath", "Дыхание", "Тыныс", "h_breath").Show(null, "Mouth", "lungs")
+                        .Act("Наклонись ухом к его рту (ближе 25 см)", "Құлағыңды аузына жақында (25 см-ден жақын)")
+                        .Act("Слушай и смотри на грудь 3 секунды", "3 секунд тыңда және кеудесіне қара")
+                        .Act("Частое и поверхностное — подозревай пневмоторакс", "Жиі әрі үстірт — пневмотораксқа күдіктен"),
+                    new LessonStep("cap_refill", "Капиллярное наполнение", "Капиллярлық толу", "h_refill").Show(null, "Nail", "press")
+                        .Act("Нажми на ноготь его пальца и держи 1 секунду", "Саусағының тырнағын басып, 1 секунд ұста")
+                        .Act("Отпусти: цвет вернулся дольше 2 с — плохая перфузия", "Жібер: түсі 2 с-тан ұзақ қайтса — перфузия нашар"),
                 },
             },
         };

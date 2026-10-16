@@ -103,6 +103,7 @@ namespace FieldMedic.Treatment
         {
             Engaged = true;
             Body.isKinematic = true;
+            if (_c != null) _c.PainReaction(0.5f, Holder != null ? Holder.transform : null, "npa"); // the tube in the nose: gag + flinch
             _palmAtEngage = Holder.PalmPosition;
             _depthAtEngage = Npa.depthCm;
             _prevRot = Holder.transform.rotation;

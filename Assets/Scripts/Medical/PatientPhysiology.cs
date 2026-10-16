@@ -102,6 +102,22 @@ namespace FieldMedic.Medical
             }
         }
 
+        /// Chest excursion 0..1 (w8 breathing check): air hunger deepens it in early shock; an open or tension
+        /// pneumothorax and a blocked airway make it shallow; sealing / decompression lets it recover.
+        public float BreathDepth
+        {
+            get
+            {
+                if (outcome == Outcome.Died) return 0f;
+                if (AirwayCompromised) return 0.22f;
+                float d = 0.45f + 0.35f * Math.Min(LossFraction, 0.3f);
+                if (LossFraction > 0.35f) d -= (LossFraction - 0.35f) * 3f;   // exhausted, agonal
+                if (pneumo == PneumoState.Open) d -= 0.15f;
+                d -= 0.4f * tensionSeverity;
+                return Math.Clamp(d, 0.08f, 1f);
+            }
+        }
+
         public float SpO2
         {
             get

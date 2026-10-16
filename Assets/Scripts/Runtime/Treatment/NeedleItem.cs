@@ -152,6 +152,7 @@ namespace FieldMedic.Treatment
             bool tension = _c.Patient.pneumo == PneumoState.Tension;
             LastFeedback = _c.Protocol.NeedleDecompression(LastSite, LastAngle, DepthCm, throughSeal);
             _c.Pain.AddSpike(0.5f);
+            _c.PainReaction(1f, Holder != null ? Holder.transform : null, "needle");
             if (LastFeedback.code == "decompressed")
             {
                 Inserted = true;

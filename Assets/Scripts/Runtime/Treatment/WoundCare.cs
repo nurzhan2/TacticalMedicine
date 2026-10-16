@@ -115,6 +115,7 @@ namespace FieldMedic.Treatment
                 {
                     _inStroke[i] = true;
                     _strokeDepth[i] = Mathf.Max(_strokeDepth[i], depth);
+                    HapticsProfile.Current.Packing(h.Input, depth / 0.04f); // soft pulses while gauze goes in
                 }
                 else if (_inStroke[i] && (depth < 0.004f || !over))
                 {
@@ -123,8 +124,9 @@ namespace FieldMedic.Treatment
                     _strokeDepth[i] = 0f;
                     if (used > 0f)
                     {
-                        Haptics.Play(h.Input, Haptics.Contact, 2f);
+                        HapticsProfile.Current.Packing(h.Input, 1f);
                         casualty.Pain.AddSpike(0.12f); // packing an open wound hurts a lot
+                        casualty.PainReaction(0.45f, h.transform, "pack");
                         if (h.Held is GauzeItem g) g.Consume(used);
                         else foreach (var gi in FindObjectsByType<GauzeItem>(FindObjectsSortMode.None)) if (gi.PackingInto == this) { gi.Consume(used); break; }
                         if (Packing.Complete) OnPacked();

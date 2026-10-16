@@ -217,6 +217,10 @@ namespace FieldMedic.Casualty
         }
 
         public bool GrabbingPlayer => _armGrabTarget != null && Time.time < _armGrabUntil;
+        /// <summary>Which of his arms reaches for the medic, and where his hand aims (the medic's wrist).</summary>
+        public Limb ArmGrabLimb => _armGrabLimb;
+        public Transform ArmGrabTarget => _armGrabTarget;
+        public Vector3 ArmGrabPoint => _armGrabTarget != null ? _armGrabTarget.position - _armGrabTarget.forward * 0.05f : Vector3.zero;
 
         void Update()
         {
@@ -240,8 +244,8 @@ namespace FieldMedic.Casualty
                 return;
             }
             if (_armGrabTarget == null) return;
-            // forearm of the rescuer, a bit behind the glove
-            Vector3 target = _armGrabTarget.position - _armGrabTarget.forward * 0.12f;
+            // his hand closes around the rescuer's wrist, just behind the glove
+            Vector3 target = ArmGrabPoint;
             rig.SetLimbIK(_armGrabLimb, target, _armWeight);
         }
 

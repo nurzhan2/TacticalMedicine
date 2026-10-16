@@ -79,6 +79,9 @@ namespace FieldMedic.Casualty
         {
             if (_sinceScream < 1.2f) return;
             _sinceScream = 0f;
+            var avpu = c.Patient.AVPU;
+            if (avpu == Consciousness.Unresponsive) return;
+            if (avpu == Consciousness.Pain) { Vocalise(bank != null ? bank.groan : null, 0.6f, true); _cooldown = Mathf.Max(_cooldown, 2f); return; }
             if (tourniquet && _rng.NextDouble() < 0.6) Say("take_off", true);
             else if (_rng.NextDouble() < 0.5) Say("hurts", true);
             else Vocalise(bank != null ? bank.scream : null, 1f, true);

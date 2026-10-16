@@ -59,6 +59,8 @@ namespace FieldMedic.Medical
         public readonly List<DebriefEntry> timeline = new();
         public readonly List<DebriefMistake> mistakes = new();
         public readonly List<DebriefPhase> phases = new();
+        /// Hands-on checks (w8): "Пульс проверен (на шее) в 0:42 — 128, слабый", in time order.
+        public readonly List<string> checks = new();
         /// Timeline strip range (patient seconds): the injury → the end of the run.
         public float startTime, endTime;
         /// Casualty fall point / treatment spot on the mini map (x, z), when known.
@@ -142,6 +144,7 @@ namespace FieldMedic.Medical
                 });
             }
             r.mistakes.Sort((a, b) => b.points.CompareTo(a.points));
+            foreach (var a in protocol.assessments) r.checks.Add(VitalsAssessment.DebriefLine(a, incidentAt, kz));
             r.startTime = Math.Max(0f, incidentAt);
             r.endTime = Math.Max(r.startTime + 1f, p.secondsSinceStart);
             r.NumberMistakes();

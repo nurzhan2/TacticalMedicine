@@ -140,8 +140,9 @@ namespace FieldMedic.Treatment
             foreach (var h in HandGrabber.All)
             {
                 if (h == null || h.Input == null || h.Held != null) continue;
-                foreach (var p in new[] { h.FingertipPosition, h.PalmPosition })
+                for (int pi = 0; pi < 2; pi++)
                 {
+                    Vector3 p = pi == 0 ? h.FingertipPosition : h.PalmPosition; // no per-frame array
                     float lat = care.Lateral(p), height = care.Height(p);
                     // edge press: fingers run around the rim
                     if (Proc.step == ChestSealProcedure.Step.Placed && lat > 0.03f && lat < 0.08f && height < 0.012f && h.Input.Trigger < 0.6f)
@@ -152,7 +153,7 @@ namespace FieldMedic.Treatment
                         if ((_sectorsPressed & (1 << sector)) == 0)
                         {
                             _sectorsPressed |= 1 << sector;
-                            Haptics.Play(h.Input, Haptics.Contact, 2f);
+                            HapticsProfile.Current.SealPress(h.Input);
                             if (Proc.PressEdge()) OnSealed();
                         }
                     }

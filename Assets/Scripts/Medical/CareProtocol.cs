@@ -16,6 +16,8 @@ namespace FieldMedic.Medical
         PulseCheck, LogRoll, WoundFound, MarkForehead, LimbElevation, SealBurp, PlayerDrag,
         // S5 scenario additions
         ClearMouth, TourniquetConversion, TourniquetRetighten, MedevacRequest, TourniquetReassess, Scenario,
+        // w8 hands-on assessment (pulse / breathing / AVPU / capillary refill)
+        Assessment,
     }
 
     public enum Severity { Info, Ok, Warning, Error }
@@ -154,6 +156,20 @@ namespace FieldMedic.Medical
         {
             log.Add(new LoggedAction { time = patient.secondsSinceStart, action = MedAction.Scenario, severity = sev, code = code, text = text });
         }
+
+        /// <summary>Hands-on checks (w8): pulse, breathing, AVPU, capillary refill — for the debrief and training steps.</summary>
+        public readonly List<AssessmentRecord> assessments = new();
+
+        public AssessmentRecord RecordAssessment(AssessmentKind kind, string site, string ru, string kz)
+        {
+            var r = new AssessmentRecord { kind = kind, time = patient.secondsSinceStart, site = site, ru = ru, kz = kz };
+            assessments.Add(r);
+            log.Add(new LoggedAction { time = r.time, action = MedAction.Assessment, target = site, severity = Severity.Info,
+                code = "chk_" + kind.ToString().ToLowerInvariant(), text = VitalsAssessment.KindName(kind, false) + ": " + ru });
+            return r;
+        }
+
+        public bool Assessed(AssessmentKind kind) => assessments.Exists(a => a.kind == kind);
 
         public bool medevacRequested;
         public float medevacRequestedAt = -1f;
