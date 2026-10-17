@@ -122,6 +122,24 @@ namespace FieldMedic.EditorTools
                 gs = per.SettingsForBuildTarget(BuildTargetGroup.Android);
                 Debug.Log("[FMVR] XR settings map repaired (" + subs.Count + " general settings found)");
             }
+            if (gs != null && gs.Manager == null)
+            {
+                // the asset also used a wrong field name (m_Manager instead of m_LoaderManagerInstance) -> manager null
+                var mgrs = AssetDatabase.LoadAllAssetsAtPath(path).OfType<UnityEngine.XR.Management.XRManagerSettings>().ToList();
+                foreach (var pair in new[] { ("Android Settings", "Android Providers"), ("Standalone Settings", "Standalone Providers") })
+                {
+                    var set = AssetDatabase.LoadAllAssetsAtPath(path).OfType<UnityEngine.XR.Management.XRGeneralSettings>().FirstOrDefault(s => s.name == pair.Item1);
+                    var mgr = mgrs.FirstOrDefault(m => m.name == pair.Item2);
+                    if (set == null || mgr == null) continue;
+                    var so = new SerializedObject(set);
+                    so.FindProperty("m_LoaderManagerInstance").objectReferenceValue = mgr;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(set);
+                }
+                AssetDatabase.SaveAssets();
+                gs = per.SettingsForBuildTarget(BuildTargetGroup.Android);
+                Debug.Log("[FMVR] XR manager link repaired: " + (gs.Manager != null ? gs.Manager.name : "NULL") + " (" + mgrs.Count + " managers)");
+            }
             int n = gs != null && gs.Manager != null ? gs.Manager.activeLoaders.Count : 0;
             if (n == 0 && gs != null && gs.Manager != null)
             {
