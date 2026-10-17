@@ -108,6 +108,20 @@ namespace FieldMedic.EditorTools
             if (per == null) { Debug.LogError("[FMVR] XR settings asset missing: " + path); return false; }
             EditorBuildSettings.AddConfigObject(UnityEngine.XR.Management.XRGeneralSettings.k_SettingsKey, per, true);
             var gs = per.SettingsForBuildTarget(BuildTargetGroup.Android);
+            if (gs == null)
+            {
+                // Root cause (18.10): the asset was written in the m_SettingsPerBuildTarget format, but the installed
+                // XR Management 4.6.1 reads Keys/Values only -> empty map -> no XR in any APK. Re-register the sub-assets.
+                var subs = AssetDatabase.LoadAllAssetsAtPath(path).OfType<UnityEngine.XR.Management.XRGeneralSettings>().ToList();
+                var android = subs.FirstOrDefault(s => s.name == "Android Settings");
+                var standalone = subs.FirstOrDefault(s => s.name == "Standalone Settings");
+                if (android != null) { android.InitManagerOnStart = true; per.SetSettingsForBuildTarget(BuildTargetGroup.Android, android); EditorUtility.SetDirty(android); }
+                if (standalone != null) per.SetSettingsForBuildTarget(BuildTargetGroup.Standalone, standalone);
+                EditorUtility.SetDirty(per);
+                AssetDatabase.SaveAssets();
+                gs = per.SettingsForBuildTarget(BuildTargetGroup.Android);
+                Debug.Log("[FMVR] XR settings map repaired (" + subs.Count + " general settings found)");
+            }
             int n = gs != null && gs.Manager != null ? gs.Manager.activeLoaders.Count : 0;
             Debug.Log($"[FMVR] XR settings registered: android loaders={n} initOnStart={(gs != null && gs.InitManagerOnStart)}");
             if (n == 0 || !gs.InitManagerOnStart) { Debug.LogError("[FMVR] XR: no active Android loader / init on start off"); return false; }
