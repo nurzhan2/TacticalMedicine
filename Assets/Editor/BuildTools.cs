@@ -97,6 +97,23 @@ namespace FieldMedic.EditorTools
             }
         }
 
+        /// <summary>
+        /// 18.10 device log: every APK shipped WITHOUT libUnityOpenXR.so and XR never started (loader=none) because
+        /// XR Management printed "No XR Manager settings found" in batch builds. Register the settings explicitly.
+        /// </summary>
+        public static bool EnsureXrSettings()
+        {
+            const string path = "Assets/XR/XRGeneralSettingsPerBuildTarget.asset";
+            var per = AssetDatabase.LoadAssetAtPath<UnityEditor.XR.Management.XRGeneralSettingsPerBuildTarget>(path);
+            if (per == null) { Debug.LogError("[FMVR] XR settings asset missing: " + path); return false; }
+            EditorBuildSettings.AddConfigObject(UnityEngine.XR.Management.XRGeneralSettings.k_SettingsKey, per, true);
+            var gs = per.SettingsForBuildTarget(BuildTargetGroup.Android);
+            int n = gs != null && gs.Manager != null ? gs.Manager.activeLoaders.Count : 0;
+            Debug.Log($"[FMVR] XR settings registered: android loaders={n} initOnStart={(gs != null && gs.InitManagerOnStart)}");
+            if (n == 0 || !gs.InitManagerOnStart) { Debug.LogError("[FMVR] XR: no active Android loader / init on start off"); return false; }
+            return true;
+        }
+
         public static int Build(Variant v, string apk, string testName)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(apk));
@@ -122,6 +139,7 @@ namespace FieldMedic.EditorTools
                 }
             }
             AssetDatabase.SaveAssets();
+            if (!EnsureXrSettings()) return 6;
             var scenes = ScenesFor(v);
             var opts = new BuildPlayerOptions
             {

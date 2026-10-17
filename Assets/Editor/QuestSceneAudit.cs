@@ -24,7 +24,7 @@ namespace FieldMedic.EditorTools
         public const float ApkBudgetMB = 150f;
         public const float ApkHardLimitMB = 200f;
         public static readonly string[] RequiredShaders =
-            { "TextMeshPro/Distance Field", "TextMeshPro/Mobile/Distance Field", "FieldMedic/BloodDecal", "FieldMedic/UiCard" };
+            { "TextMeshPro/Distance Field", "TextMeshPro/Mobile/Distance Field", "FieldMedic/BloodDecal", "FieldMedic/UiCard", "Universal Render Pipeline/Unlit" };
         // (GUI/Text Shader for TextMesh comes with the built-in font material; the editor copy is DontSave and breaks the build)
         public static readonly string[] BootForbidden = { "Assets/_Licensed/", "Assets/Art/Battlefield/", "Assets/Art/Characters/", "Assets/Audio/", "Assets/ThirdParty/" };
 
