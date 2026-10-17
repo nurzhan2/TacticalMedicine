@@ -123,6 +123,17 @@ namespace FieldMedic.EditorTools
                 Debug.Log("[FMVR] XR settings map repaired (" + subs.Count + " general settings found)");
             }
             int n = gs != null && gs.Manager != null ? gs.Manager.activeLoaders.Count : 0;
+            if (n == 0 && gs != null && gs.Manager != null)
+            {
+                var la = AssetDatabase.LoadAssetAtPath<UnityEngine.XR.Management.XRLoader>("Assets/XR/Loaders/OpenXRLoader.asset");
+                Debug.Log("[FMVR] OpenXRLoader asset: " + (la != null ? la.GetType().FullName : "NULL"));
+                bool ok = UnityEditor.XR.Management.Metadata.XRPackageMetadataStore.AssignLoader(gs.Manager, "UnityEngine.XR.OpenXR.OpenXRLoader", BuildTargetGroup.Android);
+                if (gs.Manager.activeLoaders.Count == 0 && la != null) gs.Manager.TryAddLoader(la);
+                EditorUtility.SetDirty(gs.Manager);
+                AssetDatabase.SaveAssets();
+                n = gs.Manager.activeLoaders.Count;
+                Debug.Log("[FMVR] AssignLoader OpenXR: " + ok + " -> loaders " + n);
+            }
             Debug.Log($"[FMVR] XR settings registered: android loaders={n} initOnStart={(gs != null && gs.InitManagerOnStart)}");
             if (n == 0 || !gs.InitManagerOnStart) { Debug.LogError("[FMVR] XR: no active Android loader / init on start off"); return false; }
             return true;
