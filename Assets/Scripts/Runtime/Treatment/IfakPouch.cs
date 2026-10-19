@@ -6,7 +6,7 @@ namespace FieldMedic.Treatment
     /// <summary>
     /// An IFAK: slots holding <see cref="MedItem"/>s. The player's own kit is worn on the body (rig-relative: body-locked
     /// at the belt, follows the head's yaw lazily like the torso, opened toward the player) as a real two-echelon kit
-    /// (w9): a small always-open quick-access pouch on the left (1st echelon: CAT + shears) and the main rip-away pouch
+    /// (w9): a small always-open quick-access pouch on the right (1st echelon: CAT + shears) and the main rip-away pouch
     /// (2nd echelon). The casualty's pouch rides on his plate carrier. Every item not held sits exactly in its own
     /// slot (parented, kinematic, no gravity); <see cref="LateUpdate"/> enforces that after the kit moved.
     /// </summary>
@@ -29,8 +29,8 @@ namespace FieldMedic.Treatment
         public float slotSpacing = 0.055f;
         public int columns = 7;
         public float rowSpacing = 0.095f;
-        [Tooltip("Quick pouch centre relative to the main pouch (left of the tray, slightly toward the player).")]
-        public Vector3 quickOffset = new Vector3(-0.285f, 0.0f, -0.01f);
+        [Tooltip("Quick pouch centre relative to the main pouch (right of the tray, on the side away from a casualty the kit is put down next to).")]
+        public Vector3 quickOffset = new Vector3(0.285f, 0.0f, -0.01f);
         [Header("Body lock (player pouch)")]
         public bool bodyLocked;
         public Transform head;

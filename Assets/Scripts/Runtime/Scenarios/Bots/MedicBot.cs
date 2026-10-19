@@ -22,6 +22,15 @@ namespace FieldMedic.Scenarios.Bots
         public string lastStep;
 
         ScriptedHandInput _l, _r;
+        string _loggedStep;
+
+        /// <summary>Every step change goes to the log (a stuck bot run shows where it stopped).</summary>
+        void Update()
+        {
+            if (lastStep == _loggedStep) return;
+            _loggedStep = lastStep;
+            Debug.Log($"[FMVR] bot step: {lastStep} at {Time.time:F1} s");
+        }
 
         public void Init(HandGrabber l, HandGrabber r)
         {
@@ -226,7 +235,13 @@ namespace FieldMedic.Scenarios.Bots
             // uneven ground (crater rims on the steppe): never aim the loop into the soil
             Vector3 Lift(Vector3 q) { if (CasualtyDrag.FloorAt(q, out float fl)) q.y = Mathf.Max(q.y, fl + 0.06f); return q; }
             lastStep = "tq: over the end";
-            yield return MoveHeld(h, cat.transform, cat.transform.position, Lift(end + endDir * 0.12f + Vector3.up * 0.03f));
+            // like a person: lift the CAT clear of the body first and bring it down past the foot — never drag the loop
+            // under a raised knee on the way (that would route it around the limb at the wrong place)
+            Vector3 over = Lift(end + endDir * 0.12f + Vector3.up * 0.03f);
+            float clear = Mathf.Max(cat.transform.position.y, over.y, c.transform.position.y + 0.55f) + 0.15f;
+            yield return MoveHeld(h, cat.transform, cat.transform.position, new Vector3(cat.transform.position.x, clear, cat.transform.position.z));
+            yield return MoveHeld(h, cat.transform, cat.transform.position, new Vector3(over.x, clear, over.z));
+            yield return MoveHeld(h, cat.transform, cat.transform.position, over);
             for (float p = 2.55f; p >= Mathf.Max(limbPos, 2.0f); p -= 0.1f)
                 yield return MoveHeld(h, cat.transform, cat.transform.position, Lift(LimbMath.PointAt(rig, limb, p)), 0.8f);
             for (int k = 0; k < 20 && !cat.State.OnLimb; k++) yield return Frame();

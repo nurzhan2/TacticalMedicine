@@ -85,10 +85,19 @@ namespace FieldMedic.Treatment
             string carried = MeshyModels.ByKind.TryGetValue(kind, out var e) ? e.target : null;
             var move = new List<Transform>();
             foreach (Transform c in transform)
-                if (c != v && (c.name.StartsWith("Merged_") || (carried != null && c.name == carried))) move.Add(c);
+                if (c != v && (c.name.StartsWith("Merged_") || (carried != null && c.name == carried) || IsPlainLook(c))) move.Add(c);
             foreach (var c in move) c.SetParent(v, true);
             v.SetSiblingIndex(0);
         }
+
+        /// <summary>Children driven by the procedure logic (never part of the swappable carried look).</summary>
+        static readonly HashSet<string> LogicParts = new HashSet<string> { "OnLimb", "Seal", "Sheet", "PadGroup", "UpperBlade", "CutSlit", "Tip" };
+
+        /// <summary>A child that only draws (no grab handle, no written text, not a logic part): e.g. the two gloves.</summary>
+        bool IsPlainLook(Transform c) =>
+            c != tip && !LogicParts.Contains(c.name) && c.GetComponentInChildren<Renderer>(true) != null &&
+            c.GetComponentInChildren<GrabPoint>(true) == null && c.GetComponentInChildren<Grabbable>(true) == null &&
+            c.GetComponentInChildren<TextMesh>(true) == null;
 
         /// <summary>Solid box collider around the visual (so it can lie on the ground).</summary>
         protected void FitCollider()

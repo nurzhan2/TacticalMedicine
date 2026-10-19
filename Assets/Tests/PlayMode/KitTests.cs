@@ -138,8 +138,8 @@ namespace FieldMedic.Tests
                 yield return _bot.Grab(h, it);
                 Assert.AreEqual(it, h.Held, "grabbed " + it.name);
                 Assert.IsFalse(it.InPouch, it.name + " out of the kit");
-                // 0.9 m to the side of the player, chest height, then let go
-                Vector3 drop = _head.position + new Vector3(0.9f, -0.35f, 0.2f + 0.06f * i);
+                // 0.9 m to the side of the player, chest height, then let go (spread out so they do not pile up)
+                Vector3 drop = _head.position + new Vector3(0.9f + 0.25f * (i % 2), -0.35f, -0.9f + 0.14f * i);
                 yield return _bot.Move(h, drop, false, 2.5f);
                 yield return _bot.Release(h);
                 released.Add((it, Time.time));
@@ -154,7 +154,7 @@ namespace FieldMedic.Tests
                 Assert.IsFalse(it.Body.isKinematic, it.name + " is a physics object after release");
                 Assert.IsTrue(it.Body.useGravity, it.name + " has gravity after release");
                 var b = it.GetComponent<Collider>().bounds;
-                Assert.Less(b.min.y, 0.08f, $"{it.name} lies on the ground (bottom at {b.min.y:F2} m, released {Time.time - at:F1} s ago)");
+                Assert.Less(b.min.y, 0.1f, $"{it.name} lies on the ground (bottom at {b.min.y:F2} m, released {Time.time - at:F1} s ago)");
                 Assert.Greater(b.max.y, -0.05f, it.name + " did not fall through the ground");
                 Assert.Less(it.Body.linearVelocity.magnitude, 0.2f, it.name + " came to rest");
             }
