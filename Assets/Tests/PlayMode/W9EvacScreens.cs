@@ -112,6 +112,7 @@ namespace FieldMedic.Tests
             Assert.AreEqual(tac.heli, ScenarioDirector.Instance.playerRig.parent, "player rides in the cabin (reference frame)");
             yield return DemoFlowRunner.Seconds(0.8f);
             var eye = Camera.main.transform;
+            Debug.Log($"[FMVR] evac cabin view: camera {eye.name} at {eye.position:F2} (root {eye.root.name}), rig {ScenarioDirector.Instance.playerRig.name} at {ScenarioDirector.Instance.playerRig.position:F2}, cabin {tac.CabinPoint:F2}");
             Shot("w9_evac_cabin", eye.position, tac.CabinPoint + Vector3.up * 0.2f, 85f);
             while (tac.State != TacevacController.Stage.Departing && Time.time - t0 < 12f) yield return null;
             yield return DemoFlowRunner.Seconds(3.5f);

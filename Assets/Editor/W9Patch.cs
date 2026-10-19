@@ -183,6 +183,8 @@ namespace FieldMedic.EditorTools
             if (tac == null) return;
             if (tac.stretcher != null) Object.DestroyImmediate(tac.stretcher.gameObject);
             tac.stretcher = null;
+            // the side door / cabin floor / bench come from the fuselage mesh, measured here (not readable on the device)
+            if (!tac.BakeCabin()) Debug.LogWarning("[FMVR] w9 patch: helicopter cabin could not be measured, runtime defaults");
             EditorUtility.SetDirty(tac);
         }
 

@@ -128,45 +128,100 @@ namespace FieldMedic.Scenarios
         void Land()
         {
             State = Stage.Landed;
-            if (heli != null) heli.SetPositionAndRotation(LandingPoint, _landRot);
+            if (heli != null) heli.SetPositionAndRotation(GroundAt(LandingPoint), _landRot);
             MeasureCabin();
             BuildCrewAndDoor();
             Debug.Log($"[FMVR] tacevac: landed at the LZ, side door at {DoorPoint:F1}");
         }
 
+        /// <summary>The steppe is not flat out at the LZ: put the skids on the real ground (the helicopter has no colliders).</summary>
+        static Vector3 GroundAt(Vector3 p)
+        {
+            if (Physics.Raycast(p + Vector3.up * 6f, Vector3.down, out var hit, 20f, ~0, QueryTriggerInteraction.Ignore)) p.y = hit.point.y;
+            return p;
+        }
+
         // ------------------------------------------------------------------ geometry
         /// <summary>Fuselage box in heli space → the port-side door (front third), the cabin floor and a seat.</summary>
+        [Header("Cabin geometry (baked in the editor by W9Patch: mesh data is not readable on the device)")]
+        public bool cabinBaked;
+        public float bakedMinY, bakedZMin, bakedZMax, bakedHalfWidth;
+
+        /// <summary>Fuselage of the helicopter from its body mesh (editor: read-only mesh data works on any mesh).</summary>
+        public bool BakeCabin()
+        {
+            if (!MeasureFromMeshes(out bakedMinY, out bakedZMin, out bakedZMax, out bakedHalfWidth, out int n)) return false;
+            cabinBaked = true;
+            Debug.Log($"[FMVR] tacevac: cabin baked from {n} vertices: y0 {bakedMinY:F2}, z {bakedZMin:F2}..{bakedZMax:F2}, half width {bakedHalfWidth:F2}");
+            return true;
+        }
+
+        /// <summary>Vertices below 55 % of the height (drooping blade tips sit higher), robust percentiles; nose at +z.</summary>
+        bool MeasureFromMeshes(out float minY, out float zMin, out float zMax, out float half, out int count)
+        {
+            minY = 0f; zMin = -8f; zMax = 8f; half = 1.2f; count = 0;
+            if (heli == null) return false;
+            var inv = heli.worldToLocalMatrix;
+            var pts = new System.Collections.Generic.List<Vector3>(8192);
+            foreach (var mf in heli.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (mf.transform == rotor || (rotor != null && mf.transform.IsChildOf(rotor))) continue;
+                var mesh = mf.sharedMesh;
+                if (mesh == null) continue;
+                var m = inv * mf.transform.localToWorldMatrix;
+                using (var data = Mesh.AcquireReadOnlyMeshData(mesh))
+                {
+                    if (data.Length == 0) continue;
+                    var v = new Unity.Collections.NativeArray<Vector3>(data[0].vertexCount, Unity.Collections.Allocator.Temp);
+                    data[0].GetVertices(v);
+                    int step = Mathf.Max(1, v.Length / 8000);
+                    for (int i = 0; i < v.Length; i += step) pts.Add(m.MultiplyPoint3x4(v[i]));
+                    v.Dispose();
+                }
+            }
+            count = pts.Count;
+            if (pts.Count < 100) return false;
+            pts.Sort((a, c) => a.y.CompareTo(c.y));
+            minY = pts[0].y;
+            float maxY = pts[pts.Count - 1].y;
+            float yCut = minY + (maxY - minY) * 0.55f;
+            var low = pts.FindAll(q => q.y < yCut);
+            if (low.Count < 50) return false;
+            low.Sort((a, c) => a.z.CompareTo(c.z));
+            zMin = low[(int)(low.Count * 0.01f)].z;
+            zMax = low[(int)(low.Count * 0.99f)].z;
+            float zCabin = zMax - (zMax - zMin) * 0.45f;
+            float y0 = minY;
+            var cab = low.FindAll(q => q.z > zCabin && q.y > y0 + 0.4f);
+            if (cab.Count > 20)
+            {
+                cab.Sort((a, c) => Mathf.Abs(a.x).CompareTo(Mathf.Abs(c.x)));
+                half = Mathf.Abs(cab[(int)(cab.Count * 0.95f)].x);
+            }
+            return true;
+        }
+
         void MeasureCabin()
         {
             _geoValid = false;
             if (heli == null) return;
-            var inv = heli.worldToLocalMatrix;
-            var b = new Bounds();
-            bool any = false;
-            foreach (var r in heli.GetComponentsInChildren<Renderer>(true))
-            {
-                if (r.transform == rotor || (rotor != null && r.transform.IsChildOf(rotor))) continue; // blades widen the box
-                var wb = r.bounds;
-                for (int i = 0; i < 8; i++)
-                {
-                    var c = wb.center + Vector3.Scale(wb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
-                    var p = inv.MultiplyPoint3x4(c);
-                    if (!any) { b = new Bounds(p, Vector3.zero); any = true; } else b.Encapsulate(p);
-                }
-            }
-            if (!any || b.size.z < 3f) { b = new Bounds(new Vector3(0f, 1.6f, 0f), new Vector3(2.4f, 3.2f, 16f)); }
-            // fuselage half-width: rotor blades/stub wings are excluded, but clamp to a transport cabin (~1.2 m)
-            float half = Mathf.Clamp(Mathf.Min(-b.min.x, b.max.x), 0.9f, 1.4f);
-            float len = b.size.z;
-            float zDoor = b.center.z + len * 0.16f;
-            _floorLocalY = Mathf.Clamp(b.min.y + 0.75f, 0.45f, 1.1f);
+            float minY, zMin, zMax, half;
+            string src = "baked";
+            if (cabinBaked) { minY = bakedMinY; zMin = bakedZMin; zMax = bakedZMax; half = bakedHalfWidth; }
+            else if (!MeasureFromMeshes(out minY, out zMin, out zMax, out half, out _)) { src = "default"; minY = 0f; zMin = -8f; zMax = 8f; half = 1.2f; }
+            else src = "measured";
+            half = Mathf.Clamp(half, 0.8f, 1.6f);
+            float len = Mathf.Max(4f, zMax - zMin);
+            float zDoor = zMax - len * 0.3f;   // the cabin door sits just behind the cockpit
+            _floorLocalY = minY + 0.75f;
             _doorHalfWidth = 0.65f;
-            _doorLocal = new Vector3(-half - 0.55f, 0f, zDoor);
-            _cabinLocal = new Vector3(-half * 0.15f, _floorLocalY, zDoor - 0.4f);
-            _seatLocal = new Vector3(half * 0.55f, _floorLocalY, zDoor + 0.2f);
+            _doorLocal = new Vector3(-half - 0.55f, minY, zDoor);
+            _cabinLocal = new Vector3(-half * 0.25f, _floorLocalY, zDoor - 0.3f);
+            _seatLocal = new Vector3(half - 0.3f, _floorLocalY, zDoor + 0.1f);   // on the troop bench
             _doorPanelClosed = new Vector3(-half - 0.02f, _floorLocalY + 0.65f, zDoor);
-            _doorPanelOpen = _doorPanelClosed + new Vector3(-0.05f, 0f, -1.3f);
+            _doorPanelOpen = _doorPanelClosed + new Vector3(-0.06f, 0f, -1.3f);
             _geoValid = true;
+            Debug.Log($"[FMVR] tacevac: cabin ({src}) y0 {minY:F2}, z {zMin:F2}..{zMax:F2}, half width {half:F2}, door {_doorLocal:F2}, floor {_floorLocalY:F2}");
         }
 
         /// <summary>Two crew members' arms in the doorway (sleeve + glove) and a sliding door panel.</summary>
@@ -185,6 +240,18 @@ namespace FieldMedic.Scenarios
             _doorPanel = FieldMedic.Treatment.Kit.Part(heli, PrimitiveType.Cube, "SideDoor", _doorPanelOpen,
                 new Vector3(0.05f, 1.25f, 1.25f), hull).transform;
             _doorPanel.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // the imported hull is single-sided: from inside you would look through its floor at the ground.
+            // A cabin floor (ribbed aluminium, olive), the troop bench the medic sits on and a back wall.
+            var floorM = FieldMedic.Treatment.Kit.Mat("CabinFloor", new Color(0.2f, 0.21f, 0.17f), 0.25f, 0.3f);
+            var canvas = FieldMedic.Treatment.Kit.Mat("CabinBench", new Color(0.3f, 0.3f, 0.2f), 0.1f);
+            float half = -_doorLocal.x - 0.55f, z = _doorLocal.z;
+            var cabin = new GameObject("EvacCabin").transform;
+            cabin.SetParent(heli, false);
+            FieldMedic.Treatment.Kit.Part(cabin, PrimitiveType.Cube, "Floor", new Vector3(0f, _floorLocalY - 0.03f, z - 0.2f), new Vector3(half * 2f - 0.06f, 0.05f, 2.8f), floorM);
+            FieldMedic.Treatment.Kit.Part(cabin, PrimitiveType.Cube, "Bench", new Vector3(half - 0.3f, _floorLocalY + 0.42f, z + 0.1f), new Vector3(0.42f, 0.06f, 1.9f), canvas);
+            FieldMedic.Treatment.Kit.Part(cabin, PrimitiveType.Cube, "BenchBack", new Vector3(half - 0.08f, _floorLocalY + 0.85f, z + 0.1f), new Vector3(0.04f, 0.75f, 1.9f), canvas);
+            FieldMedic.Treatment.Kit.Part(cabin, PrimitiveType.Cube, "BackWall", new Vector3(0f, _floorLocalY + 0.7f, z - 1.6f), new Vector3(half * 2f - 0.06f, 1.4f, 0.04f), floorM);
+            FieldMedic.Treatment.Kit.Merge(cabin);
             SetArms(0f);
         }
 
@@ -244,7 +311,7 @@ namespace FieldMedic.Scenarios
             var headB = c.rig.Bone(HumanBodyBones.Head);
             Vector3 hp = hips != null ? hips.position : root.position;
             Vector3 along = (headB != null ? headB.position : hp + root.forward) - hp; along.y = 0f;
-            Vector3 want = heli.right; want.y = 0f;   // head toward the starboard side = feet at the door
+            Vector3 want = heli.forward; want.y = 0f; // along the cabin floor, head toward the cockpit
             float yaw = Vector3.SignedAngle(along.sqrMagnitude > 1e-4f ? along : root.forward, want, Vector3.up);
             _cStartPos = root.position;
             _cStartRot = root.rotation;
@@ -319,7 +386,9 @@ namespace FieldMedic.Scenarios
             // freeze ground-bound comfort systems: the cabin is the reference frame now
             _paused.Clear();
             foreach (var b in _rig.GetComponentsInChildren<Locomotion>(true)) if (b.enabled) { b.enabled = false; _paused.Add(b); }
+            // the eye that belongs to this rig (tests may drive a detached head transform)
             var head = Head();
+            if (head == null || !head.IsChildOf(_rig)) head = Camera.main != null && Camera.main.transform.IsChildOf(_rig) ? Camera.main.transform : null;
             Vector3 seat = heli.TransformPoint(_seatLocal);
             Vector3 headOff = head != null ? head.position - _rig.position : Vector3.up * 1.2f;
             Vector3 face = CabinPoint - seat; face.y = 0f;

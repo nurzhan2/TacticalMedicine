@@ -20,7 +20,8 @@ namespace FieldMedic.Tests
             for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
             {
                 var s = SceneManager.GetSceneAt(i);
-                if (s != fresh && s.isLoaded) yield return SceneManager.UnloadSceneAsync(s);
+                // never the test runner's own scene (unloading it stops the run)
+                if (s != fresh && s.isLoaded && !s.name.StartsWith("InitTestScene")) yield return SceneManager.UnloadSceneAsync(s);
             }
             yield return null;
         }

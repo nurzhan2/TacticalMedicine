@@ -377,7 +377,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 350af755a69f92548b0b49db167db6ac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Battle.SoldierAgent
---- !u!1 &273021284
+--- !u!1 &227096861
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -385,8 +385,8 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 273021286}
-  - component: {fileID: 273021285}
+  - component: {fileID: 227096863}
+  - component: {fileID: 227096862}
   m_Layer: 0
   m_Name: ~SceneLinker
   m_TagString: Untagged
@@ -394,13 +394,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &273021285
+--- !u!114 &227096862
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 273021284}
+  m_GameObject: {fileID: 227096861}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 331f39c69703c61418047a7a61b0de17, type: 3}
@@ -439,13 +439,13 @@ MonoBehaviour:
     field: head
     targetPath: OVRCameraRig/TrackingSpace/CenterEyeAnchor
     targetType: UnityEngine.Transform
---- !u!4 &273021286
+--- !u!4 &227096863
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 273021284}
+  m_GameObject: {fileID: 227096861}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -22512,4 +22512,4 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 711978483}
-  - {fileID: 273021286}
+  - {fileID: 227096863}

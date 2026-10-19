@@ -413,7 +413,20 @@ namespace FieldMedic.Scenarios.Bots
             yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.05f);
             yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.004f, 0.3f);
             for (int k = 0; k < 10 && b.ApplyingTo == null; k++) yield return Frame();
-            if (b.ApplyingTo == null) { lastStep = "bandage: pad not placed"; yield break; }
+            // like a person: look again and re-aim on the live wound (he breathes, the limb settles), press a touch harder
+            for (int tries = 0; tries < 3 && b.ApplyingTo == null; tries++)
+            {
+                w = care.transform.position; n = care.Normal;
+                yield return MoveHeld(h, b.transform, b.TipPosition, w + n * 0.03f, 0.4f);
+                yield return MoveHeld(h, b.transform, b.TipPosition, w - n * 0.002f * (tries + 1), 0.25f);
+                for (int k = 0; k < 10 && b.ApplyingTo == null; k++) yield return Frame();
+            }
+            if (b.ApplyingTo == null)
+            {
+                lastStep = "bandage: pad not placed";
+                Debug.Log($"[FMVR] bot bandage pad not placed: lateral {care.Lateral(b.TipPosition):F3} height {care.Height(b.TipPosition):F3} skin {care.SkinAccessible} step {care.Bandage.step} hint {b.LastHint}");
+                yield break;
+            }
             Vector3 axis = care.WrapAxis(out Vector3 c, out float r);
             Vector3 start = Vector3.ProjectOnPlane(n, axis).normalized;
             float radius = r + 0.08f;
