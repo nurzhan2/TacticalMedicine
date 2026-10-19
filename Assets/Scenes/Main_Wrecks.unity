@@ -831,6 +831,40 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0.8176313, z: 0}
   m_TimeToStationary: 0.5
+--- !u!1 &273021284
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 273021285}
+  m_Layer: 0
+  m_Name: Battlefield
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &273021285
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 273021284}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 515263507}
+  - {fileID: 940186845}
+  - {fileID: 432707041}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &295441414
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1004,7 +1038,7 @@ Transform:
   - {fileID: 497836288}
   - {fileID: 1519513141}
   - {fileID: 821346411}
-  m_Father: {fileID: 1748748363}
+  m_Father: {fileID: 273021285}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &497836287
 GameObject:
@@ -5874,7 +5908,7 @@ Transform:
   - {fileID: 1983005429}
   - {fileID: 1043828971}
   - {fileID: 1886278768}
-  m_Father: {fileID: 1748748363}
+  m_Father: {fileID: 273021285}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &518846238
 PrefabInstance:
@@ -11701,7 +11735,7 @@ Transform:
   m_Children:
   - {fileID: 806291537}
   - {fileID: 20575702}
-  m_Father: {fileID: 1748748363}
+  m_Father: {fileID: 273021285}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1043828970
 GameObject:
@@ -12986,40 +13020,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1855814777376756338, guid: def814b697b2647408bfc5320d569bc8, type: 3}
   m_PrefabInstance: {fileID: 1571803884}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &1748748362
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1748748363}
-  m_Layer: 0
-  m_Name: Battlefield
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1748748363
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1748748362}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 515263507}
-  - {fileID: 940186845}
-  - {fileID: 432707041}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1816982150
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -18935,4 +18935,4 @@ NavMeshObstacle:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1748748363}
+  - {fileID: 273021285}

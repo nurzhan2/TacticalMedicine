@@ -15,10 +15,13 @@ namespace FieldMedic.Environment
     {
         public const string ObjectName = "SkyText_Satpaev";
         public const string Phrase = "САТПАЕВ ЛУЧШЕ ВСЕХ";
+        /// <summary>Two lines: bigger letters for the same angular width.</summary>
+        public const string DisplayText = "САТПАЕВ\nЛУЧШЕ ВСЕХ";
+        public static string Normalise(string s) => s == null ? null : s.Replace('\n', ' ').Trim();
 
         public TextMeshPro text;
-        public Color baseColor = new Color(1f, 0.93f, 0.78f, 0.82f);
-        public Color goldColor = new Color(1f, 0.8f, 0.45f, 0.95f);
+        public Color baseColor = new Color(1f, 0.92f, 0.72f, 0.95f);
+        public Color goldColor = new Color(1f, 0.76f, 0.36f, 1f);
         [Tooltip("Shimmer speed (rad/s) and per-letter phase step.")]
         public float speed = 0.7f;
         public float letterPhase = 0.55f;

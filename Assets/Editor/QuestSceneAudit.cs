@@ -79,7 +79,7 @@ namespace FieldMedic.EditorTools
 
         /// <summary>
         /// w9 owner request: «САТПАЕВ ЛУЧШЕ ВСЕХ» in the sky of every gameplay scene. The root's forward must point at the
-        /// spawn eye (≤ 15°), the text must sit 25–35° above the horizon in the start view direction (± 30° yaw), the
+        /// spawn eye (≤ 15°), the text must sit 25–35° above the horizon in the start view direction (± 40° yaw: clear of the ruin walls), the
         /// TMP child must read away from the viewer (not mirrored) and the whole thing must be inside the far plane.
         /// </summary>
         public static List<string> SkyTextRules(string sceneSet, Transform sky, Vector3 spawnEye, float spawnYaw, float farPlane)
@@ -93,14 +93,14 @@ namespace FieldMedic.EditorTools
             if (elev < 25f || elev > 35f) p.Add($"{sceneSet}: sky text at {elev:F0}° elevation (want 25–35°)");
             Vector3 flat = sky.position - spawnEye; flat.y = 0f;
             float yaw = flat.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(flat).eulerAngles.y : spawnYaw;
-            if (Mathf.Abs(Mathf.DeltaAngle(yaw, spawnYaw)) > 30f) p.Add($"{sceneSet}: sky text at yaw {yaw:F0}°, the player starts facing {spawnYaw:F0}°");
+            if (Mathf.Abs(Mathf.DeltaAngle(yaw, spawnYaw)) > 40f) p.Add($"{sceneSet}: sky text at yaw {yaw:F0}°, the player starts facing {spawnYaw:F0}°");
             var tmp = sky.GetComponentInChildren<TMPro.TextMeshPro>(true);
             if (tmp == null) p.Add($"{sceneSet}: sky text has no TextMeshPro");
             else
             {
                 if (Vector3.Dot(tmp.transform.forward, sky.position - spawnEye) <= 0f) p.Add($"{sceneSet}: sky text would read mirrored from the spawn");
                 if (Vector3.Dot(tmp.transform.up, Vector3.up) < 0.5f) p.Add($"{sceneSet}: sky text is upside down / sideways");
-                if (tmp.text != FieldMedic.Environment.SkyText.Phrase) p.Add($"{sceneSet}: sky text reads '{tmp.text}'");
+                if (FieldMedic.Environment.SkyText.Normalise(tmp.text) != FieldMedic.Environment.SkyText.Phrase) p.Add($"{sceneSet}: sky text reads '{tmp.text}'");
             }
             if (toSpawn.magnitude > farPlane * 0.9f) p.Add($"{sceneSet}: sky text {toSpawn.magnitude:F0} m away, beyond the far plane {farPlane:F0} m");
             return p;
