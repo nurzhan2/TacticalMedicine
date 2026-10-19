@@ -164,6 +164,8 @@ namespace FieldMedic.EditorTools
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
             EditorUserBuildSettings.buildAppBundle = false;
             EditorUserBuildSettings.development = v == Variant.FullDev;
+            // w9: no symbols.zip / .sym.so for the release APKs — the unstripped libil2cpp copy ran this laptop out of disk
+            EditorUserBuildSettings.androidCreateSymbols = v == Variant.FullDev ? AndroidCreateSymbols.Public : AndroidCreateSymbols.Disabled;
             EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
             QuestLaunchSetup.Apply();
             if (!File.Exists(SceneBuilders.BootSceneBuilder.ScenePath)) SceneBuilders.BootSceneBuilder.Build();
