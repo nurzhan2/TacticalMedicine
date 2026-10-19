@@ -311,7 +311,10 @@ namespace FieldMedic.Scenarios
             float evacDt = -1f;
             if (Timeline.State == ScenarioState.Evacuation)
             {
-                casualty.simulationSpeed = Mathf.Max(casualty.simulationSpeed, Timeline.evacTimeScale);
+                // only the wait for the helicopter is time-compressed; from touchdown on the drag to the door, the
+                // hand-over and the boarding are played in real time (w9)
+                var landed = TacevacController.Instance != null && TacevacController.Instance.Landed;
+                casualty.simulationSpeed = landed ? 1f : Mathf.Max(casualty.simulationSpeed, Timeline.evacTimeScale);
                 evacDt = dt * casualty.simulationSpeed;
             }
             // the schedule follows the casualty's clock (tests and time-compression speed it up together)

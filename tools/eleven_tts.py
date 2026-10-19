@@ -119,7 +119,7 @@ def main():
     ap.add_argument("--raw", default=os.path.join(ROOT, "SourceAssets", "Voice", "eleven_raw"))
     ap.add_argument("--out", default=os.path.join(ROOT, "Assets", "Resources", "Radio"))
     ap.add_argument("--model", default="eleven_multilingual_v2", help="eleven_multilingual_v2 (default) or eleven_v3")
-    ap.add_argument("--kz-model", default=None, help="model for Kazakh lines (default: same as --model)")
+    ap.add_argument("--kz-model", default="eleven_v3", help="model for Kazakh lines (default eleven_v3: Kazakh is supported ONLY by Eleven v3)")
     ap.add_argument("--lang", default="ru,kz", help="ru,kz | ru | kz")
     ap.add_argument("--only", default="", help="comma list of line ids")
     ap.add_argument("--force", action="store_true", help="regenerate lines that already exist")

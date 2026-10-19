@@ -31,9 +31,10 @@ namespace FieldMedic.Tests
         DebriefReport _report;
         static readonly Vector3 CoverAt = new Vector3(-3.6f, 0f, 0f);
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
+            yield return FreshScene.Ensure(); // w9: never inherit a battlefield from an earlier test
             GameSettings.HoldTimeScale = 60f;
             _report = null;
             _pouch = null;
