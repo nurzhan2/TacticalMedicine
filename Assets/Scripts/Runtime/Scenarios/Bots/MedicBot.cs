@@ -127,7 +127,7 @@ namespace FieldMedic.Scenarios.Bots
 
         public IEnumerator Grab(HandGrabber h, Grabbable g, Vector3? at = null)
         {
-            if (g is MedItem mi && mi.InPouch && mi.pouch != null && !mi.pouch.IsOpen)
+            if (g is MedItem mi && mi.InPouch && mi.pouch != null && !mi.pouch.IsSlotOpen(mi.homeSlot))
                 yield return OpenPouch(mi.pouch, h);
             lastStep = "grab " + g.name;
             Vector3 aim = at ?? g.transform.position;

@@ -16,6 +16,8 @@ namespace FieldMedic.Medical
         PulseCheck, LogRoll, WoundFound, MarkForehead, LimbElevation, SealBurp, PlayerDrag,
         // S5 scenario additions
         ClearMouth, TourniquetConversion, TourniquetRetighten, MedevacRequest, TourniquetReassess, Scenario,
+        // w9: casualty dragged to the helicopter door and taken aboard by the crew (TACEVAC)
+        EvacLoad,
     }
 
     public enum Severity { Info, Ok, Warning, Error }
@@ -202,6 +204,8 @@ namespace FieldMedic.Medical
                     tourniquetReassessed = true;
                     if (tourniquetReassessedAt < 0f) tourniquetReassessedAt = patient.secondsSinceStart;
                     return new(Severity.Ok, "tq_reassessed", "Жгут переоценён: пульс ниже жгута, кровотечение, время.");
+                case MedAction.EvacLoad:
+                    return new(Severity.Ok, "evac_loaded", "Раненый дотащен до вертолёта и передан экипажу.");
                 case MedAction.MedevacRequest:
                     if (!medevacRequested) { medevacRequested = true; medevacRequestedAt = patient.secondsSinceStart; }
                     return new(Severity.Ok, "medevac", "Запрос на эвакуацию передан.");

@@ -56,6 +56,8 @@ namespace FieldMedic.Medical
         public float durationSeconds;
         public float lossPercent;
         public string endReason;
+        /// <summary>w9: TACEVAC done by hand — the casualty was dragged to the helicopter door (protocol code evac_loaded).</summary>
+        public bool evacLoaded;
         public readonly List<DebriefEntry> timeline = new();
         public readonly List<DebriefMistake> mistakes = new();
         public readonly List<DebriefPhase> phases = new();
@@ -103,9 +105,11 @@ namespace FieldMedic.Medical
                 score = score,
                 durationSeconds = p.secondsSinceStart,
                 lossPercent = p.LossFraction * 100f,
+                evacLoaded = protocol.log.Any(e => e.code == "evac_loaded"),
             };
             r.outcomeText = playerHit ? (playerHitText ?? (kz ? "Сіз жараландыңыз — Ерлан көмексіз қалды." : "Вы ранены — Ерлан остался без помощи."))
                 : p.outcome == Outcome.Died ? (kz ? "Ерлан қаза тапты: " : "Ерлан погиб: ") + p.causeOfDeath
+                : endReason == "evacuated" && r.evacLoaded ? (kz ? "Ерлан тікұшаққа дейін сүйретілді және тірі эвакуацияланды." : "Ерлан дотащен до вертолёта и эвакуирован живым.")
                 : endReason == "evacuated" ? (kz ? "Ерлан эвакуацияланды. Тірі." : "Ерлан передан на эвакуацию живым.")
                 : (kz ? "Сценарий аяқталды." : "Сценарий завершён.");
 

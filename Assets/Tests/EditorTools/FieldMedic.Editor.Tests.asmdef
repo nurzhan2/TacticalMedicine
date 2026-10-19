@@ -5,6 +5,7 @@
         "FieldMedic.Editor",
         "FieldMedic.Runtime",
         "Oculus.VR",
+        "Unity.TextMeshPro",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

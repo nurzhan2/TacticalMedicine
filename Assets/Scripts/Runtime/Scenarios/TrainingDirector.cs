@@ -332,6 +332,7 @@ namespace FieldMedic.Scenarios
                 case "card": return C.Protocol.log.Any(e => e.code == "card");
                 case "medevac": return C.Protocol.medevacRequested;
                 case "heli_landed": return tac != null && tac.Landed;
+                case "heli_aboard": return tac != null && tac.CasualtyAboard;
                 case "loaded": return tac != null ? tac.Loaded : C.Protocol.medevacRequested;
             }
             return false;
@@ -437,7 +438,8 @@ namespace FieldMedic.Scenarios
                 case "ChestBack": return _exit != null ? WoundPoint(_exit) : (Vector3?)null;
                 case "Nose": return rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.08f;
                 case "Body": return Chest;
-                case "Stretcher": return TacevacController.Instance != null && TacevacController.Instance.Landed ? TacevacController.Instance.StretcherPoint : (Vector3?)null;
+                case "Stretcher":
+                case "HeliDoor": return TacevacController.Instance != null && TacevacController.Instance.Landed ? TacevacController.Instance.DoorPoint + Vector3.up * 1.1f : (Vector3?)null;
             }
             return null;
         }
@@ -499,7 +501,15 @@ namespace FieldMedic.Scenarios
                 case "npa_in": from = Item<NpaItem>(); to = rig.Bone(HumanBodyBones.Head).position; return true;
                 case "blanket": from = Item<BlanketItem>(); to = Chest; return true;
                 case "card": from = Item<CardItem>(); to = Chest; return true;
-                case "loaded": if (TacevacController.Instance == null || !TacevacController.Instance.Landed) return false; from = hand; to = TacevacController.Instance.ButtonPoint; return true;
+                case "loaded":
+                {
+                    var tac = TacevacController.Instance;
+                    if (tac == null || !tac.Landed) return false;
+                    // drag him by the handle toward the open side door; once he is aboard: you, into the door
+                    from = !tac.CasualtyAboard && C.Interaction != null && C.Interaction.Drag != null ? C.Interaction.Drag.transform.position : hand;
+                    to = tac.DoorPoint + Vector3.up * 0.5f;
+                    return true;
+                }
             }
             return false;
         }

@@ -133,6 +133,42 @@ namespace FieldMedic.Tests
         }
 
         [Test]
+        public void Evac_DraggedToHelicopter_IsTheEvacStep_InTheDebrief()
+        {
+            var p = new PatientPhysiology();
+            var cp = new CareProtocol(p, Phase.TacticalFieldCare);
+            p.Advance(60f, 1f);
+            cp.Perform(MedAction.MedevacRequest);
+            var before = DebriefBuilder.Build(ScenarioCatalog.Get("S1"), cp, "evacuated", t => t.ToString("0"));
+            Assert.IsFalse(before.evacLoaded, "not yet at the helicopter");
+            var fb = cp.Perform(MedAction.EvacLoad);
+            Assert.AreEqual(Severity.Ok, fb.severity);
+            Assert.AreEqual("evac_loaded", fb.code);
+            Assert.AreEqual(0, cp.penalties.Count, "the hand-over is not a mistake");
+            var r = DebriefBuilder.Build(ScenarioCatalog.Get("S1"), cp, "evacuated", t => t.ToString("0"));
+            Assert.IsTrue(r.evacLoaded, "dragged to the helicopter counts as the evac step");
+            StringAssert.Contains("вертол", r.outcomeText);
+            Assert.IsTrue(r.timeline.Exists(e => e.text.Contains("вертол")), "hand-over in the debrief timeline");
+            var kz = DebriefBuilder.Build(ScenarioCatalog.Get("S1"), cp, "evacuated", t => t.ToString("0"), 0f, null, true);
+            StringAssert.Contains("тікұшақ", kz.outcomeText);
+        }
+
+        [Test]
+        public void Tacevac_Steps_AskToDragToTheDoor_NoLoadButton()
+        {
+            foreach (var l in TrainingCatalog.All)
+                foreach (var s in l.steps)
+                {
+                    if (s.id != "loaded") continue;
+                    Assert.AreEqual("HeliDoor", s.target, l.id + ": the hint points at the helicopter door");
+                    var acts = string.Join(" | ", s.actions.Select(a => a.ru));
+                    StringAssert.DoesNotContain("ПОГРУЗИТЬ", acts, l.id);
+                    StringAssert.Contains("двери", acts, l.id);
+                    Assert.IsTrue(s.actions.Any(a => a.check == "heli_aboard"), l.id + ": ticks when the crew has him");
+                }
+        }
+
+        [Test]
         public void Debrief_MistakesCarryStepTitles_NumberedInTimeOrder_KazakhReasons()
         {
             var p = new PatientPhysiology();

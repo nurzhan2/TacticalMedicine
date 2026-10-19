@@ -79,8 +79,8 @@ The owner will generate real voices with ElevenLabs. Prepare everything so it is
 - `tools/eleven_tts.py`: reads `tools/radio_lines.tsv` (and `tools/voice_lines.tsv` for Erlan if useful),
   calls the ElevenLabs text-to-speech REST API (`POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}`,
   header `xi-api-key` from the environment variable `ELEVENLABS_API_KEY` ONLY - never print it, never
-  write it to any file, never commit it; model `eleven_multilingual_v2` by default, `--model` flag to
-  switch to `eleven_v3`), one voice id per speaker from `tools/eleven_voices.json`
+  write it to any file, never commit it; model: `eleven_v3` for KZ lines (Kazakh `kk` is supported ONLY by
+  Eleven v3), `eleven_multilingual_v2` for RU lines by default, `--model` flag to force one model for all), one voice id per speaker from `tools/eleven_voices.json`
   (`{"radio": "<id>", "instructor": "<id>"}` - leave placeholder ids and a comment, the owner fills them),
   RU text from `ru`, KZ text from `kz` (real Kazakh, not the transliterated `kz_tts` column),
   output mp3 -> wav 48 kHz mono into a raw folder, skip lines that already exist unless `--force`,

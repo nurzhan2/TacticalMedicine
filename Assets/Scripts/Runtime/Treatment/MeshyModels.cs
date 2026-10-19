@@ -93,14 +93,15 @@ namespace FieldMedic.Treatment
             var hide = new List<Renderer>();
             if (!string.IsNullOrEmpty(target))
             {
-                var t = root.Find(target);
+                var t = root.Find(target) ?? root.Find(MedItem.VisualName + "/" + target); // w9: carried look under "Visual"
                 if (t == null) return null;
                 parent = t;
                 hide.AddRange(t.GetComponentsInChildren<Renderer>(true));
             }
             else
             {
-                foreach (Transform c in root)
+                var holder = root.Find(MedItem.VisualName);
+                foreach (Transform c in holder != null ? holder : root)
                 {
                     if (!c.name.StartsWith("Merged_")) continue;
                     var r = c.GetComponent<Renderer>();

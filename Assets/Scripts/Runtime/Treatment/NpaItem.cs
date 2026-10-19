@@ -17,6 +17,7 @@ namespace FieldMedic.Treatment
         public NpaProcedure Npa = new NpaProcedure();
         public Feedback LastFeedback { get; private set; }
         public bool Engaged { get; private set; }
+        protected override bool HoldsOwnPose => Engaged;
 
         float _measureHold;
         Vector3 _palmAtEngage;

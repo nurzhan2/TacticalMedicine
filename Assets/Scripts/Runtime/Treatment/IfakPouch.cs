@@ -4,20 +4,24 @@ using UnityEngine;
 namespace FieldMedic.Treatment
 {
     /// <summary>
-    /// An IFAK: slots holding <see cref="MedItem"/>s. The player's own pouch is body-locked at the belt
-    /// (follows the head's yaw lazily, like the torso, at waist height, opened toward the player);
-    /// the casualty's pouch rides on his plate carrier.
+    /// An IFAK: slots holding <see cref="MedItem"/>s. The player's own kit is worn on the body (rig-relative: body-locked
+    /// at the belt, follows the head's yaw lazily like the torso, opened toward the player) as a real two-echelon kit
+    /// (w9): a small always-open quick-access pouch on the left (1st echelon: CAT + shears) and the main rip-away pouch
+    /// (2nd echelon). The casualty's pouch rides on his plate carrier. Every item not held sits exactly in its own
+    /// slot (parented, kinematic, no gravity); <see cref="LateUpdate"/> enforces that after the kit moved.
     /// </summary>
     [DefaultExecutionOrder(-40)]
     public sealed class IfakPouch : MonoBehaviour
     {
         public MedItemKind[] contents =
         {
-            MedItemKind.Tourniquet, MedItemKind.Tourniquet, MedItemKind.HemostaticGauze, MedItemKind.IsraeliBandage,
+            MedItemKind.Tourniquet, MedItemKind.HemostaticGauze, MedItemKind.IsraeliBandage,
             MedItemKind.ChestSeal, MedItemKind.ChestSeal, MedItemKind.NasalAirway, MedItemKind.Lubricant,
-            MedItemKind.DecompressionNeedle, MedItemKind.TraumaShears, MedItemKind.NitrileGloves, MedItemKind.Marker,
+            MedItemKind.DecompressionNeedle, MedItemKind.NitrileGloves, MedItemKind.Marker,
             MedItemKind.ThermalBlanket, MedItemKind.CasualtyCard,
         };
+        [Tooltip("1st echelon, quick-access pouch next to the main one (always open). Empty = no quick pouch.")]
+        public MedItemKind[] quickContents = { MedItemKind.Tourniquet, MedItemKind.TraumaShears };
         public bool buildVisual = true;
         public bool buildOnStart = true;
         [Header("Layout (local)")]
@@ -25,6 +29,8 @@ namespace FieldMedic.Treatment
         public float slotSpacing = 0.055f;
         public int columns = 7;
         public float rowSpacing = 0.095f;
+        [Tooltip("Quick pouch centre relative to the main pouch (left of the tray, slightly toward the player).")]
+        public Vector3 quickOffset = new Vector3(-0.285f, 0.0f, -0.01f);
         [Header("Body lock (player pouch)")]
         public bool bodyLocked;
         public Transform head;
@@ -37,6 +43,7 @@ namespace FieldMedic.Treatment
         public bool closedLid = true;
         public PouchFlap Flap { get; private set; }
         public bool IsOpen => Flap == null || Flap.IsOpen;
+        public Transform QuickPouch { get; private set; }
 
         public readonly List<MedItem> Items = new List<MedItem>();
         public bool Built { get; private set; }
@@ -50,6 +57,7 @@ namespace FieldMedic.Treatment
             if (Built) return;
             Built = true;
             if (buildVisual) BuildVisual();
+            if (quickContents != null && quickContents.Length > 0) BuildQuickPouch();
             for (int i = 0; i < contents.Length; i++)
             {
                 int row = i / Mathf.Max(1, columns), col = i % Mathf.Max(1, columns);
@@ -57,13 +65,54 @@ namespace FieldMedic.Treatment
                 slot.SetParent(transform, false);
                 slot.localPosition = slotOrigin + new Vector3(col * slotSpacing, 0f, -row * rowSpacing);
                 slot.localRotation = Quaternion.identity;
-                var item = Kit.Create(contents[i], slot.position, slot.rotation);
-                item.PutInPouch(this, slot);
-                Items.Add(item);
+                AddItem(contents[i], slot);
             }
             if (buildVisual && closedLid) Flap = PouchFlap.Add(this);
             if (bodyLocked) Follow(1f, true);
         }
+
+        void AddItem(MedItemKind kind, Transform slot)
+        {
+            var item = Kit.Create(kind, slot.position, slot.rotation);
+            item.PutInPouch(this, slot);
+            Items.Add(item);
+        }
+
+        /// <summary>Open-top elastic pouch: CAT standing ready on the left, shears next to it. Items come first in
+        /// <see cref="Items"/> (so <c>Find&lt;TourniquetCAT&gt;()</c> is the quick one).</summary>
+        void BuildQuickPouch()
+        {
+            QuickPouch = new GameObject("QuickPouch").transform;
+            QuickPouch.SetParent(transform, false);
+            QuickPouch.localPosition = quickOffset;
+            if (buildVisual)
+            {
+                var coyote = Kit.Mat("PouchCoyote", Kit.Coyote, 0.12f);
+                var dark = Kit.Mat("PouchDark", new Color(0.16f, 0.13f, 0.09f), 0.1f);
+                var red = Kit.Mat("PouchRed", new Color(0.5f, 0.06f, 0.05f), 0.2f);
+                var v = new GameObject("QuickVisual").transform;
+                v.SetParent(QuickPouch, false);
+                Kit.Part(v, PrimitiveType.Cube, "Base", new Vector3(0f, -0.005f, 0f), new Vector3(0.11f, 0.01f, 0.22f), dark);
+                Kit.Part(v, PrimitiveType.Cube, "WallBack", new Vector3(0f, 0.022f, 0.105f), new Vector3(0.11f, 0.054f, 0.012f), coyote);
+                Kit.Part(v, PrimitiveType.Cube, "WallFront", new Vector3(0f, 0.012f, -0.105f), new Vector3(0.11f, 0.034f, 0.012f), coyote);
+                Kit.Part(v, PrimitiveType.Cube, "WallL", new Vector3(-0.055f, 0.022f, 0f), new Vector3(0.012f, 0.054f, 0.22f), coyote);
+                Kit.Part(v, PrimitiveType.Cube, "WallR", new Vector3(0.055f, 0.022f, 0f), new Vector3(0.012f, 0.054f, 0.22f), coyote);
+                Kit.Part(v, PrimitiveType.Cube, "Elastic", new Vector3(0f, 0.014f, 0.03f), new Vector3(0.108f, 0.003f, 0.014f), dark);
+                Kit.Part(v, PrimitiveType.Cube, "TabTQ", new Vector3(0f, 0.03f, -0.112f), new Vector3(0.05f, 0.022f, 0.004f), red);
+                Kit.Merge(v);
+            }
+            for (int i = 0; i < quickContents.Length; i++)
+            {
+                var slot = new GameObject("QuickSlot_" + i + "_" + quickContents[i]).transform;
+                slot.SetParent(QuickPouch, false);
+                slot.localPosition = new Vector3(quickContents.Length == 1 ? 0f : -0.024f + 0.048f * i / (quickContents.Length - 1), 0.02f, 0f);
+                slot.localRotation = Quaternion.identity;
+                AddItem(quickContents[i], slot);
+            }
+        }
+
+        /// <summary>Can an item in this slot be taken / put back? Quick pouch: always; main pouch: once the lid is open.</summary>
+        public bool IsSlotOpen(Transform slot) => IsOpen || (slot != null && QuickPouch != null && slot.parent == QuickPouch);
 
         public T Find<T>(int index = 0) where T : MedItem
         {
@@ -99,13 +148,18 @@ namespace FieldMedic.Treatment
             for (int i = 0; i < 2; i++)
                 Kit.Part(v, PrimitiveType.Cube, "Elastic", new Vector3(0f, 0.012f, 0.045f - i * rowSpacing), new Vector3(0.41f, 0.003f, 0.012f), dark);
             Kit.Merge(v);
-            MeshyModels.ApplyPouch(transform);
+            if (ArtModels.ApplyPouch(transform) == null) MeshyModels.ApplyPouch(transform);
         }
 
         void LateUpdate()
         {
-            if (!bodyLocked) return;
-            Follow(Time.deltaTime, false);
+            if (bodyLocked) Follow(Time.deltaTime, false);
+            // after the kit moved: slotted items exactly in place, loose ones never hover (owner bug, w9)
+            for (int i = 0; i < Items.Count; i++)
+            {
+                var it = Items[i];
+                if (it != null) it.Enforce();
+            }
         }
 
         void Follow(float dt, bool snap)

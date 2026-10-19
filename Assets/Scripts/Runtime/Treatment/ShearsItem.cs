@@ -42,11 +42,22 @@ namespace FieldMedic.Treatment
             tip.localPosition = new Vector3(0f, -0.014f, 0.068f);
         }
 
+        Transform _artBlade;
+        Quaternion _artBladeRest;
+
+        /// <summary>Imported shears: BladeB follows the procedural blade's opening (pivot at the screw).</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            _artBlade = ArtModels.FindPart(art, "BladeB");
+            if (_artBlade != null) _artBladeRest = _artBlade.localRotation;
+        }
+
         void Update()
         {
             float trig = Trigger;
             _snip += Time.deltaTime * (trig > 0.5f ? 14f : 0f);
             _blade.localRotation = Quaternion.Euler(0f, trig > 0.5f ? Mathf.Abs(Mathf.Sin(_snip)) * 14f : 10f, 0f);
+            if (_artBlade != null) _artBlade.localRotation = _artBladeRest * _blade.localRotation;
             if (!IsHeld || trig < 0.5f) { _hasLast = false; return; }
             var c = NearestCasualty(TipPosition, 1.4f);
             if (c == null || c.rig == null || c.Interaction == null) { _hasLast = false; return; }

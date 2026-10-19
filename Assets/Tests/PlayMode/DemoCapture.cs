@@ -197,12 +197,14 @@ namespace FieldMedic.Tests
                 wantPos = Vector3.Lerp(chest, BattlefieldLayout.LandingZone, 0.2f) + Vector3.up * 1.6f;
                 wantLook = (tac.heli != null ? tac.heli.position : BattlefieldLayout.LandingZone) + Vector3.up * 1.2f;
             }
-            else if (_mode == "load" && tac != null && tac.LoadButton != null)
+            else if (_mode == "load" && tac != null && tac.Landed)
             {
-                Vector3 b = tac.LoadButton.transform.position;
-                Vector3 back = -tac.LoadButton.transform.forward; back.y = 0f;
-                wantPos = b + back.normalized * 1.6f + Vector3.up * 0.5f + Vector3.Cross(Vector3.up, back.normalized) * 0.8f;
-                wantLook = Vector3.Lerp(b, tac.heli != null ? tac.heli.position : b, 0.35f);
+                // w9: follow the drag to the side door from behind the player's shoulder
+                Vector3 door = tac.DoorPoint;
+                Vector3 back = chest - door; back.y = 0f;
+                if (back.sqrMagnitude < 0.01f) back = Vector3.right;
+                wantPos = chest + back.normalized * 1.8f + Vector3.Cross(Vector3.up, back.normalized) * 1.2f + Vector3.up * 1.4f;
+                wantLook = Vector3.Lerp(chest, door + Vector3.up * 1.0f, 0.4f);
             }
             else if (_mode == "debrief")
             {

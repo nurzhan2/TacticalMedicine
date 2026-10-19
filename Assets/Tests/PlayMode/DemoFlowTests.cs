@@ -23,7 +23,7 @@ namespace FieldMedic.Tests
     /// <see cref="MedicBot"/>): ДЕМО → Training with the white hint panel, Erlan bleeding from the thigh in the open →
     /// rip the IFAK lid open by its tab → CAT high and tight → drag him by the plate-carrier handle into the ruins →
     /// time on the CAT → pack the second (left thigh) wound → chest seal → blanket → card → radio by fingertip →
-    /// helicopter → «ПОГРУЗИТЬ» by fingertip → debrief. Shared by <see cref="DemoFlowTests"/> and the video capture.
+    /// helicopter lands → (w9) drag him to its side door, the crew takes him in, board, fly off → debrief. Shared by <see cref="DemoFlowTests"/> and the video capture.
     /// </summary>
     public sealed class DemoFlowRunner
     {
@@ -104,7 +104,7 @@ namespace FieldMedic.Tests
         /// Drag by the plate-carrier handle toward `dest` like a person would: pull straight; when the body is stopped
         /// by an obstacle, pull along it (toward the side nearer the goal) for a moment, then straight again.
         /// </summary>
-        public IEnumerator DragVia(Vector3 dest, float timeout)
+        public IEnumerator DragVia(Vector3 dest, float timeout, Func<bool> until = null)
         {
             var h = bot.right;
             var drag = C.Interaction.Drag;
@@ -115,7 +115,7 @@ namespace FieldMedic.Tests
             while (t < timeout)
             {
                 Vector3 to = dest - Hips; to.y = 0f;
-                if (to.magnitude < 0.25f) break;
+                if (to.magnitude < 0.25f || (until != null && until())) break;
                 Vector3 dir = to.normalized;
                 blockedFor = drag.BlockedByWall ? blockedFor + Time.deltaTime : 0f;
                 if (blockedFor > 0.25f && t > detourUntil)
@@ -134,6 +134,36 @@ namespace FieldMedic.Tests
                 yield return null;
             }
             yield return bot.Release(h);
+        }
+
+        /// <summary>
+        /// w9 TACEVAC by hand: out of house A through the east doorway, south along its east wall, then head-first to the
+        /// helicopter's side door until the crew takes him in; then the player steps into the door zone and boards.
+        /// </summary>
+        public IEnumerator DragToHelicopterAndBoard(TacevacController tac, float timeout = 240f)
+        {
+            var door = BattlefieldLayout.DoorwayCentre;
+            float t0 = Time.time;
+            Func<bool> taken = () => tac.State >= TacevacController.Stage.TakingAboard;
+            Debug.Log($"[FMVR] evac drag: from {Hips:F2}, heli side door {tac.DoorPoint:F2}");
+            if (Hips.x < door.x + 0.5f) yield return DragVia(new Vector3(door.x + 1.5f, 0f, door.z), 60f, taken);
+            if (!taken() && Hips.z > BattlefieldLayout.HouseAMin.y - 1f)
+                yield return DragVia(new Vector3(door.x + 1.7f, 0f, BattlefieldLayout.HouseAMin.y - 2.2f), 60f, taken);
+            Vector3 hd = tac.DoorPoint;
+            if (!taken()) yield return DragVia(new Vector3(hd.x, 0f, hd.z), Mathf.Max(30f, timeout - (Time.time - t0)), taken);
+            float t1 = Time.time;
+            while (!tac.CasualtyAboard && Time.time - t1 < 8f) yield return null;
+            Debug.Log($"[FMVR] evac drag: aboard={tac.CasualtyAboard} after {Time.time - t0:F1} s, dragged {C.Interaction.Drag.DraggedDistance:F1} m, chest→door {tac.CasualtyDoorDistance():F2} m");
+            Assert.IsTrue(tac.CasualtyAboard, $"crew took Erlan in at the door (chest {tac.CasualtyDoorDistance():F2} m from the door, state {tac.State})");
+            moment?.Invoke("aboard");
+            // the player walks into the door zone → fade, seated, door closes, lift-off, fade out
+            TakeHead(tac.DoorPoint + Vector3.up * 1.6f);
+            t1 = Time.time;
+            while (!tac.PlayerAboard && Time.time - t1 < 6f) yield return null;
+            Assert.IsTrue(tac.PlayerAboard, "player boarded by stepping into the door zone");
+            moment?.Invoke("seated");
+            while (!tac.Loaded && Time.time - t1 < 30f) yield return null;
+            Assert.IsTrue(tac.Loaded, "helicopter flew off, evacuation complete; state " + tac.State);
         }
 
         IEnumerator DragIntoHouseA()
@@ -170,7 +200,8 @@ namespace FieldMedic.Tests
             var pouch = Pouch;
             Assert.IsFalse(pouch.IsOpen, "the IFAK starts closed");
             var cat = pouch.Find<TourniquetCAT>();
-            Assert.IsFalse(cat.CanBeGrabbedBy(bot.right), "no item can be taken out of the closed pouch");
+            Assert.IsTrue(cat.CanBeGrabbedBy(bot.right), "w9: the CAT rides in the always-open quick pouch");
+            Assert.IsFalse(pouch.Find<GauzeItem>().CanBeGrabbedBy(bot.right), "no item can be taken out of the closed main pouch");
             yield return bot.OpenPouch(pouch, bot.right);
             Assert.IsTrue(pouch.IsOpen, "the lid ripped open by pulling the tab");
             moment?.Invoke("ifak");
@@ -261,10 +292,9 @@ namespace FieldMedic.Tests
             while (!tac.Landed && Time.time - t0 < 40f) yield return null;
             Assert.IsTrue(tac.Landed, "helicopter landed at the LZ");
             moment?.Invoke("heli");
-            Assert.IsNotNull(tac.LoadButton);
-            TakeHead(tac.LoadButton.transform.position - tac.LoadButton.transform.forward * 0.8f + Vector3.up * 0.3f);
-            for (int k = 0; k < 4 && !tac.Loaded; k++) yield return bot.Poke(tac.LoadButton, bot.right);
-            Assert.IsTrue(tac.Loaded, "loaded by pressing the button");
+            Assert.IsFalse(tac.stretcher != null && tac.stretcher.gameObject.activeInHierarchy, "no litter cart (w9)");
+            yield return DragToHelicopterAndBoard(tac);
+            Assert.IsTrue(C.Protocol.log.Any(e => e.code == "evac_loaded"), "evac step logged: dragged to the helicopter");
             t0 = Time.time;
             while (!t.LessonComplete && Time.time - t0 < 8f) yield return null;
             Assert.IsTrue(t.LessonComplete, "demo complete; at " + t.Progress.Step?.id);
@@ -272,6 +302,7 @@ namespace FieldMedic.Tests
             // 12) debrief
             Assert.IsNotNull(t.Report, "demo ends with the debrief");
             Assert.IsTrue(t.Report.survived, "Erlan survives");
+            Assert.IsTrue(t.Report.evacLoaded, "debrief counts the drag to the helicopter as the evac step");
             moment?.Invoke("debrief");
             Debug.Log($"[FMVR] demo flow complete: score {t.Report.score}, wrong actions {t.WrongCount}: {string.Join(" | ", t.WrongLog)}; bot fallback grabs {bot.fallbackGrabs}");
         }

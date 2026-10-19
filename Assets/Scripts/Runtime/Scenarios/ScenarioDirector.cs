@@ -125,6 +125,7 @@ namespace FieldMedic.Scenarios
             var tac = TacevacController.Instance;
             if (tac != null) { tac.ResetForRun(); Timeline.waitForLoading = true; }
             _phases.Clear();
+            _landSaid = false;
             MistakePlaces.Clear();
             _logSeen = 0;
             _fallKnown = false;
@@ -320,7 +321,16 @@ namespace FieldMedic.Scenarios
             var tac = TacevacController.Instance;
             if (tac != null && Timeline.waitForLoading && Timeline.State == ScenarioState.Evacuation)
             {
-                if (Timeline.EvacArrived && !tac.Called) { tac.Call(testMode); RadioSay("evac_arrived"); }
+                if (Timeline.EvacArrived && !tac.Called) tac.Call(testMode);
+                // w9: on touchdown the radio tells the medic to drag him to the helicopter (no litter cart)
+                if (tac.Landed && !_landSaid)
+                {
+                    _landSaid = true;
+                    RadioSay("evac_arrived");
+                    // the LZ is secured by the escort and the door gunner: no aimed fire at the medic during the
+                    // long drag to the helicopter and the lift-off (the battle itself goes on around)
+                    FieldMedic.Battle.BattleDirector.PlayerArmed = false;
+                }
                 if (tac.Loaded && !Timeline.Loaded) Timeline.MarkLoaded();
             }
             if (Timeline.State == ScenarioState.Debrief) return;
@@ -328,6 +338,8 @@ namespace FieldMedic.Scenarios
         }
 
         /// <summary>The board on the ruin wall is only needed for the menu, the briefing and the debrief (draw calls).</summary>
+        bool _landSaid;
+
         void HideBoardForRun()
         {
             if (board != null && !testMode) board.gameObject.SetActive(false);

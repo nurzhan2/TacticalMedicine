@@ -313,8 +313,9 @@ namespace FieldMedic.Tests
             while (!tac.Landed && Time.time - t0 < 10f) yield return null;
             Assert.IsTrue(tac.Landed, "helicopter landed at the LZ");
             Assert.Less(Vector3.Distance(tac.heli.position, BattlefieldLayout.LandingZone), 1.5f);
-            Assert.IsNotNull(tac.LoadButton);
-            tac.LoadButton.Click();
+            // w9: no button — drag him to the side door (crew takes him in), then board
+            var run = new DemoFlowRunner { bot = _bot };
+            yield return run.DragToHelicopterAndBoard(tac);
             t0 = Time.time;
             while (!t.LessonComplete && Time.time - t0 < 6f) yield return null;
             Assert.IsTrue(t.LessonComplete, "full TCCC lesson complete; at " + t.Progress.Step?.id);
@@ -388,13 +389,17 @@ namespace FieldMedic.Tests
             while (!tac.Landed && Time.time - t0 < 6f) yield return null;
             Assert.IsTrue(tac.Landed);
             Assert.AreEqual(ScenarioState.Evacuation, d.State, "waits for the loading");
-            Assert.IsTrue(tac.LoadButton != null && tac.LoadButton.gameObject.activeInHierarchy, "load button at the litter");
-            Assert.Less(Vector3.Distance(tac.StretcherPoint, Hips), 2f, "litter next to Erlan");
-            tac.LoadButton.Click();
+            Assert.IsFalse(tac.stretcher != null && tac.stretcher.gameObject.activeInHierarchy, "w9: no litter cart");
+            Assert.IsNull(Object.FindObjectsByType<RoundButton>(FindObjectsSortMode.None).FirstOrDefault(b => b.name == "LoadButton"), "w9: no load button");
+            // w9: the medic drags Erlan to the helicopter's side door himself, the crew takes him in, then he boards
+            yield return new DemoFlowRunner { bot = _bot }.DragToHelicopterAndBoard(tac);
+            Assert.AreEqual(tac.heli, C.transform.parent, "Erlan flew off in the cabin");
             t0 = Time.time;
             while (d.Report == null && Time.time - t0 < 5f) yield return null;
             var r = d.Report;
             Assert.IsNotNull(r, "debrief");
+            Assert.IsTrue(r.evacLoaded, "debrief: dragged to the helicopter = the evac step");
+            Assert.IsTrue(r.timeline.Any(e => e.text.Contains("вертол")), "timeline shows the hand-over at the helicopter");
             Debug.Log($"[FMVR] w4 combat S1 bot: survived={r.survived} score={r.score} end={r.endReason} mistakes=[{string.Join(",", r.mistakes.Select(m => m.code + (m.hasPos ? "@" + m.x.ToString("0") + "," + m.z.ToString("0") : "")))}] phases=[{string.Join(",", r.phases.Select(p => p.id))}]");
             Assert.AreEqual("evacuated", r.endReason);
             Assert.IsTrue(r.survived);

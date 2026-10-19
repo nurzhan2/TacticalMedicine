@@ -125,3 +125,8 @@ InitTestScene*.unity*
 /Assets/_Licensed/
 /Assets/_Licensed.meta
 /textures/
+
+# w9: raw ElevenLabs downloads (processed copies live in Assets/Resources/Radio)
+/SourceAssets/Voice/eleven_raw/
+# w9: incoming art drops (models are imported into Assets/Art/Items)
+/SourceAssets/Incoming/*/

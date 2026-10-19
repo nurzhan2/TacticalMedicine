@@ -165,6 +165,7 @@ namespace FieldMedic.Casualty
             Ifak = pouchGo.AddComponent<IfakPouch>();
             Ifak.buildVisual = false;
             Ifak.contents = ifakContents;
+            Ifak.quickContents = new MedItemKind[0]; // his kit is one pouch on the plate carrier
             Ifak.slotSpacing = 0.045f;
             Ifak.slotOrigin = pouchGo.transform.InverseTransformPoint(ifakT.position + casualty.rig.BodyUp * 0.05f);
             Ifak.Build();

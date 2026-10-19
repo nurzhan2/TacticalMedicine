@@ -221,9 +221,10 @@ namespace FieldMedic.Tests
             yield return Seconds(3.5f);
             Assert.IsTrue(tac.Landed);
             Shot("v2_w4_tacevac_lz", G(lz.x + 9f, lz.z + 13f, 2.2f), lz + Vector3.up * 2f, 62f);
-            var bp = tac.ButtonPoint;
-            Vector3 side = (bp - Hips); side.y = 0f;
-            Shot("v2_w4_tacevac_litter", bp + side.normalized * 1.3f + Vector3.up * 0.45f + Vector3.Cross(Vector3.up, side.normalized) * 0.6f, Vector3.Lerp(bp, Hips, 0.4f) + Vector3.down * 0.3f, 72f);
+            // w9: no litter — the open side door the medic drags Erlan to
+            var door = tac.DoorPoint;
+            Vector3 side = door - tac.heli.position; side.y = 0f;
+            Shot("v2_w4_tacevac_door", door + side.normalized * 3.2f + Vector3.up * 1.5f + tac.heli.forward * 1.5f, door + Vector3.up * 1.1f, 68f);
         }
 
         // ================================================================== menu + debrief

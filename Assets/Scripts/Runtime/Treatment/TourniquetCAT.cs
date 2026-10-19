@@ -202,8 +202,7 @@ namespace FieldMedic.Treatment
             Limb = limb;
             Attached = true;
             GetComponent<BoxCollider>().isTrigger = true; // the marker must reach the TIME strap
-            Body.isKinematic = true;
-            Body.useGravity = false;
+            Pin(); // kinematic on a moving limb: no interpolation (w9)
             _slideHand = PrimaryHolder;
             Haptics.Play(HolderInput, Haptics.Grab);
             _folded.gameObject.SetActive(false);

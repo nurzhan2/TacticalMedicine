@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FieldMedic.Casualty;
 using FieldMedic.Input;
 using FieldMedic.Interaction;
@@ -7,8 +8,14 @@ namespace FieldMedic.Treatment
 {
     /// <summary>
     /// A piece of the IFAK. Rides kinematic in its pouch slot until grabbed; held it follows the hand with
-    /// weight; released near its slot it goes back, otherwise it drops. Subclasses add the procedure
-    /// (tourniquet, packing, seal...). <see cref="tip"/> is the working point (needle tip, marker tip...).
+    /// weight; released near the open kit it goes back into its own slot, otherwise it drops as a normal physics
+    /// object. Subclasses add the procedure (tourniquet, packing, seal...). <see cref="tip"/> is the working point
+    /// (needle tip, marker tip...). The carried look lives in the child <see cref="VisualName"/> (art swap,
+    /// docs/ART_IMPORT.md).
+    /// w9 root cause of "the items float somewhere away from the kit": a kinematic body with Rigidbody interpolation
+    /// writes its last physics pose back to the transform every frame, so a slot that moves with the player
+    /// (body-locked kit, bone of a dragged casualty) left the items behind (3.9 m after a 5 m walk, KitTests).
+    /// Parented items (slot / body) therefore never interpolate; only free or held items do.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     public class MedItem : Grabbable
@@ -17,17 +24,23 @@ namespace FieldMedic.Treatment
         public Transform tip;
         public IfakPouch pouch;
         public Transform homeSlot;
-        public float returnDistance = 0.12f;
+        [Tooltip("Released this close to its slot in the OPEN kit → back into the slot (owner: ~25 cm).")]
+        public float returnDistance = 0.25f;
+        public const string VisualName = "Visual";
 
         public bool InPouch { get; private set; }
         /// <summary>On the casualty (band on a limb, seal on the chest, NPA in the nose...).</summary>
         public bool Attached { get; protected set; }
         public bool Consumed { get; protected set; }
+        /// <summary>Carried look (procedural parts or an imported model). Logic parts are its siblings.</summary>
+        public Transform Visual { get; private set; }
         public new HandGrabber Holder => PrimaryHolder;
         public IHandInput HolderInput => Holder != null ? Holder.Input : null;
         public float Trigger => HolderInput != null ? HolderInput.Trigger : 0f;
         public Vector3 TipPosition => tip != null ? tip.position : transform.position;
         public bool IsHeld => IsGrabbed;
+        /// <summary>Not in the kit, not held, not on the casualty, not used up.</summary>
+        public bool IsLoose => !InPouch && !Attached && !Consumed && !IsGrabbed;
 
         bool _built;
 
@@ -35,7 +48,14 @@ namespace FieldMedic.Treatment
         {
             base.Awake();
             priority = 2;
-            if (!_built) { _built = true; BuildVisual(); MeshyModels.Apply(this); FitCollider(); }
+            if (!_built)
+            {
+                _built = true;
+                BuildVisual();
+                OrganizeVisual();
+                if (ArtModels.Apply(this) == null) MeshyModels.Apply(this);
+                FitCollider();
+            }
         }
 
         /// <summary>Item look from primitives. Base: lubricant packet.</summary>
@@ -50,6 +70,24 @@ namespace FieldMedic.Treatment
             tip.localPosition = new Vector3(0f, 0f, 0.03f);
             Body.mass = 0.01f;
             Kit.Merge(transform);
+        }
+
+        /// <summary>Moves the carried look (merged procedural meshes + the kind's carried-state child) under "Visual".</summary>
+        void OrganizeVisual()
+        {
+            var v = transform.Find(VisualName);
+            if (v == null)
+            {
+                v = new GameObject(VisualName).transform;
+                v.SetParent(transform, false);
+            }
+            Visual = v;
+            string carried = MeshyModels.ByKind.TryGetValue(kind, out var e) ? e.target : null;
+            var move = new List<Transform>();
+            foreach (Transform c in transform)
+                if (c != v && (c.name.StartsWith("Merged_") || (carried != null && c.name == carried))) move.Add(c);
+            foreach (var c in move) c.SetParent(v, true);
+            v.SetSiblingIndex(0);
         }
 
         /// <summary>Solid box collider around the visual (so it can lie on the ground).</summary>
@@ -77,8 +115,9 @@ namespace FieldMedic.Treatment
             col.size = Vector3.Max(b.size, Vector3.one * 0.012f);
         }
 
-        /// <summary>In a closed IFAK (rip-away lid not pulled open yet) the item can be neither seen nor taken.</summary>
-        public override bool CanBeGrabbedBy(HandGrabber hand) => (!InPouch || pouch == null || pouch.IsOpen) && base.CanBeGrabbedBy(hand);
+        /// <summary>In a closed IFAK (rip-away lid not pulled open yet) the item can be neither seen nor taken.
+        /// The quick-access pouch (CAT + shears) is always open.</summary>
+        public override bool CanBeGrabbedBy(HandGrabber hand) => (!InPouch || pouch == null || pouch.IsSlotOpen(homeSlot)) && base.CanBeGrabbedBy(hand);
 
         // ------------------------------------------------------------------ pouch
         public void PutInPouch(IfakPouch p, Transform slot)
@@ -92,12 +131,51 @@ namespace FieldMedic.Treatment
         {
             if (homeSlot == null) return;
             InPouch = true;
-            Body.isKinematic = true;
-            Body.useGravity = false;
+            Pin();
             transform.SetParent(homeSlot, false);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
         }
+
+        /// <summary>Kinematic, no gravity, no interpolation: the transform hierarchy (slot / bone) owns the pose.</summary>
+        protected void Pin()
+        {
+            if (!Body.isKinematic) { Body.linearVelocity = Vector3.zero; Body.angularVelocity = Vector3.zero; }
+            Body.isKinematic = true;
+            Body.useGravity = false;
+            Body.interpolation = RigidbodyInterpolation.None;
+        }
+
+        /// <summary>A normal physics object: falls, collides, sleeps (interpolated for smooth motion).</summary>
+        public void MakeFree()
+        {
+            Body.isKinematic = false;
+            Body.useGravity = true;
+            Body.interpolation = RigidbodyInterpolation.Interpolate;
+        }
+
+        /// <summary>
+        /// Guard run by the owning kit every frame (after it moved): slotted items exactly in their slot, nothing
+        /// loose hangs kinematic in the air, an item that fell out of the world goes back into the kit.
+        /// </summary>
+        internal void Enforce()
+        {
+            if (InPouch)
+            {
+                if (homeSlot == null) return;
+                if (transform.parent != homeSlot) transform.SetParent(homeSlot, false);
+                if (transform.localPosition.sqrMagnitude > 1e-8f) transform.localPosition = Vector3.zero;
+                if (transform.localRotation != Quaternion.identity) transform.localRotation = Quaternion.identity;
+                if (!Body.isKinematic || Body.interpolation != RigidbodyInterpolation.None) Pin();
+                return;
+            }
+            if (!IsLoose || !isActiveAndEnabled || HoldsOwnPose) return;
+            if (Body.isKinematic || !Body.useGravity) MakeFree();
+            if (transform.position.y < -25f && homeSlot != null) ReturnToSlot();
+        }
+
+        /// <summary>Kinematic on purpose while loose (a constraint drives it). Default: no.</summary>
+        protected virtual bool HoldsOwnPose => false;
 
         /// <summary>Out of the pouch for good (scenario setup: the item is already in use).</summary>
         public void TakeOutOfPouch()
@@ -110,8 +188,7 @@ namespace FieldMedic.Treatment
         {
             InPouch = false;
             transform.SetParent(null, true);
-            Body.isKinematic = false;
-            Body.useGravity = true;
+            MakeFree();
         }
 
         protected override void OnGrabbed(HandGrabber hand, GrabPoint point)
@@ -126,7 +203,7 @@ namespace FieldMedic.Treatment
         {
             if (IsGrabbed) return;
             if (Attached || Consumed || !isActiveAndEnabled) { OnItemReleased(hand); return; } // released by OnDisable: no re-parenting while deactivating
-            if (homeSlot != null && Vector3.Distance(transform.position, homeSlot.position) < returnDistance)
+            if (homeSlot != null && pouch != null && pouch.IsSlotOpen(homeSlot) && Vector3.Distance(transform.position, homeSlot.position) < returnDistance)
             {
                 ReturnToSlot();
                 OnItemReleased(hand);
@@ -134,23 +211,23 @@ namespace FieldMedic.Treatment
             }
             if (!InPouch && !Attached && !Consumed)
             {
-                Body.isKinematic = false;
-                Body.useGravity = true;
+                MakeFree();
                 if (hand != null && hand.Input != null) Body.linearVelocity = Vector3.ClampMagnitude(hand.Input.Velocity, maxSpeed);
             }
             OnItemReleased(hand);
         }
 
+        /// <summary>An imported model replaced the carried look (bind its moving sub-parts here).</summary>
+        public virtual void OnArtApplied(Transform art) { }
+
         protected virtual void OnItemGrabbed(HandGrabber hand) { }
         protected virtual void OnItemReleased(HandGrabber hand) { }
 
-        /// <summary>Fix the item on the casualty's body (kinematic, parented to a bone).</summary>
+        /// <summary>Fix the item on the casualty's body (kinematic, parented to a bone, no interpolation).</summary>
         protected void AttachTo(Transform parent)
         {
             Attached = true;
-            Body.isKinematic = true;
-            Body.useGravity = false;
-            Body.linearVelocity = Vector3.zero;
+            Pin();
             transform.SetParent(parent, true);
             // on the body it must not shove other tools away (marker on the TIME strap, fingers on the seal)
             foreach (var col in GetComponents<Collider>()) col.isTrigger = true;

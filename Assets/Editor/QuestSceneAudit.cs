@@ -77,6 +77,35 @@ namespace FieldMedic.EditorTools
             return p;
         }
 
+        /// <summary>
+        /// w9 owner request: «САТПАЕВ ЛУЧШЕ ВСЕХ» in the sky of every gameplay scene. The root's forward must point at the
+        /// spawn eye (≤ 15°), the text must sit 25–35° above the horizon in the start view direction (± 30° yaw), the
+        /// TMP child must read away from the viewer (not mirrored) and the whole thing must be inside the far plane.
+        /// </summary>
+        public static List<string> SkyTextRules(string sceneSet, Transform sky, Vector3 spawnEye, float spawnYaw, float farPlane)
+        {
+            var p = new List<string>();
+            if (sky == null) { p.Add($"{sceneSet}: {FieldMedic.Environment.SkyText.ObjectName} missing (owner: sky text in every gameplay scene)"); return p; }
+            Vector3 toSpawn = spawnEye - sky.position;
+            float face = Vector3.Angle(sky.forward, toSpawn);
+            if (face > 15f) p.Add($"{sceneSet}: sky text forward is {face:F0}° off the spawn point");
+            float elev = FieldMedic.Environment.SkyText.ElevationFrom(spawnEye, sky.position);
+            if (elev < 25f || elev > 35f) p.Add($"{sceneSet}: sky text at {elev:F0}° elevation (want 25–35°)");
+            Vector3 flat = sky.position - spawnEye; flat.y = 0f;
+            float yaw = flat.sqrMagnitude > 1e-4f ? Quaternion.LookRotation(flat).eulerAngles.y : spawnYaw;
+            if (Mathf.Abs(Mathf.DeltaAngle(yaw, spawnYaw)) > 30f) p.Add($"{sceneSet}: sky text at yaw {yaw:F0}°, the player starts facing {spawnYaw:F0}°");
+            var tmp = sky.GetComponentInChildren<TMPro.TextMeshPro>(true);
+            if (tmp == null) p.Add($"{sceneSet}: sky text has no TextMeshPro");
+            else
+            {
+                if (Vector3.Dot(tmp.transform.forward, sky.position - spawnEye) <= 0f) p.Add($"{sceneSet}: sky text would read mirrored from the spawn");
+                if (Vector3.Dot(tmp.transform.up, Vector3.up) < 0.5f) p.Add($"{sceneSet}: sky text is upside down / sideways");
+                if (tmp.text != FieldMedic.Environment.SkyText.Phrase) p.Add($"{sceneSet}: sky text reads '{tmp.text}'");
+            }
+            if (toSpawn.magnitude > farPlane * 0.9f) p.Add($"{sceneSet}: sky text {toSpawn.magnitude:F0} m away, beyond the far plane {farPlane:F0} m");
+            return p;
+        }
+
         // ------------------------------------------------------------------ scene checks
         public static List<CamInfo> Cameras(IEnumerable<Scene> scenes)
         {
@@ -208,6 +237,19 @@ namespace FieldMedic.EditorTools
             problems.AddRange(PassthroughRules(set, opened));
             foreach (var s in opened.Skip(1))
                 if (Cameras(new[] { s }).Count > 0) problems.Add($"additive scene {s.name} has its own camera");
+            if (opened.Count > 0)
+            {
+                var rig = opened.SelectMany(s => s.GetRootGameObjects()).SelectMany(g => g.GetComponentsInChildren<OVRCameraRig>(true)).FirstOrDefault();
+                var sky = opened.SelectMany(s => s.GetRootGameObjects()).FirstOrDefault(g => g.name == FieldMedic.Environment.SkyText.ObjectName);
+                var cam = rig != null ? rig.GetComponentsInChildren<Camera>(true).FirstOrDefault() : null;
+                if (rig == null) problems.Add($"{set}: no OVRCameraRig (spawn) for the sky text check");
+                else
+                {
+                    problems.AddRange(SkyTextRules(set, sky != null ? sky.transform : null, rig.transform.position + Vector3.up * FieldMedic.Environment.BattlefieldLayout.StandEyeHeight,
+                        rig.transform.eulerAngles.y, cam != null ? cam.farClipPlane : 1500f));
+                    if (sky != null) notes.Add($"sky text at {sky.transform.position:F0}, {FieldMedic.Environment.SkyText.ElevationFrom(rig.transform.position + Vector3.up * 1.65f, sky.transform.position):F0}° above the horizon");
+                }
+            }
 
             problems.AddRange(ShaderRules());
             problems.AddRange(UrpRules());
