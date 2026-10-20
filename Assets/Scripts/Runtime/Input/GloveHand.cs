@@ -201,11 +201,41 @@ namespace FieldMedic.Input
         }
 
         // ------------------------------------------------------------------ soldier hands (w10b)
-        static Transform FindDeep(Transform t, string name)
+        /// <summary>"Bip01 L Hand" == "Bip01_L_Hand" == "bip01.l.hand" == "Armature:Bip01 L Hand" (ignores case, spaces,
+        /// underscores, dots, dashes and a namespace prefix).</summary>
+        static string Norm(string n)
         {
-            if (t.name == name) return t;
-            for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), name); if (r != null) return r; }
+            int c = n.LastIndexOf(':');
+            if (c >= 0) n = n.Substring(c + 1);
+            var sb = new System.Text.StringBuilder(n.Length);
+            foreach (char ch in n) if (char.IsLetterOrDigit(ch)) sb.Append(char.ToLowerInvariant(ch));
+            return sb.ToString();
+        }
+
+        static Transform FindDeep(Transform t, string key)
+        {
+            if (Norm(t.name) == key) return t;
+            for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), key); if (r != null) return r; }
             return null;
+        }
+
+        /// <summary>Bone by (normalised) name: the renderer's bone list first, then the whole instance hierarchy.</summary>
+        static Transform FindBone(Transform root, SkinnedMeshRenderer smr, string name)
+        {
+            string key = Norm(name);
+            if (smr != null && smr.bones != null)
+                foreach (var b in smr.bones) if (b != null && Norm(b.name) == key) return b;
+            return FindDeep(root, key);
+        }
+
+        static string Dump(Transform t, int depth = 0)
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.Append(' ', depth * 2).Append(t.name);
+            foreach (var c in t.GetComponents<Component>()) if (!(c is Transform)) sb.Append(" [").Append(c.GetType().Name).Append(']');
+            sb.Append('\n');
+            for (int i = 0; i < t.childCount && depth < 8; i++) sb.Append(Dump(t.GetChild(i), depth + 1));
+            return sb.ToString();
         }
 
         bool TryBuildSoldier()
@@ -217,9 +247,9 @@ namespace FieldMedic.Input
             if (src == null) { Debug.LogWarning("[FMVR] FP hands: Resources/" + SoldierResDir + "FPHands_" + s + " missing, procedural glove"); return false; }
             var inst = Instantiate(src, transform, false);
             inst.name = "SoldierHand_" + s;
-            var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+            var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>(true);
             string pre = "Bip01 " + s + " ";
-            var hand = FindDeep(inst.transform, pre + "Hand");
+            var hand = FindBone(inst.transform, smr, pre + "Hand");
             var chains = new Transform[5][];
             bool ok = smr != null && hand != null;
             for (int f = 0; ok && f < 5; f++)
@@ -228,13 +258,15 @@ namespace FieldMedic.Input
                 for (int k = 0; k < 3; k++)
                 {
                     // Bip01 R Finger1, Finger11, Finger12 (thumb: Finger0, Finger01, Finger02)
-                    chains[f][k] = FindDeep(inst.transform, pre + BipedFinger[f] + (k == 0 ? "" : k.ToString()));
+                    chains[f][k] = FindBone(inst.transform, smr, pre + BipedFinger[f] + (k == 0 ? "" : k.ToString()));
                     if (chains[f][k] == null) ok = false;
                 }
             }
             if (!ok)
             {
-                Debug.LogWarning("[FMVR] FP hands: renderer/bones not found in FPHands_" + s + ", procedural glove");
+                Debug.LogWarning("[FMVR] FP hands: " + (smr == null ? "no SkinnedMeshRenderer (model Rig must be Generic, see FPHandsImport)" : "bones not found")
+                                 + " in FPHands_" + s + ", procedural glove. Hierarchy:\n" + Dump(inst.transform)
+                                 + (smr != null && smr.bones != null ? "smr.bones: " + string.Join(", ", System.Array.ConvertAll(smr.bones, b => b != null ? b.name : "null")) : ""));
                 DestroyNow(inst);
                 return false;
             }
@@ -292,6 +324,8 @@ namespace FieldMedic.Input
             var mat = Resources.Load<Material>(SoldierResDir + "FPHands_Body");
             if (mat != null) smr.sharedMaterial = mat;
             else if (material != null) smr.sharedMaterial = material;
+            smr.gameObject.SetActive(true);
+            smr.enabled = true;
             smr.updateWhenOffscreen = true;
             smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             smr.skinnedMotionVectors = false;

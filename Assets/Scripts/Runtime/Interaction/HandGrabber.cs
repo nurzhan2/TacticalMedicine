@@ -165,7 +165,7 @@ namespace FieldMedic.Interaction
                 if (!StepFocus.Allows(g)) continue;
 
                 // inside several handles at once: the one whose centre is nearest wins
-                float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm) + 0.1f * Vector3.Distance(col.bounds.center, palm);
+                float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm) + 0.5f * Vector3.Distance(col.bounds.center, palm);
                 bool first = _seen.Add(g);
 
                 GrabPoint point = null;

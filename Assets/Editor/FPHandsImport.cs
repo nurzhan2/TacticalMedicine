@@ -10,6 +10,9 @@ namespace FieldMedic.EditorTools
     /// </summary>
     public sealed class FPHandsImport : AssetPostprocessor
     {
+        // bump to force a reimport of the FPHands models when the settings below change
+        public override uint GetVersion() => 2;
+
         void OnPreprocessModel()
         {
             if (!assetPath.Contains("/FPHands/") || !assetPath.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase)) return;
@@ -21,7 +24,10 @@ namespace FieldMedic.EditorTools
             mi.importCameras = false;
             mi.importLights = false;
             mi.importVisibility = false;
-            mi.animationType = ModelImporterAnimationType.None;
+            // Generic, NOT None: with Rig=None Unity imports the skinned mesh as a plain MeshRenderer (no bones)
+            mi.animationType = ModelImporterAnimationType.Generic;
+            mi.avatarSetup = ModelImporterAvatarSetup.NoAvatar;
+            mi.optimizeGameObjects = false;
             mi.materialImportMode = ModelImporterMaterialImportMode.None;
             mi.meshCompression = ModelImporterMeshCompression.Off;
             mi.isReadable = false;

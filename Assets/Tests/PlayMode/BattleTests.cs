@@ -133,6 +133,7 @@ namespace FieldMedic.Tests
         [UnityTest]
         public IEnumerator EnemyFire_StandingUpBehindSandbags_IsExposed()
         {
+            BattleDirector.Mode = BattleMode.Exam; // w10b: strict 4 s exposure limit (Combat is 2.2x more forgiving)
             var cp = SandbagPoint();
             var head = TestHead(cp.transform.position + Vector3.up * 1.75f);
             var far = cp.HeadPosition + cp.threatDirection.normalized * 85f;
