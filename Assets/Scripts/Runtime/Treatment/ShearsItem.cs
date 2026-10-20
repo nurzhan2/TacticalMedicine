@@ -44,12 +44,39 @@ namespace FieldMedic.Treatment
 
         Transform _artBlade;
         Quaternion _artBladeRest;
+        Vector3 _artAxis;
+        float _artSign = 1f, _artAngle;
+        /// <summary>Opening of the imported blades (degrees; 0 = closed).</summary>
+        public float BladeAngle => _artAngle;
 
-        /// <summary>Imported shears: BladeB follows the procedural blade's opening (pivot at the screw).</summary>
+        /// <summary>Imported shears (Astra): BladeA turns about the screw axis (the blades' shared origin), BladeB,
+        /// screw and carabiner stay; the blunt tip of BladeA is the working tip.</summary>
         public override void OnArtApplied(Transform art)
         {
-            _artBlade = ArtModels.FindPart(art, "BladeB");
-            if (_artBlade != null) _artBladeRest = _artBlade.localRotation;
+            _artBlade = ArtModels.FindPart(art, "BladeA");
+            var other = ArtModels.FindPart(art, "BladeB");
+            if (_artBlade == null) return;
+            _artBladeRest = _artBlade.localRotation;
+            _artAxis = _artBlade.parent.InverseTransformDirection(transform.up).normalized;
+            // open away from BladeB: the sign that moves BladeA's tip away from BladeB's tip
+            var tipA = ArtModels.TipOf(transform, art, "BladeA");
+            var tipB = other != null ? ArtModels.TipOf(transform, art, "BladeB") : null;
+            if (tipA.HasValue && tipB.HasValue)
+            {
+                Vector3 pivot = transform.InverseTransformPoint(_artBlade.position);
+                Vector3 a = tipA.Value - pivot;
+                float plus = Vector3.Distance(Quaternion.AngleAxis(12f, Vector3.up) * a + pivot, tipB.Value);
+                float minus = Vector3.Distance(Quaternion.AngleAxis(-12f, Vector3.up) * a + pivot, tipB.Value);
+                _artSign = plus >= minus ? 1f : -1f;
+                tip.localPosition = tipA.Value + new Vector3(0f, 0f, -0.004f);
+            }
+            SetArtAngle(0f);
+        }
+
+        void SetArtAngle(float deg)
+        {
+            _artAngle = deg;
+            if (_artBlade != null) _artBlade.localRotation = Quaternion.AngleAxis(deg * _artSign, _artAxis) * _artBladeRest;
         }
 
         void Update()
@@ -57,7 +84,12 @@ namespace FieldMedic.Treatment
             float trig = Trigger;
             _snip += Time.deltaTime * (trig > 0.5f ? 14f : 0f);
             _blade.localRotation = Quaternion.Euler(0f, trig > 0.5f ? Mathf.Abs(Mathf.Sin(_snip)) * 14f : 10f, 0f);
-            if (_artBlade != null) _artBlade.localRotation = _artBladeRest * _blade.localRotation;
+            // real blades: closed in the kit, ready-open in the hand, snipping open/close while squeezed (<= 35 deg, Astra)
+            if (_artBlade != null)
+            {
+                float want = InPouch ? 0f : !IsHeld ? 6f : trig > 0.5f ? Mathf.Abs(Mathf.Sin(_snip)) * 30f : 22f;
+                SetArtAngle(Mathf.MoveTowards(_artAngle, want, Time.deltaTime * 400f));
+            }
             if (!IsHeld || trig < 0.5f) { _hasLast = false; return; }
             var c = NearestCasualty(TipPosition, 1.4f);
             if (c == null || c.rig == null || c.Interaction == null) { _hasLast = false; return; }

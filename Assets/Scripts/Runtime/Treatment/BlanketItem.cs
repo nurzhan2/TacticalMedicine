@@ -48,6 +48,7 @@ namespace FieldMedic.Treatment
             if (Vector3.Distance(a.PalmPosition, b.PalmPosition) < 0.55f) return;
             Unfolded = true;
             _folded.gameObject.SetActive(false);
+            ShowCarriedLook(false);
             _sheet.gameObject.SetActive(true);
             GetComponent<BoxCollider>().size = new Vector3(0.6f, 0.02f, 0.4f);
             Haptics.Play(a.Input, Haptics.Grab);

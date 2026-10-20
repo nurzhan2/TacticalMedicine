@@ -40,6 +40,14 @@ namespace FieldMedic.Treatment
             tip.localPosition = new Vector3(0f, -0.008f, 0f);
         }
 
+        /// <summary>Imported Israeli bandage: sealed pack in the kit, opened pack in the hand with the pad pulled out
+        /// (the procedural pad group = the logic part that goes onto the wound).</summary>
+        protected override void OnPouchState(bool inPouch)
+        {
+            base.OnPouchState(inPouch);
+            if (ArtRoot != null && _pad != null && ApplyingTo == null) _pad.gameObject.SetActive(!inPouch);
+        }
+
         void Update()
         {
             if (!IsHeld) return;

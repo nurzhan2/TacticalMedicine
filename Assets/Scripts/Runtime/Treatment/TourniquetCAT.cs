@@ -115,6 +115,30 @@ namespace FieldMedic.Treatment
             State.StageChanged += OnStage;
         }
 
+        Transform _artClip, _artBuckle, _artTab;
+
+        /// <summary>Imported CAT: the delivered windlass rod, clip, buckle and TIME tab ride on the procedural band.</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            ArtModels.Graft(art, "Windlass", _rodPivot, Quaternion.Euler(0f, -90f, 0f), Vector3.zero);
+            _artClip = ArtModels.Graft(art, "WindlassClip", _onLimb, Quaternion.identity, Vector3.zero, false);
+            _artBuckle = ArtModels.Graft(art, "Buckle", _onLimb, Quaternion.identity, Vector3.zero, false);
+            _artTab = ArtModels.Graft(art, "TimeTab", _onLimb, Quaternion.Euler(90f, -90f, 0f), Vector3.zero, false);
+            void Hide(string n) { var t = _onLimb.Find(n); if (t != null) foreach (var r in t.GetComponentsInChildren<Renderer>(true)) r.enabled = false; }
+            if (_artClip != null) Hide("Clip");
+            if (_artBuckle != null) Hide("Buckle");
+            if (_artTab != null) Hide("TimeCover");
+        }
+
+        static void Pose(Transform art, Vector3 pos, Quaternion rot)
+        {
+            if (art == null) return;
+            var mf = art.GetComponent<MeshFilter>();
+            var c = mf != null && mf.sharedMesh != null ? mf.sharedMesh.bounds.center : Vector3.zero;
+            art.localRotation = rot;
+            art.localPosition = pos - rot * c;
+        }
+
         // ------------------------------------------------------------------ grabbing the band itself
         protected override void OnItemGrabbed(HandGrabber hand)
         {
@@ -206,6 +230,7 @@ namespace FieldMedic.Treatment
             _slideHand = PrimaryHolder;
             Haptics.Play(HolderInput, Haptics.Grab);
             _folded.gameObject.SetActive(false);
+            ShowCarriedLook(false);
             _onLimb.gameObject.SetActive(true);
             GetComponent<BoxCollider>().size = new Vector3(0.12f, 0.08f, 0.06f);
             if (c.Interaction != null) c.Interaction.Register(this);
@@ -468,6 +493,15 @@ namespace FieldMedic.Treatment
             TimeStrapHandle.transform.localPosition = _timeFlap.localPosition;
             TimeLabel.localPosition = new Vector3(0f, top + 0.0285f, 0f);
             TimeLabel.gameObject.SetActive(secured);
+            // delivered parts on the band (clip next to the rod, buckle on the side, TIME tab over the clip when secured)
+            Pose(_artClip, new Vector3(0f, top + 0.008f, 0.04f), Quaternion.identity);
+            Vector3 n = new Vector3(0.707f, 0.707f, 0f);
+            Pose(_artBuckle, buckle - new Vector3(0.006f, 0f, 0f), Quaternion.LookRotation(-n, Vector3.Cross(-n, Vector3.forward)));
+            if (_artTab != null)
+            {
+                _artTab.gameObject.SetActive(secured);
+                Pose(_artTab, new Vector3(0f, top + 0.027f, 0f), Quaternion.Euler(90f, -90f, 0f));
+            }
         }
 
         /// <summary>World point on the TIME strap a marker writes on.</summary>

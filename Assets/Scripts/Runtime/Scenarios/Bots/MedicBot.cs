@@ -305,6 +305,52 @@ namespace FieldMedic.Scenarios.Bots
         }
 
         /// <summary>Uncap... squeeze the marker and scribble on a point.</summary>
+        /// <summary>
+        /// w9d: elastic tourniquet (Alpha / Esmarch): hold the roll on the limb at `limbPos` until the end is pinned,
+        /// circle the limb `turns` times with the hand `pullOff` off the skin (stretched), then press the roll onto the
+        /// turns and squeeze → hooks / balls fix the end.
+        /// </summary>
+        public IEnumerator ApplyElasticTourniquet(ElasticTourniquetItem band, CasualtyController c, Limb limb, float limbPos,
+            int turns = 4, float pullOff = 0.12f, HandGrabber h = null, bool fix = true)
+        {
+            h ??= right;
+            var rig = c.rig;
+            lastStep = "elastic: grab";
+            yield return Grab(h, band);
+            Vector3 axisPt = LimbMath.PointAt(rig, limb, limbPos);
+            Vector3 up = LimbMath.UpAround(rig, limb, limbPos);
+            float r = LimbMath.RadiusAt(limb, limbPos);
+            lastStep = "elastic: pin";
+            Vector3 above = axisPt + up * (r + 0.15f);
+            yield return MoveHeld(h, band.transform, band.transform.position, above);
+            yield return MoveHeld(h, band.transform, band.transform.position, axisPt + up * (r + 0.01f), 0.6f);
+            for (float t = 0f; t < ElasticTourniquetItem.PinSeconds + 0.3f && !band.State.OnLimb; t += Time.deltaTime) yield return null;
+            if (!band.State.OnLimb) { lastStep = "elastic: pin failed"; yield break; }
+            lastStep = "elastic: wind";
+            float total = turns * 360f + 40f, step = 12f;
+            for (float a = 0f; a <= total; a += step)
+            {
+                // the limb moves a little with every painful turn: follow its live axis
+                axisPt = LimbMath.PointAt(rig, limb, band.State.limbPosition);
+                Vector3 axis = LimbMath.AxisAt(rig, limb, band.State.limbPosition);
+                up = LimbMath.UpAround(rig, limb, band.State.limbPosition);
+                Vector3 dir = Quaternion.AngleAxis(a, axis) * up;
+                Vector3 to = axisPt + dir * (r + pullOff);
+                Vector3 offset = band.transform.position - h.PalmPosition;
+                yield return Move(h, to - offset, false, 2.2f);
+            }
+            if (!fix) { lastStep = "elastic: wound, not fixed"; yield break; }
+            lastStep = "elastic: fix";
+            axisPt = LimbMath.PointAt(rig, limb, band.State.limbPosition);
+            up = LimbMath.UpAround(rig, limb, band.State.limbPosition);
+            yield return MoveHeld(h, band.transform, band.transform.position, axisPt + up * (r + 0.025f), 0.8f);
+            yield return SetTrigger(h, 1f);
+            for (int k = 0; k < 10 && !band.Fixed; k++) yield return Frame();
+            yield return SetTrigger(h, 0f);
+            if (h.Held != null) yield return Release(h);
+            lastStep = band.Fixed ? "elastic: done" : "elastic: not fixed";
+        }
+
         public IEnumerator Write(MarkerItem marker, Vector3 point, HandGrabber h = null)
         {
             h ??= right;

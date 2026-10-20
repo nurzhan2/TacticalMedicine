@@ -64,7 +64,7 @@ namespace FieldMedic.Tests
                 Assert.AreEqual("WindlassClip", ArtModels.FindPart(m.transform, "WindlassClip").name);
                 Assert.AreEqual("Flap", ArtModels.FindPart(m.transform, "Lid|Flap").name);
                 Assert.IsNull(ArtModels.FindPart(m.transform, "Buckle"));
-                CollectionAssert.AreEqual(new[] { "TimeTab", "Buckle" }, ArtModels.MissingParts(m.transform, ArtModels.ByKind[MedItemKind.Tourniquet]));
+                CollectionAssert.AreEqual(new[] { "TQ_Stowed", "TimeTab", "Buckle" }, ArtModels.MissingParts(m.transform, ArtModels.ByKind[MedItemKind.Tourniquet]));
             }
             finally { Object.DestroyImmediate(m); }
         }
@@ -157,6 +157,102 @@ namespace FieldMedic.Tests
                 Object.DestroyImmediate(pouch);
             }
             finally { Object.DestroyImmediate(item); Object.DestroyImmediate(art); }
+        }
+
+        // ------------------------------------------------------------------ w9d: the Astra deliveries
+        [Test]
+        public void FindPart_ExactNameWins_StateNamesAreNotSuffixes()
+        {
+            var m = Model("Pack_Open", "Pack", "Strap_LOD0");
+            try
+            {
+                Assert.AreEqual("Pack", ArtModels.FindPart(m.transform, "Pack").name, "exact name before Pack_Open");
+                Assert.AreEqual("Strap_LOD0", ArtModels.FindPart(m.transform, "Strap").name);
+                Object.DestroyImmediate(m.transform.Find("Pack").gameObject);
+                Assert.IsNull(ArtModels.FindPart(m.transform, "Pack"), "Pack_Open is another state, not a suffix of Pack");
+            }
+            finally { Object.DestroyImmediate(m); }
+        }
+
+        [Test]
+        public void DeliveryFolders_MapToItems()
+        {
+            CollectionAssert.AreEquivalent(new[] { "npa", "lubricant" }, ArtImporter.SpecsForFolder("npa").ConvertAll(s => s.id));
+            CollectionAssert.AreEquivalent(new[] { "casualty_card", "tri_bandage", "eye_shield", "wipes", "tape" }, ArtImporter.SpecsForFolder("small").ConvertAll(s => s.id));
+            Assert.AreEqual("tourniquet", ArtImporter.SpecsForFolder("tq")[0].id);
+            Assert.AreEqual("israeli_bandage", ArtImporter.SpecsForFolder("israeli")[0].id);
+            Assert.AreEqual("hemostatic_gauze", ArtImporter.SpecsForFolder("gauze")[0].id);
+            Assert.AreEqual("chest_seal", ArtImporter.SpecsForFolder("chestseal")[0].id);
+            Assert.AreEqual("ifak", ArtImporter.SpecsForFolder("ifak")[0].id);
+            foreach (MedItemKind k in System.Enum.GetValues(typeof(MedItemKind)))
+                Assert.IsTrue(ArtModels.ByKind.ContainsKey(k), k + " has an art spec");
+        }
+
+        [Test]
+        public void MultiStateModel_OnlyCarriedStateActive_OtherObjectsDropped()
+        {
+            var m = Model("TQ_Stowed", "TQ_Open", "Strap", "Windlass", "WindlassClip", "TimeTab", "Buckle", "Unrelated");
+            foreach (var n in new[] { "Strap", "Windlass", "WindlassClip", "TimeTab", "Buckle" }) m.transform.Find(n).SetParent(m.transform.Find("TQ_Open"), true);
+            try
+            {
+                var spec = ArtModels.ByKind[MedItemKind.Tourniquet];
+                var res = new ArtImporter.Result { id = spec.id };
+                var p = ArtImporter.BuildPrefab(m, spec, TestRoot + "/Resources/Art", res);
+                Assert.IsNotNull(p, res.ToString());
+                Assert.IsTrue(ArtModels.FindPart(p.transform, "TQ_Stowed").gameObject.activeSelf, "stowed look shown in the kit");
+                Assert.IsFalse(ArtModels.FindPart(p.transform, "TQ_Open").gameObject.activeSelf, "open state kept but hidden");
+                Assert.IsNotNull(ArtModels.FindPart(p.transform, "Windlass"), "open-state parts stay available");
+
+                var lube = ArtModels.ByKind[MedItemKind.Lubricant];
+                var m2 = Model("LubeSachet", "Tube", "Package");
+                var r2 = new ArtImporter.Result { id = lube.id };
+                var p2 = ArtImporter.BuildPrefab(m2, lube, TestRoot + "/Resources/Art", r2);
+                Object.DestroyImmediate(m2);
+                Assert.IsNotNull(p2, r2.ToString());
+                Assert.IsNull(ArtModels.FindPart(p2.transform, "Tube"), "the NPA tube is not part of the lubricant");
+            }
+            finally { Object.DestroyImmediate(m); }
+        }
+
+        /// <summary>Quest budget for the imported kit + items (task 5): tris, materials, ASTC ≤ 1024, no mesh colliders.</summary>
+        [Test]
+        public void ImportedArt_WithinQuestBudget()
+        {
+            var prefabs = Resources.LoadAll<GameObject>(ArtModels.ResourceFolder);
+            if (prefabs.Length == 0) Assert.Ignore("no imported art (SourceAssets/Incoming not imported on this machine)");
+            int total = 0;
+            var mats = new System.Collections.Generic.HashSet<Material>();
+            foreach (var p in prefabs)
+            {
+                Assert.IsNull(p.GetComponentInChildren<MeshCollider>(true), p.name + ": no mesh colliders");
+                int tris = 0;
+                foreach (var mf in p.GetComponentsInChildren<MeshFilter>(true))
+                    for (int s = 0; s < mf.sharedMesh.subMeshCount; s++) tris += (int)mf.sharedMesh.GetIndexCount(s) / 3;
+                Assert.LessOrEqual(tris, p.name == ArtModels.Pouch.id ? 8000 : 4000, p.name + " triangles (all states)");
+                total += tris;
+                foreach (var r in p.GetComponentsInChildren<Renderer>(true))
+                {
+                    Assert.LessOrEqual(r.sharedMaterials.Length, 2, p.name + " materials per renderer");
+                    foreach (var m in r.sharedMaterials)
+                    {
+                        Assert.IsNotNull(m, p.name + " missing material");
+                        mats.Add(m);
+                        foreach (var prop in new[] { "_BaseMap", "_BumpMap", "_MetallicGlossMap" })
+                        {
+                            var tex = m.HasProperty(prop) ? m.GetTexture(prop) : null;
+                            if (tex == null) continue;
+                            var ti = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex));
+                            if (ti == null) continue;
+                            var a = ti.GetPlatformTextureSettings("Android");
+                            Assert.IsTrue(a.overridden && a.maxTextureSize <= 1024, tex.name + " Android ≤ 1024");
+                            StringAssert.StartsWith("ASTC", a.format.ToString(), tex.name + " ASTC on Quest");
+                        }
+                    }
+                }
+            }
+            Debug.Log($"[FMVR] imported art: {prefabs.Length} prefabs, {total} tris (all states), {mats.Count} materials");
+            Assert.LessOrEqual(total, 60000, "kit + items, every state counted");
+            Assert.LessOrEqual(mats.Count, 24, "materials (≈ one per delivery)");
         }
 
         // ------------------------------------------------------------------ sky text rule

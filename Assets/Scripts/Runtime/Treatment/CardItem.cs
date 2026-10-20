@@ -36,11 +36,38 @@ namespace FieldMedic.Treatment
 
         public override bool CanBeGrabbedBy(HandGrabber hand) => !Attached && base.CanBeGrabbedBy(hand);
 
+        /// <summary>Imported card (Astra): the title and the field names are printed — the marker writes into the fields.</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            if (_text == null) return;
+            _text.text = "";
+            _text.anchor = TextAnchor.UpperLeft;
+            _text.alignment = TextAlignment.Left;
+            _text.characterSize = 0.0007f;
+            var b = new Bounds();
+            bool any = false;
+            foreach (var mf in art.GetComponentsInChildren<MeshFilter>())
+            {
+                var mb = mf.sharedMesh.bounds;
+                for (int i = 0; i < 8; i++)
+                {
+                    var c = mb.center + Vector3.Scale(mb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                    var p = transform.InverseTransformPoint(mf.transform.TransformPoint(c));
+                    if (!any) { b = new Bounds(p, Vector3.zero); any = true; } else b.Encapsulate(p);
+                }
+            }
+            // printed fields start ~40 % down the card; the writing goes to the right half of each line
+            _text.transform.localPosition = new Vector3(b.min.x + b.size.x * 0.40f, b.max.y + 0.0006f, b.max.z - b.size.z * 0.36f);
+            _artPrinted = true;
+        }
+
+        bool _artPrinted;
+
         /// <summary>Written with the marker: current state of the casualty.</summary>
         public void Fill()
         {
             var c = NearestCasualty(transform.position, 3f);
-            var sb = new StringBuilder("КАРТОЧКА РАНЕНОГО\nряд. Ерлан Сейтқали\n");
+            var sb = new StringBuilder(_artPrinted ? "ряд. Ерлан Сейтқали\n" : "КАРТОЧКА РАНЕНОГО\nряд. Ерлан Сейтқали\n");
             if (c != null)
             {
                 var p = c.Patient;

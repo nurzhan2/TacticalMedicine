@@ -35,9 +35,14 @@ namespace FieldMedic.Treatment
             return f;
         }
 
+        IfakArt _art;
+        float _open01;
+
         void Build()
         {
             if (Lid != null) return;
+            _art = pouch != null ? pouch.Art : null;
+            if (_art != null) { BuildArt(); return; }
             var coyote = Kit.Mat("PouchCoyote", Kit.Coyote, 0.12f);
             var dark = Kit.Mat("PouchDark", new Color(0.16f, 0.13f, 0.09f), 0.1f);
             var red = Kit.Mat("PouchRed", new Color(0.5f, 0.06f, 0.05f), 0.2f);
@@ -61,6 +66,19 @@ namespace FieldMedic.Treatment
             Tab.Grabbed += (_, h) => Haptics.Play(h.Input, Haptics.Grab);
         }
 
+        /// <summary>w9d: the real kit — the pull tab is the delivered PullTab on top of the body; opening unfolds the
+        /// model's panels (<see cref="IfakArt.SetOpen"/>).</summary>
+        void BuildArt()
+        {
+            Lid = _art.Flap;
+            _art.SetOpen(0f);
+            var tab = _art.PullTab != null ? _art.PullTab : _art.Body;
+            var r = tab.GetComponentInChildren<Renderer>();
+            Vector3 at = r != null ? r.bounds.center : tab.position;
+            Tab = ProxyHandle.Create<ProxyHandle>("Grab_PouchTab", _art.Body, at, 0.045f, 4);
+            Tab.Grabbed += (_, h) => Haptics.Play(h.Input, Haptics.Grab);
+        }
+
         void Update()
         {
             if (!IsOpen && Tab != null && Tab.Hand != null)
@@ -71,6 +89,12 @@ namespace FieldMedic.Treatment
                 if (d >= pullToOpen) Open(Tab.Hand);
             }
             else if (!IsOpen) Pull = 0f;
+            if (_art != null)
+            {
+                float goal = IsOpen ? 1f : 0f;
+                if (!Mathf.Approximately(_open01, goal)) { _open01 = Mathf.MoveTowards(_open01, goal, Time.deltaTime / 0.55f); _art.SetOpen(_open01); }
+                return;
+            }
             float target = IsOpen ? openAngle : 0f;
             if (!Mathf.Approximately(_angle, target))
             {

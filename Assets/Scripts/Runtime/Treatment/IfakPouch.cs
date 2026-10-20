@@ -13,12 +13,16 @@ namespace FieldMedic.Treatment
     [DefaultExecutionOrder(-40)]
     public sealed class IfakPouch : MonoBehaviour
     {
+        /// <summary>Main (2nd echelon) pouch. w9d: the real kit — the windlass CAT rides in the quick pouch, the main
+        /// pouch carries the elastic Alpha and Esmarch tourniquets and every item Astra modelled.</summary>
         public MedItemKind[] contents =
         {
-            MedItemKind.Tourniquet, MedItemKind.HemostaticGauze, MedItemKind.IsraeliBandage,
+            MedItemKind.HemostaticGauze, MedItemKind.IsraeliBandage,
             MedItemKind.ChestSeal, MedItemKind.ChestSeal, MedItemKind.NasalAirway, MedItemKind.Lubricant,
             MedItemKind.DecompressionNeedle, MedItemKind.NitrileGloves, MedItemKind.Marker,
             MedItemKind.ThermalBlanket, MedItemKind.CasualtyCard,
+            MedItemKind.AlphaTourniquet, MedItemKind.EsmarchTourniquet, MedItemKind.Splint,
+            MedItemKind.TriangularBandage, MedItemKind.EyeShield, MedItemKind.AntisepticWipes, MedItemKind.DuctTape,
         };
         [Tooltip("1st echelon, quick-access pouch next to the main one (always open). Empty = no quick pouch.")]
         public MedItemKind[] quickContents = { MedItemKind.Tourniquet, MedItemKind.TraumaShears };
@@ -37,6 +41,8 @@ namespace FieldMedic.Treatment
         public float waistBelowHead = 0.68f;
         public float forward = 0.26f;
         public float tilt = 35f;
+        [Tooltip("w9d: the real kit opens into a 28 × 50 cm layout — worn a bit further out and steeper (clipboard-like).")]
+        public float artForward = 0.34f, artWaistBelowHead = 0.56f, artTilt = 45f;
         public float yawSlack = 35f;
 
         [Tooltip("w7: the player's pouch starts closed — pull the red tab to rip the lid open (PouchFlap).")]
@@ -44,6 +50,8 @@ namespace FieldMedic.Treatment
         public PouchFlap Flap { get; private set; }
         public bool IsOpen => Flap == null || Flap.IsOpen;
         public Transform QuickPouch { get; private set; }
+        /// <summary>w9d: the imported FMVR_IFAK (null = procedural tray).</summary>
+        public IfakArt Art { get; private set; }
 
         public readonly List<MedItem> Items = new List<MedItem>();
         public bool Built { get; private set; }
@@ -56,6 +64,7 @@ namespace FieldMedic.Treatment
         {
             if (Built) return;
             Built = true;
+            if (buildVisual && BuildArt()) return;
             if (buildVisual) BuildVisual();
             if (quickContents != null && quickContents.Length > 0) BuildQuickPouch();
             for (int i = 0; i < contents.Length; i++)
@@ -111,8 +120,36 @@ namespace FieldMedic.Treatment
             }
         }
 
+        /// <summary>w9d: the real kit (FMVR_IFAK): items on the delivered Slot_* empties, rip-away lid = the model's
+        /// folding panels (<see cref="PouchFlap"/> in art mode). False → no imported kit, procedural tray.</summary>
+        bool BuildArt()
+        {
+            Art = IfakArt.Build(transform);
+            if (Art == null) return false;
+            QuickPouch = Art.QuickPouch;
+            var count = new Dictionary<MedItemKind, int>();
+            int extra = 0;
+            void Place(MedItemKind kind)
+            {
+                count.TryGetValue(kind, out int n);
+                count[kind] = n + 1;
+                Transform seat = null;
+                if (IfakArt.Layout(kind, n, out var slot, out bool tipDown, out var off))
+                    seat = Art.Seat(slot, "Seat_" + kind + (n > 0 ? "_" + n : ""), tipDown, off);
+                // a kind the kit has no slot for (e.g. a second CAT): in the middle of the upper panel, stacked
+                if (seat == null) seat = Art.Seat("Slot_ChestSeal_1", "Seat_Extra" + extra, false, new Vector3(0f, 0.02f + 0.012f * extra++, 0f));
+                if (seat == null) { seat = new GameObject("Seat_" + kind).transform; seat.SetParent(transform, false); }
+                AddItem(kind, seat);
+            }
+            if (quickContents != null) foreach (var k in quickContents) Place(k);
+            foreach (var k in contents) Place(k);
+            if (closedLid) Flap = PouchFlap.Add(this);
+            if (bodyLocked) Follow(1f, true);
+            return true;
+        }
+
         /// <summary>Can an item in this slot be taken / put back? Quick pouch: always; main pouch: once the lid is open.</summary>
-        public bool IsSlotOpen(Transform slot) => IsOpen || (slot != null && QuickPouch != null && slot.parent == QuickPouch);
+        public bool IsSlotOpen(Transform slot) => IsOpen || (slot != null && QuickPouch != null && slot.IsChildOf(QuickPouch));
 
         public T Find<T>(int index = 0) where T : MedItem
         {
@@ -172,9 +209,10 @@ namespace FieldMedic.Treatment
             // the torso turns only when the head looks far to the side (and then smoothly)
             if (Mathf.Abs(diff) > yawSlack) _yaw += (Mathf.Abs(diff) - yawSlack) * Mathf.Sign(diff);
             var yawRot = Quaternion.Euler(0f, _yaw, 0f);
-            Vector3 p = head.position + yawRot * Vector3.forward * forward;
-            p.y = head.position.y - waistBelowHead;
-            transform.SetPositionAndRotation(p, yawRot * Quaternion.Euler(-tilt, 0f, 0f));
+            bool art = Art != null;
+            Vector3 p = head.position + yawRot * Vector3.forward * (art ? artForward : forward);
+            p.y = head.position.y - (art ? artWaistBelowHead : waistBelowHead);
+            transform.SetPositionAndRotation(p, yawRot * Quaternion.Euler(-(art ? artTilt : tilt), 0f, 0f));
         }
     }
 }

@@ -53,7 +53,7 @@ namespace FieldMedic.Treatment
                 { source = "israeli", carried = new[] { "Pack" }, held = new[] { "Pack_Open" }, euler = new Vector3(90f, 90f, 0f),
                   stack = new Dictionary<string, Vector3> { { "Pack_Open", Vector3.zero } } } },
             { MedItemKind.HemostaticGauze, new Spec("hemostatic_gauze", 0.14f, new[] { "Pack_Closed", "Pack_OpenBottom", "Gauze_Roll" })
-                { source = "gauze", carried = new[] { "Pack_Closed" }, held = new[] { "Pack_OpenBottom" }, euler = new Vector3(90f, 0f, 0f) } },
+                { source = "gauze", carried = new[] { "Pack_Closed" }, held = new[] { "Pack_OpenBottom", "Gauze_Roll" }, euler = new Vector3(90f, 0f, 0f) } },
             { MedItemKind.ChestSeal, new Spec("chest_seal", 0.20f, new[] { "Pack", "Seal", "Liner" })
                 { source = "chestseal", carried = new[] { "Pack" }, euler = new Vector3(90f, 0f, 0f) } },
             { MedItemKind.NasalAirway, new Spec("npa", 0.15f, new[] { "Tube" })
@@ -169,6 +169,7 @@ namespace FieldMedic.Treatment
             var art = Swap(item.transform, item.Visual, prefab, spec.hideExtra);
             if (art == null) return null;
             ShowState(art, spec, true);
+            item.ArtRoot = art;
             item.OnArtApplied(art);
             return art;
         }
@@ -213,6 +214,25 @@ namespace FieldMedic.Treatment
             foreach (var c in art.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
             foreach (var r in art.GetComponentsInChildren<Renderer>(true)) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return art.transform;
+        }
+
+        /// <summary>Item-local point at the +Z end (the working tip) of an imported part, null if missing.</summary>
+        public static Vector3? TipOf(Transform item, Transform art, string part)
+        {
+            var t = FindPart(art, part);
+            var mf = t != null ? t.GetComponent<MeshFilter>() : null;
+            if (mf == null || mf.sharedMesh == null) return null;
+            var b = mf.sharedMesh.bounds;
+            float bz = float.MinValue; Vector3 sum = Vector3.zero;
+            for (int i = 0; i < 8; i++)
+            {
+                var c = b.center + Vector3.Scale(b.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                var p = item.InverseTransformPoint(t.TransformPoint(c));
+                sum += p;
+                if (p.z > bz) bz = p.z;
+            }
+            var mid = sum / 8f;
+            return new Vector3(mid.x, mid.y, bz);
         }
 
         /// <summary>Takes an imported sub-part out of the carried look and re-parents it onto a logic transform

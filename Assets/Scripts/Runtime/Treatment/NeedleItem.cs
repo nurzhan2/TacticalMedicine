@@ -45,6 +45,14 @@ namespace FieldMedic.Treatment
 
         public override bool CanBeGrabbedBy(HandGrabber hand) => !Attached && base.CanBeGrabbedBy(hand);
 
+        /// <summary>Imported 14G needle: in the kit it rides in its clear case with the cap; taken out it is the bare
+        /// needle-catheter, whose real point is the working tip.</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            var p = ArtModels.TipOf(transform, art, "Needle");
+            if (p.HasValue) tip.localPosition = new Vector3(0f, 0f, p.Value.z);
+        }
+
         void Update()
         {
             if (_catheterTimer >= 0f)

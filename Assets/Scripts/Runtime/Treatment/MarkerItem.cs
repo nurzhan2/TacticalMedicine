@@ -35,8 +35,55 @@ namespace FieldMedic.Treatment
             tip.localPosition = new Vector3(0f, 0f, 0.075f);
         }
 
+        Transform _artCap;
+        Vector3 _capRestPos, _capPostedPos;
+        Quaternion _capRestRot, _capPostedRot;
+        float _capT;
+        /// <summary>0 = cap on the tip, 1 = posted on the back end.</summary>
+        public float CapOff => _capT;
+
+        /// <summary>Imported marker: the working tip is the real nib; the cap comes off when the marker is taken out
+        /// of the kit and is posted on the back end (and goes back on the tip in the kit).</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            var nib = ArtModels.TipOf(transform, art, "Body");
+            if (nib.HasValue) tip.localPosition = nib.Value + new Vector3(0f, 0f, 0.002f);
+            _artCap = ArtModels.FindPart(art, "Cap");
+            var body = ArtModels.FindPart(art, "Body");
+            if (_artCap == null || body == null) return;
+            _capRestPos = _artCap.localPosition;
+            _capRestRot = _artCap.localRotation;
+            var bb = body.GetComponent<MeshFilter>().sharedMesh.bounds;
+            var cb = _artCap.GetComponent<MeshFilter>().sharedMesh.bounds;
+            float backZ = float.MaxValue;
+            for (int i = 0; i < 8; i++)
+            {
+                var c = bb.center + Vector3.Scale(bb.extents, new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+                backZ = Mathf.Min(backZ, transform.InverseTransformPoint(body.TransformPoint(c)).z);
+            }
+            // cap centre (in its parent) goes to the back end, turned around so its open end faces the body
+            Vector3 capCenterWorld = _artCap.TransformPoint(cb.center);
+            float capZ = transform.InverseTransformPoint(capCenterWorld).z;
+            Vector3 capCenterParent = _artCap.parent.InverseTransformPoint(capCenterWorld);
+            var turn = Quaternion.AngleAxis(180f, _artCap.parent.InverseTransformDirection(transform.up));
+            _capPostedRot = turn * _capRestRot;
+            Vector3 shift = _artCap.parent.InverseTransformVector(transform.TransformVector(new Vector3(0f, 0f, backZ + 0.008f - capZ)));
+            _capPostedPos = turn * (_capRestPos - capCenterParent) + capCenterParent + shift;
+        }
+
         void Update()
         {
+            if (_artCap != null)
+            {
+                float want = InPouch ? 0f : 1f;
+                if (!Mathf.Approximately(_capT, want))
+                {
+                    _capT = Mathf.MoveTowards(_capT, want, Time.deltaTime / 0.35f);
+                    float k = _capT * _capT * (3f - 2f * _capT);
+                    _artCap.localPosition = Vector3.Lerp(_capRestPos, _capPostedPos, k);
+                    _artCap.localRotation = Quaternion.Slerp(_capRestRot, _capPostedRot, k);
+                }
+            }
             if (!IsHeld || Trigger < 0.5f) { _hasLast = false; return; }
             Vector3 t = TipPosition;
             object target = FindTarget(t);

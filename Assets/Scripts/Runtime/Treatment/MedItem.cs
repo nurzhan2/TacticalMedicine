@@ -34,6 +34,9 @@ namespace FieldMedic.Treatment
         public bool Consumed { get; protected set; }
         /// <summary>Carried look (procedural parts or an imported model). Logic parts are its siblings.</summary>
         public Transform Visual { get; private set; }
+        /// <summary>w9d: the imported model inside <see cref="Visual"/> (null = procedural look).</summary>
+        public Transform ArtRoot { get; internal set; }
+        public ArtModels.Spec ArtSpec => ArtModels.ByKind.TryGetValue(kind, out var s) ? s : null;
         public new HandGrabber Holder => PrimaryHolder;
         public IHandInput HolderInput => Holder != null ? Holder.Input : null;
         public float Trigger => HolderInput != null ? HolderInput.Trigger : 0f;
@@ -144,6 +147,20 @@ namespace FieldMedic.Treatment
             transform.SetParent(homeSlot, false);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
+            OnPouchState(true);
+        }
+
+        /// <summary>In the kit / out of it: the imported model shows its packed or its in-hand state (sealed pack →
+        /// opened pack, needle in its case → bare needle...). Subclasses add their own parts.</summary>
+        protected virtual void OnPouchState(bool inPouch)
+        {
+            if (ArtRoot != null) ArtModels.ShowState(ArtRoot, ArtSpec, inPouch);
+        }
+
+        /// <summary>Hides / shows the whole carried look (state changes: band on a limb, seal torn out, sheet unfolded).</summary>
+        protected void ShowCarriedLook(bool on)
+        {
+            if (ArtRoot != null) ArtRoot.gameObject.SetActive(on);
         }
 
         /// <summary>Kinematic, no gravity, no interpolation: the transform hierarchy (slot / bone) owns the pose.</summary>
@@ -198,6 +215,7 @@ namespace FieldMedic.Treatment
             InPouch = false;
             transform.SetParent(null, true);
             MakeFree();
+            OnPouchState(false);
         }
 
         protected override void OnGrabbed(HandGrabber hand, GrabPoint point)

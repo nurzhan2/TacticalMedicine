@@ -58,6 +58,14 @@ namespace FieldMedic.Treatment
             posterior = -fwd;
         }
 
+        /// <summary>Imported NPA: sealed in its package in the kit, the bare tube in the hand; the bevelled end of the
+        /// delivered tube is the working tip.</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            var p = ArtModels.TipOf(transform, art, "Tube");
+            if (p.HasValue) tip.localPosition = new Vector3(0f, 0f, p.Value.z);
+        }
+
         void Update()
         {
             if (Attached) return;

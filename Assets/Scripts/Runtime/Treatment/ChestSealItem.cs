@@ -73,6 +73,20 @@ namespace FieldMedic.Treatment
             }
         }
 
+        Transform _artSeal, _artLiner;
+
+        /// <summary>Imported chest seal: the delivered round Seal (valve up) and its Liner replace the procedural disc
+        /// once the package is torn; the liner peels with the backing tab.</summary>
+        public override void OnArtApplied(Transform art)
+        {
+            _artSeal = ArtModels.Graft(art, "Seal", _seal, Quaternion.Euler(-90f, 0f, 0f), new Vector3(0f, 0.0005f, 0f), false);
+            _artLiner = ArtModels.Graft(art, "Liner", _seal, Quaternion.Euler(-90f, 0f, 0f), new Vector3(0f, -0.0022f, 0.005f), false);
+            if (_artSeal != null)
+                foreach (Transform c in _seal)
+                    if (c.name.StartsWith("Merged_")) foreach (var r in c.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+            if (_artLiner != null) foreach (var r in _backing.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+        }
+
         void Tear()
         {
             TearNotch.gameObject.SetActive(IsHeld);
@@ -84,6 +98,7 @@ namespace FieldMedic.Treatment
             TearNotch.ForceRelease();
             TearNotch.gameObject.SetActive(false);
             _package.gameObject.SetActive(false);
+            ShowCarriedLook(false);
             _seal.gameObject.SetActive(true);
             BackingTab.gameObject.SetActive(true);
         }
@@ -93,11 +108,13 @@ namespace FieldMedic.Treatment
             if (BackingTab.Hand == null) { _peelMax = 0f; return; }
             _peelMax = Mathf.Max(_peelMax, BackingTab.PalmDelta.magnitude);
             _backing.localPosition = new Vector3(0f, -0.0015f - _peelMax * 0.2f, -_peelMax * 0.5f);
+            if (_artLiner != null) _artLiner.localPosition = _backing.localPosition + new Vector3(0f, -0.0007f, 0.005f) - _artLiner.localRotation * _artLiner.GetComponent<MeshFilter>().sharedMesh.bounds.center;
             if (_peelMax < 0.08f || !Proc.Peel()) return;
             Haptics.Play(BackingTab.Input, Haptics.PressClick);
             BackingTab.ForceRelease();
             BackingTab.gameObject.SetActive(false);
             _backing.gameObject.SetActive(false);
+            if (_artLiner != null) _artLiner.gameObject.SetActive(false);
         }
 
         void TryPlace()

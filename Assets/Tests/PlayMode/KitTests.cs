@@ -165,7 +165,8 @@ namespace FieldMedic.Tests
         public IEnumerator EveryItem_HasASwappableVisualChild()
         {
             yield return MakeKit();
-            Assert.AreEqual(14, _pouch.Items.Count, "two-echelon kit holds the same 14 items");
+            // w9d: the real kit — CAT + shears in the quick pouch, 18 items (incl. Alpha, Esmarch, splint...) in the main one
+            Assert.AreEqual(20, _pouch.Items.Count, "two-echelon kit holds every modelled item");
             foreach (var it in _pouch.Items)
             {
                 Assert.IsNotNull(it.Visual, it.name + " has a Visual child");
@@ -186,9 +187,11 @@ namespace FieldMedic.Tests
             Assert.IsNotNull(_pouch.QuickPouch, "two-echelon kit: quick pouch");
             var cat = _pouch.Find<TourniquetCAT>();
             var shears = _pouch.Find<ShearsItem>();
-            Assert.AreEqual(_pouch.QuickPouch, cat.homeSlot.parent, "first CAT in the quick pouch");
-            Assert.AreEqual(_pouch.QuickPouch, shears.homeSlot.parent, "shears in the quick pouch");
-            Assert.IsNotNull(_pouch.Find<TourniquetCAT>(1), "second CAT in the main pouch");
+            Assert.IsTrue(cat.homeSlot.IsChildOf(_pouch.QuickPouch), "CAT in the quick pouch");
+            Assert.IsTrue(shears.homeSlot.IsChildOf(_pouch.QuickPouch), "shears in the quick pouch");
+            Assert.IsNotNull(_pouch.Find(MedItemKind.AlphaTourniquet), "elastic Alpha tourniquet in the main pouch");
+            Assert.IsNotNull(_pouch.Find(MedItemKind.EsmarchTourniquet), "Esmarch band in the main pouch");
+            Assert.IsFalse(_pouch.Find(MedItemKind.AlphaTourniquet).homeSlot.IsChildOf(_pouch.QuickPouch), "2nd echelon");
             Assert.IsFalse(_pouch.Find<GauzeItem>().CanBeGrabbedBy(_bot.right), "main pouch items locked while the lid is closed");
             yield return _bot.Grab(_bot.right, cat);
             Assert.AreEqual(cat, _bot.right.Held, "CAT out of the quick pouch without opening the kit");
