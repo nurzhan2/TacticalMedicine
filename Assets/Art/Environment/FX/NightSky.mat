@@ -30,8 +30,8 @@ Material:
     - _StarBrightness: 0.75
     - _StarDensity: 0.3
     m_Colors:
-    - _FlashColor: {r: 0.054150462, g: 0.049818426, b: 0.04223736, a: 0.054150462}
-    - _FlashDir: {r: -0.27430877, g: 0.8043182, b: 0.52709293, a: 0}
+    - _FlashColor: {r: 0, g: 0, b: 0, a: 0}
+    - _FlashDir: {r: -0.94252586, g: 0.00034027436, b: 0.33413285, a: 0}
     - _GlowAzimuths: {r: 15, g: 70, b: -40, a: 160}
     - _GlowColor: {r: 0.54999995, g: 0.21999997, b: 0.059999965, a: 1}
     - _HorizonColor: {r: 0.035, g: 0.044999972, b: 0.06999998, a: 1}
