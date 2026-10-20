@@ -213,6 +213,12 @@ namespace FieldMedic.Casualty
         /// Finds the skin/clothing surface point of the current (skinned) pose: among mesh vertices close to
         /// the segment bone→child at `along`, takes the one furthest in direction `dirWorld`.
         /// </summary>
+        bool IsHumanBone(Transform t)
+        {
+            foreach (var kv in _bones) if (kv.Value == t) return true;
+            return false;
+        }
+
         public bool SurfacePoint(HumanBodyBones bone, HumanBodyBones child, float along, Vector3 dirWorld,
             out Vector3 point, out Vector3 normal)
         {
@@ -230,7 +236,13 @@ namespace FieldMedic.Casualty
             var allowed = new HashSet<int>();
             var smrBones = bodyRenderer.bones;
             for (int i = 0; i < smrBones.Length; i++)
-                if (smrBones[i] == bt || (ct != null && smrBones[i] == ct)) allowed.Add(i);
+            {
+                var sb = smrBones[i];
+                if (sb == null) continue;
+                // w10c: Biped twist bones (Bip01 R ThighTwist...) are children of the limb bone and carry its skin
+                bool inBone = sb == bt || (sb.IsChildOf(bt) && (ct == null || !sb.IsChildOf(ct)) && !IsHumanBone(sb));
+                if (inBone || (ct != null && sb == ct)) allowed.Add(i);
+            }
             BoneWeight[] weights = null;
             var shared = bodyRenderer.sharedMesh;
             if (shared != null && shared.isReadable) weights = shared.boneWeights;
@@ -253,6 +265,20 @@ namespace FieldMedic.Casualty
                 float perp = (radial - dirWorld * t).magnitude;
                 if (perp > 0.035f) continue;
                 if (t > best) { best = t; bi = i; }
+            }
+            if (bi < 0 && weights != null)
+            {
+                // no rigidly skinned vertex there (blended skin): take the outermost vertex anyway
+                for (int i = 0; i < verts.Length; i++)
+                {
+                    Vector3 rel = m.MultiplyPoint3x4(verts[i]) - c;
+                    float ax = Vector3.Dot(rel, axis);
+                    if (Mathf.Abs(ax) > slab) continue;
+                    Vector3 radial = rel - axis * ax;
+                    float t = Vector3.Dot(radial, dirWorld);
+                    if (t <= 0f || radial.magnitude > 0.2f || (radial - dirWorld * t).magnitude > 0.035f) continue;
+                    if (t > best) { best = t; bi = i; }
+                }
             }
             if (bi < 0) return false;
             point = m.MultiplyPoint3x4(verts[bi]);
