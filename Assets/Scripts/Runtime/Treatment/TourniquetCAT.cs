@@ -448,7 +448,7 @@ namespace FieldMedic.Treatment
             transform.SetPositionAndRotation(c, Quaternion.LookRotation(axis, up));
 
             // band circumference = limb + remaining slack (shown as a loose, larger loop)
-            float r = LimbMath.RadiusAt(Limb, pos) + 0.004f + State.slackCm / 100f / (2f * Mathf.PI) * 1.4f;
+            float r = LimbMath.RadiusAt(Limb, pos) + (State.overClothing ? ElasticTourniquetItem.ClothAllowanceFor(Limb, pos) : 0.004f) + State.slackCm / 100f / (2f * Mathf.PI) * 1.4f;
             if (Mathf.Abs(r - _shownRadius) > 0.0008f)
             {
                 _shownRadius = r;

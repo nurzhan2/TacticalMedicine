@@ -35,7 +35,7 @@ namespace FieldMedic.Treatment
         struct Hinge { public Transform t; public Quaternion rest; public Vector3 axis; public float closedDeg; public float order; }
         readonly List<Hinge> _hinges = new List<Hinge>();
         readonly Dictionary<string, Transform> _slots = new Dictionary<string, Transform>();
-        Vector3 _bodyRest;
+        Vector3 _bodyRest, _quickRest, _quickAttach;
 
         /// <summary>Builds the art kit under `pouch` (null when there is no imported IFAK).</summary>
         public static IfakArt Build(Transform pouch)
@@ -65,8 +65,8 @@ namespace FieldMedic.Treatment
             QuickPouch = ArtModels.FindPart(Model, "QuickPouch");
             BackPanel = ArtModels.FindPart(Model, "BackPanel");
             if (Body == null || Flap == null) { Destroy(go); Root = null; return; }
-            // the quick pouch rides on the body's side (Astra shows it separated next to the open kit)
-            if (QuickPouch != null) QuickPouch.position += Model.TransformVector(new Vector3(QuickPouchAttachX, 0f, 0f));
+            // the quick pouch rides on the body's side when closed; opened, it stands apart where Astra put it (clear of the wing)
+            if (QuickPouch != null) { _quickRest = QuickPouch.localPosition; _quickAttach = QuickPouch.parent.InverseTransformVector(Model.TransformVector(new Vector3(QuickPouchAttachX, 0f, 0f))); }
             _bodyRest = Body.localPosition;
             // hinges in the model's own axes (folding order: wings, extension, flap)
             AddHinge("InnerPanel_LeftWing", Vector3.up, -90f, 0f);
@@ -97,6 +97,7 @@ namespace FieldMedic.Treatment
                 k = k * k * (3f - 2f * k);
                 h.t.localRotation = Quaternion.AngleAxis(h.closedDeg * k, h.axis) * h.rest;
             }
+            if (QuickPouch != null) QuickPouch.localPosition = _quickRest + _quickAttach * Mathf.Clamp01(closed * 1.6f);
             // ripped off the back panel: the body lifts away from it while opening
             if (Body != null)
             {
@@ -136,10 +137,10 @@ namespace FieldMedic.Treatment
                 case MedItemKind.TraumaShears: slot = "Slot_Shears"; tipDown = true; break;
                 case MedItemKind.HemostaticGauze: slot = "Slot_Gauze"; break;
                 case MedItemKind.IsraeliBandage: slot = "Slot_Israeli"; break;
-                case MedItemKind.ChestSeal: slot = n == 0 ? "Slot_ChestSeal_1" : "Slot_ChestSeal_2"; offset = new Vector3(0f, n == 0 ? 0.004f : 0f, 0f); break;
+                case MedItemKind.ChestSeal: slot = n == 0 ? "Slot_ChestSeal_1" : "Slot_ChestSeal_2"; offset = new Vector3(0f, n == 0 ? 0.001f : -0.003f, 0f); break;
                 case MedItemKind.NasalAirway: slot = "Slot_NPA"; tipDown = true; break;
                 case MedItemKind.DecompressionNeedle: slot = "Slot_Needle"; tipDown = true; break;
-                case MedItemKind.NitrileGloves: slot = "Slot_Gloves"; break;
+                case MedItemKind.NitrileGloves: slot = "Slot_Gloves"; offset = new Vector3(0f, -0.024f, 0f); break; // behind the gauze / blanket
                 case MedItemKind.Marker: slot = "Slot_Marker"; tipDown = true; break;
                 case MedItemKind.ThermalBlanket: slot = "Slot_Blanket"; break;
                 case MedItemKind.CasualtyCard: slot = "Slot_Card"; break;

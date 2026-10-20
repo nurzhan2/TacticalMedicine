@@ -315,6 +315,7 @@ namespace FieldMedic.Scenarios.Bots
         {
             h ??= right;
             var rig = c.rig;
+            if (h.Held != null && h.Held != band) yield return Release(h);
             lastStep = "elastic: grab";
             yield return Grab(h, band);
             Vector3 axisPt = LimbMath.PointAt(rig, limb, limbPos);
@@ -341,11 +342,16 @@ namespace FieldMedic.Scenarios.Bots
             }
             if (!fix) { lastStep = "elastic: wound, not fixed"; yield break; }
             lastStep = "elastic: fix";
-            axisPt = LimbMath.PointAt(rig, limb, band.State.limbPosition);
-            up = LimbMath.UpAround(rig, limb, band.State.limbPosition);
-            yield return MoveHeld(h, band.transform, band.transform.position, axisPt + up * (r + 0.025f), 0.8f);
+            // press the roll onto the turns and squeeze; the limb still twitches after the turns: home in on it live
             yield return SetTrigger(h, 1f);
-            for (int k = 0; k < 10 && !band.Fixed; k++) yield return Frame();
+            for (int k = 0; k < 40 && !band.Fixed; k++)
+            {
+                axisPt = LimbMath.PointAt(rig, limb, band.State.limbPosition);
+                up = LimbMath.UpAround(rig, limb, band.State.limbPosition);
+                Vector3 offset = band.transform.position - h.PalmPosition;
+                yield return Move(h, axisPt + up * (r + 0.025f) - offset, false, 1.5f);
+                yield return Frame();
+            }
             yield return SetTrigger(h, 0f);
             if (h.Held != null) yield return Release(h);
             lastStep = band.Fixed ? "elastic: done" : "elastic: not fixed";

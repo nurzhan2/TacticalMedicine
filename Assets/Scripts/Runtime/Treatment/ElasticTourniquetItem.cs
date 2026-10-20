@@ -27,6 +27,8 @@ namespace FieldMedic.Treatment
         public const float PinSeconds = 0.35f;
         public const float FullStretch = 0.10f;   // hand this far off the skin = band fully stretched
         public const int MaxShownTurns = 7;
+        /// <summary>Thickness of the clothing mesh over the limb radius (baggy trouser thigh > sleeve).</summary>
+        public static float ClothAllowanceFor(Limb limb, float pos) => LimbMath.IsLeg(limb) ? (pos < 1f ? 0.028f : 0.02f) : 0.016f;
 
         public CasualtyController Casualty { get; private set; }
         public Limb Limb { get; private set; }
@@ -114,13 +116,20 @@ namespace FieldMedic.Treatment
             else SpringOff();
         }
 
+        /// <summary>The roll is back on the turns (within a few cm of the band surface, near its line on the limb).</summary>
         bool NearTurns(Vector3 p)
         {
             if (Casualty == null) return false;
-            float d = LimbMath.Project(Casualty.rig, Limb, p, out float pos, out _);
+            Vector3 c = LimbMath.PointAt(Casualty.rig, Limb, State.limbPosition);
+            Vector3 axis = LimbMath.AxisAt(Casualty.rig, Limb, State.limbPosition);
             float r = LimbMath.RadiusAt(Limb, State.limbPosition);
-            return d < r + 0.07f && Mathf.Abs(LimbGeometry.Distance(State.limbId, State.limbPosition, pos)) < 0.07f;
+            Vector3 d = p - c;
+            float along = Mathf.Abs(Vector3.Dot(d, axis));
+            float radial = Vector3.ProjectOnPlane(d, axis).magnitude;
+            _lastNear = $"radial {radial - r:F3} m off the skin, {along:F3} m along";
+            return radial < r + 0.08f && along < 0.08f;
         }
+        string _lastNear;
 
         // ------------------------------------------------------------------ per frame
         void Update()
@@ -219,7 +228,7 @@ namespace FieldMedic.Treatment
             _onLimb.gameObject.SetActive(false);
             _strand.gameObject.SetActive(false);
             _shownTurns = -1;
-            Debug.Log($"[FMVR] {Label}: let go before fixing — the band sprang off");
+            Debug.Log($"[FMVR] {Label}: let go before fixing — the band sprang off ({_lastNear})");
         }
 
         /// <summary>Scenario/test setup: band already on the limb with `turns` fully stretched turns and fixed.</summary>
@@ -262,7 +271,8 @@ namespace FieldMedic.Treatment
             Vector3 axis = LimbMath.AxisAt(rig, Limb, pos);
             Vector3 up = LimbMath.UpAround(rig, Limb, pos);
             _onLimb.SetPositionAndRotation(c, Quaternion.LookRotation(axis, up));
-            float r = LimbMath.RadiusAt(Limb, pos) + 0.002f;
+            // over the trouser leg / sleeve the band lies on the cloth (the clothing mesh is thicker than the limb radius)
+            float r = LimbMath.RadiusAt(Limb, pos) + (State.overClothing ? ClothAllowanceFor(Limb, pos) : 0.003f);
             int turns = Mathf.Min(MaxShownTurns, State.elasticTurnsLaid);
             if (turns != _shownTurns || Mathf.Abs(r - _shownR) > 0.001f)
             {

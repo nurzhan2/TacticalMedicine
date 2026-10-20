@@ -157,6 +157,15 @@ namespace FieldMedic.Treatment
             if (ArtRoot != null) ArtModels.ShowState(ArtRoot, ArtSpec, inPouch);
         }
 
+        bool _hiddenInKit;
+        /// <summary>Inside a closed kit: not drawn (the item cannot be grabbed there anyway).</summary>
+        public void SetHiddenInKit(bool hidden)
+        {
+            if (hidden == _hiddenInKit || Visual == null) return;
+            _hiddenInKit = hidden;
+            Visual.gameObject.SetActive(!hidden);
+        }
+
         /// <summary>Hides / shows the whole carried look (state changes: band on a limb, seal torn out, sheet unfolded).</summary>
         protected void ShowCarriedLook(bool on)
         {

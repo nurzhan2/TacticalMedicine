@@ -164,6 +164,7 @@ namespace FieldMedic.Casualty
             pouchGo.transform.localScale = new Vector3(1f / Mathf.Max(1e-4f, ls.x), 1f / Mathf.Max(1e-4f, ls.y), 1f / Mathf.Max(1e-4f, ls.z));
             Ifak = pouchGo.AddComponent<IfakPouch>();
             Ifak.buildVisual = false;
+            Ifak.revealOnReach = true; // w9d: his kit items (real-size models) stay inside the pouch until a hand reaches in
             Ifak.contents = ifakContents;
             Ifak.quickContents = new MedItemKind[0]; // his kit is one pouch on the plate carrier
             Ifak.slotSpacing = 0.045f;

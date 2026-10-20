@@ -79,8 +79,8 @@ namespace FieldMedic.Treatment
         /// once the package is torn; the liner peels with the backing tab.</summary>
         public override void OnArtApplied(Transform art)
         {
-            _artSeal = ArtModels.Graft(art, "Seal", _seal, Quaternion.Euler(-90f, 0f, 0f), new Vector3(0f, 0.0005f, 0f), false);
-            _artLiner = ArtModels.Graft(art, "Liner", _seal, Quaternion.Euler(-90f, 0f, 0f), new Vector3(0f, -0.0022f, 0.005f), false);
+            _artSeal = ArtModels.Graft(art, "Seal", _seal, Quaternion.Euler(90f, 0f, 0f), new Vector3(0f, 0.0005f, 0f), false);
+            _artLiner = ArtModels.Graft(art, "Liner", _seal, Quaternion.Euler(90f, 0f, 0f), new Vector3(0f, -0.0022f, 0.005f), false);
             if (_artSeal != null)
                 foreach (Transform c in _seal)
                     if (c.name.StartsWith("Merged_")) foreach (var r in c.GetComponentsInChildren<Renderer>(true)) r.enabled = false;

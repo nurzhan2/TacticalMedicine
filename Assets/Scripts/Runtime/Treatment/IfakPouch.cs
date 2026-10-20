@@ -27,6 +27,9 @@ namespace FieldMedic.Treatment
         [Tooltip("1st echelon, quick-access pouch next to the main one (always open). Empty = no quick pouch.")]
         public MedItemKind[] quickContents = { MedItemKind.Tourniquet, MedItemKind.TraumaShears };
         public bool buildVisual = true;
+        [Tooltip("w9d: the casualty's pouch — its items are inside it and show only when a hand reaches in (the real models are bigger than the pouch on his carrier).")]
+        public bool revealOnReach;
+        public float revealDistance = 0.16f;
         public bool buildOnStart = true;
         [Header("Layout (local)")]
         public Vector3 slotOrigin = new Vector3(-0.165f, 0.02f, 0.045f);
@@ -192,11 +195,23 @@ namespace FieldMedic.Treatment
         {
             if (bodyLocked) Follow(Time.deltaTime, false);
             // after the kit moved: slotted items exactly in place, loose ones never hover (owner bug, w9)
+            bool shut = Art != null && Art.Open01 < 0.6f;
             for (int i = 0; i < Items.Count; i++)
             {
                 var it = Items[i];
-                if (it != null) it.Enforce();
+                if (it == null) continue;
+                it.Enforce();
+                // w9d: the real kit closed — the main-pouch items are inside it (they are bigger than the folded body)
+                if (Art != null) it.SetHiddenInKit(shut && it.InPouch && !IsSlotOpen(it.homeSlot));
+                else if (revealOnReach) it.SetHiddenInKit(it.InPouch && !(it is TourniquetCAT) && !HandNear(it.transform.position));
             }
+        }
+
+        bool HandNear(Vector3 p)
+        {
+            foreach (var h in FieldMedic.Interaction.HandGrabber.All)
+                if (h != null && h.isActiveAndEnabled && Vector3.Distance(h.PalmPosition, p) < revealDistance) return true;
+            return false;
         }
 
         void Follow(float dt, bool snap)
