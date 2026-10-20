@@ -279,12 +279,21 @@ namespace FieldMedic.Tests
             yield return _bot.CheckPulse(C, PulseSite.PedalR, 5.5f);
             yield return WaitStep(t, "tq_time");
             var cat = C.Interaction.Tourniquets.First();
-            yield return _bot.Write(Pouch.Find<MarkerItem>(), cat.TimeLabelPoint);
+            // like a person: look, and write again if the strap is still blank (he moves, the strap shifts)
+            for (int k = 0; k < 3 && !cat.State.TimeMarked; k++)
+            {
+                if (_bot.right.Held != null) yield return _bot.Release(_bot.right);
+                yield return _bot.Write(Pouch.Find<MarkerItem>(), cat.TimeLabelPoint);
+            }
             yield return WaitStep(t, "sweep");
             yield return _bot.BloodSweep(C);
             yield return WaitStep(t, "bandage2");
             var forearm = C.Patient.wounds.First(w => w.region == BodyRegion.ForearmL);
             yield return HandsTo(Hips);
+            // a dressing goes on skin, not on the sleeve: cut the sleeve open over the wound first (w9 lesson action)
+            if (!forearm.exposed)
+                yield return _bot.CutClothing(Pouch.Find<ShearsItem>(), C, Limb.LeftArm, Mathf.Min(2.25f, forearm.LimbPos + 0.5f), Mathf.Max(1.02f, forearm.LimbPos - 0.5f));
+            Assert.IsTrue(forearm.exposed, "sleeve cut open over the forearm wound (" + _bot.lastStep + ")");
             yield return _bot.Bandage(Pouch.Find<BandageItem>(), C.Interaction.Care(forearm));
             if (forearm.control != BleedControl.PressureDressing)
             {

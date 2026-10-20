@@ -158,6 +158,7 @@ namespace FieldMedic.Tests
             moment?.Invoke("aboard");
             // the player walks into the door zone → fade, seated, door closes, lift-off, fade out
             TakeHead(tac.DoorPoint + Vector3.up * 1.6f);
+            if (headFollowsCamera) tac.Board(); // video capture: the head rides the camera — board by the trigger path
             t1 = Time.time;
             while (!tac.PlayerAboard && Time.time - t1 < 6f) yield return null;
             Assert.IsTrue(tac.PlayerAboard, "player boarded by stepping into the door zone");

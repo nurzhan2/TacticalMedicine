@@ -41,8 +41,8 @@ namespace FieldMedic.Tests
             var pts = Points;
             Assert.GreaterOrEqual(pts.Length, 12, "too few cover points");
             foreach (var p in pts) Assert.IsNotNull(p.cover, p.name + ": cover object not linked");
-            // walls of both ruined houses, the burnt APC, the sandbagged barrier lines, the pipe, the wrecks
-            foreach (var name in new[] { "HouseA_North", "HouseC_North", "arx_apc", "concrete_blockade", "concrete_barriers_lowpoly", "concrete_pipe", "car_wreck_beetle" })
+            // walls of both ruined houses, the burnt APC, the sandbagged barrier lines, the wrecks (w4: the concrete pipe became a car wreck)
+            foreach (var name in new[] { "HouseA_North", "HouseC_North", "arx_apc", "concrete_blockade", "concrete_barriers_lowpoly", "car_wreck_beetle" })
                 Assert.IsTrue(pts.Any(p => p.cover.name == name), "no cover point behind " + name);
         }
 

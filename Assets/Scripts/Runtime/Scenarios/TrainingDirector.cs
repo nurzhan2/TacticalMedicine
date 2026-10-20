@@ -305,6 +305,7 @@ namespace FieldMedic.Scenarios
                 case "pulse_foot": return C.Protocol.log.Any(e => e.code == "pulse" && (e.target == "FootR" || e.target == "FootL"));
                 case "gloves": return C.Protocol.glovesOn;
                 case "exposed": return _wound.exposed;
+                case "exposed2": return _wound2 != null && _wound2.exposed;
                 case "packed": return _wound.packed;
                 case "ifak_open": return _pouch == null || _pouch.IsOpen;
                 case "gauze_grab": return FindObjectsByType<GauzeItem>(FindObjectsSortMode.None).Any(g => g.IsHeld) || (_wound2 != null && _wound2.packed);

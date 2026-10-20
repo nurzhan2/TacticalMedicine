@@ -13,8 +13,12 @@ namespace FieldMedic.Tests
     {
         readonly List<GameObject> _spawned = new List<GameObject>();
 
-        [SetUp]
-        public void LogState() => Debug.Log("[FMVR] grab test state: " + GlobalStateGuard.Describe());
+        [UnitySetUp]
+        public System.Collections.IEnumerator LogState()
+        {
+            yield return FreshScene.Ensure(); // w9: the old order-dependent flake was a battlefield left by an earlier test
+            Debug.Log("[FMVR] grab test state: " + GlobalStateGuard.Describe());
+        }
 
         [TearDown]
         public void TearDown()

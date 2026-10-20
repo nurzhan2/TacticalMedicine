@@ -25,9 +25,10 @@ namespace FieldMedic.Tests
         IfakPouch _pouch;
         MedicBot _bot;
 
-        [SetUp]
-        public void SetUp()
+        [UnitySetUp]
+        public IEnumerator SetUp()
         {
+            yield return FreshScene.Ensure(); // never inherit a battlefield from an earlier test
             _guard = new GlobalStateGuard();
             TreatmentAudio.Muted = true;
             UiAudio.Muted = true;

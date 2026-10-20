@@ -139,6 +139,8 @@ namespace FieldMedic.Scenarios.Bots
             if (g is MedItem mi && mi.InPouch && mi.pouch != null && !mi.pouch.IsSlotOpen(mi.homeSlot))
                 yield return OpenPouch(mi.pouch, h);
             lastStep = "grab " + g.name;
+            // an empty hand that still "squeezes" (the item in it was used up) opens first, or no new grab can start
+            if (h.Held == null && In(h).Grip > 0f) { In(h).Grip = 0f; yield return Frame(); }
             Vector3 aim = at ?? g.transform.position;
             yield return Move(h, aim);
             // handles on a moving body: home in on the live position
@@ -377,8 +379,9 @@ namespace FieldMedic.Scenarios.Bots
             yield return Move(holdHand, holdHand.PalmPosition + n * 0.08f + Vector3.up * 0.04f);
             for (int s = 0; s < maxStrokes && !care.Packing.Complete; s++)
             {
+                w = care.transform.position; n = care.Normal; // he breathes and twitches: aim at the live wound each stroke
                 yield return Move(pusher, w + n * 0.02f, true, 0.6f);
-                yield return Move(pusher, w - n * 0.03f, true, 0.4f);
+                yield return Move(pusher, w - n * 0.035f, true, 0.4f);
                 yield return Move(pusher, w + n * 0.02f, true, 0.6f);
             }
             yield return Move(pusher, w + n * 0.12f, true);
@@ -470,8 +473,10 @@ namespace FieldMedic.Scenarios.Bots
             lastStep = "seal: wipe";
             Vector3 w = care.transform.position, n = care.Normal;
             Vector3 side = Vector3.Cross(n, Vector3.up).sqrMagnitude > 0.01f ? Vector3.Cross(n, Vector3.up).normalized : Vector3.right;
-            for (int k = 0; k < 3; k++)
+            // like a person: wipe until the skin around the hole is dry (a few strokes, more on a bloody chest)
+            for (int k = 0; k < 6 && care.Wipes < 4; k++)
             {
+                w = care.transform.position; n = care.Normal;
                 yield return Move(other, w + n * 0.01f - side * 0.14f, false, 1.5f);
                 yield return Move(other, w + n * 0.01f + side * 0.14f, false, 0.5f);
                 yield return Move(other, w + n * 0.12f + side * 0.14f, false, 1.5f);
