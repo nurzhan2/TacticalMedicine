@@ -51,7 +51,12 @@ namespace FieldMedic.Treatment
         [Tooltip("w7: the player's pouch starts closed — pull the red tab to rip the lid open (PouchFlap).")]
         public bool closedLid = true;
         public PouchFlap Flap { get; private set; }
-        public bool IsOpen => Flap == null || Flap.IsOpen;
+        /// <summary>w10: the player's kit is stowed on the hip and summoned as a tray (<see cref="KitTray"/>).</summary>
+        public KitTray Tray { get; internal set; }
+        /// <summary>w10: body-locked kits become a summonable tray (tests of the legacy worn kit turn it off).</summary>
+        public static bool UseTray = true;
+        bool TrayWanted => bodyLocked && UseTray;
+        public bool IsOpen => Tray != null ? Tray.IsOpen : Flap == null || Flap.IsOpen;
         public Transform QuickPouch { get; private set; }
         /// <summary>w9d: the imported FMVR_IFAK (null = procedural tray).</summary>
         public IfakArt Art { get; private set; }
@@ -79,8 +84,9 @@ namespace FieldMedic.Treatment
                 slot.localRotation = Quaternion.identity;
                 AddItem(contents[i], slot);
             }
-            if (buildVisual && closedLid) Flap = PouchFlap.Add(this);
+            if (buildVisual && closedLid && !TrayWanted) Flap = PouchFlap.Add(this);
             if (bodyLocked) Follow(1f, true);
+            if (TrayWanted) Tray = KitTray.Attach(this);
         }
 
         void AddItem(MedItemKind kind, Transform slot)
@@ -146,13 +152,23 @@ namespace FieldMedic.Treatment
             }
             if (quickContents != null) foreach (var k in quickContents) Place(k);
             foreach (var k in contents) Place(k);
-            if (closedLid) Flap = PouchFlap.Add(this);
+            if (closedLid && !TrayWanted) Flap = PouchFlap.Add(this);
             if (bodyLocked) Follow(1f, true);
+            if (TrayWanted) Tray = KitTray.Attach(this);
             return true;
         }
 
         /// <summary>Can an item in this slot be taken / put back? Quick pouch: always; main pouch: once the lid is open.</summary>
         public bool IsSlotOpen(Transform slot) => IsOpen || (slot != null && QuickPouch != null && slot.IsChildOf(QuickPouch));
+
+        /// <summary>Released at `item`'s position: does it go back into its slot? Tray: within 25 cm of the open tray or at
+        /// the hip kit. Worn/ground kit (w9a): its own slot open and within the item's return distance.</summary>
+        public bool AcceptsReturn(MedItem item)
+        {
+            if (item == null || item.homeSlot == null) return false;
+            if (Tray != null) return Tray.AcceptsReturn(item.transform.position);
+            return IsSlotOpen(item.homeSlot) && Vector3.Distance(item.transform.position, item.homeSlot.position) < item.returnDistance;
+        }
 
         public T Find<T>(int index = 0) where T : MedItem
         {
@@ -193,9 +209,21 @@ namespace FieldMedic.Treatment
 
         void LateUpdate()
         {
-            if (bodyLocked) Follow(Time.deltaTime, false);
+            if (Tray != null) Tray.Drive(Time.deltaTime);
+            else if (bodyLocked) Follow(Time.deltaTime, false);
             // after the kit moved: slotted items exactly in place, loose ones never hover (owner bug, w9)
             bool shut = Art != null && Art.Open01 < 0.6f;
+            if (Tray != null)
+            {
+                bool stowed = Tray.Open01 < 0.05f;
+                foreach (var it in Items)
+                {
+                    if (it == null) continue;
+                    it.Enforce();
+                    it.SetHiddenInKit(stowed && it.InPouch);
+                }
+                return;
+            }
             for (int i = 0; i < Items.Count; i++)
             {
                 var it = Items[i];

@@ -146,10 +146,14 @@ namespace FieldMedic.Input
                 a.Trigger = (lmb && shift) || mouse.middleButton.isPressed || (kb != null && kb.fKey.isPressed) ? 1f : 0f;
                 a.PrimaryButton = kb != null && kb.spaceKey.isPressed;
                 a.Thumbstick = kb != null && kb.xKey.isPressed ? new Vector2(0f, -1f) : Vector2.zero;
+                // w10: K = the kit tray (left X), hold M = radio push-to-talk (left Y), L = headlamp (left stick click)
+                Left.PrimaryButton = (a == Left && a.PrimaryButton) || (kb != null && kb.kKey.isPressed);
+                Left.SecondaryButton = kb != null && kb.mKey.isPressed;
+                Left.StickClick = kb != null && kb.lKey.isPressed;
                 var idle = _activeRight ? Left : Right;
                 idle.Grip = idle.GripLocked ? 1f : 0f; // a locked hand keeps holding while the other one works
                 idle.Trigger = 0f;
-                idle.PrimaryButton = false;
+                if (idle != Left) idle.PrimaryButton = false;
                 idle.Thumbstick = Vector2.zero;
             }
 
@@ -169,7 +173,7 @@ namespace FieldMedic.Input
             string hand = a.Handedness == Handedness.Left ? "ЛЕВАЯ" : "ПРАВАЯ";
             GUI.color = new Color(1f, 1f, 1f, 0.75f);
             GUI.Label(new Rect(10, 10, 900, 22),
-                $"Рука: {hand}{(a.GripLocked ? " [держит]" : "")}  |  ПКМ+мышь — рука, колесо — глубина, ЛКМ — хват, G — зафиксировать хват, F — триггер, Tab — рука, Q/E — кисть, C — присесть, WASD — шаг, X — ползти назад");
+                $"Рука: {hand}{(a.GripLocked ? " [держит]" : "")}  |  ПКМ+мышь — рука, колесо — глубина, ЛКМ — хват, G — зафиксировать хват, F — триггер, Tab — рука, Q/E — кисть, C — присесть, WASD — шаг, X — ползти назад, K — аптечка, M (держать) — рация, L — фонарь");
             if (Time.unscaledTime < a.HapticUntil)
             {
                 GUI.color = new Color(1f, 0.3f, 0.2f, Mathf.Clamp01(a.LastHapticAmplitude));

@@ -2,7 +2,9 @@ using UnityEngine;
 
 namespace FieldMedic.Interaction
 {
-    /// <summary>Subtle hover tint (no outline shader, mobile friendly) via MaterialPropertyBlock.</summary>
+    /// <summary>Subtle hover tint (no outline shader, mobile friendly) via MaterialPropertyBlock.
+    /// w10: the renderer list is re-read every time the tint switches on (imported art swaps states: sealed pack →
+    /// opened pack...), the base colour always comes from the shared material.</summary>
     public sealed class GrabHighlight : MonoBehaviour
     {
         public Color tint = new Color(1f, 0.85f, 0.55f);
@@ -14,7 +16,9 @@ namespace FieldMedic.Interaction
         MaterialPropertyBlock _mpb;
         public bool IsHighlighted { get; private set; }
 
-        void Awake()
+        void Awake() => Collect();
+
+        void Collect()
         {
             _renderers = GetComponentsInChildren<Renderer>();
             _original = new Color[_renderers.Length];
@@ -23,12 +27,13 @@ namespace FieldMedic.Interaction
                 var m = _renderers[i].sharedMaterial;
                 _original[i] = m != null && m.HasProperty(BaseColor) ? m.GetColor(BaseColor) : Color.white;
             }
-            _mpb = new MaterialPropertyBlock();
+            if (_mpb == null) _mpb = new MaterialPropertyBlock();
         }
 
         public void SetHighlighted(bool on)
         {
-            if (_renderers == null) Awake();
+            if (_renderers == null || (on && !IsHighlighted)) Collect();
+            if (!on && !IsHighlighted) return;
             IsHighlighted = on;
             for (int i = 0; i < _renderers.Length; i++)
             {

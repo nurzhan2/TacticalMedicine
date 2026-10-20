@@ -107,7 +107,7 @@ namespace FieldMedic.Scenarios.SelfAid
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            if (RadioSet.Instance != null) RadioSet.Instance.pttOverride = null;
+            if (RadioSet.Instance != null) { RadioSet.Instance.pttOverride = null; RadioSet.Instance.reportOverride = null; RadioSet.Instance.expectOverride = null; }
             foreach (var r in _rescuers) if (r != null) Destroy(r.gameObject);
             if (Menu != null) Destroy(Menu.gameObject);
             if (Panel != null) Destroy(Panel.gameObject);
@@ -274,7 +274,12 @@ namespace FieldMedic.Scenarios.SelfAid
             BuildLimb();
             if (Wounded != null && Arm) Wounded.gripDisabled = true;
             if (!Arm) Crawl(true);
-            if (RadioSet.Instance != null) RadioSet.Instance.pttOverride = OnPtt;
+            if (RadioSet.Instance != null)
+            {
+                RadioSet.Instance.pttOverride = OnPtt;
+                RadioSet.Instance.reportOverride = RadioLines;
+                RadioSet.Instance.expectOverride = () => Run != null && !Run.Ended && (Run.CheckPending || (!Run.ReportSent && Run.InCover));
+            }
             Menu = SelfAidReportMenu.Create(Run, head, Config.left ? 1f : -1f);
             Menu.Chosen += o => { if (RadioSet.Instance != null) RadioSet.Instance.ShowLine(o.Text(GameSettings.KZ)); Log("report: " + o.ru); };
             if (tremor && !testMode)
@@ -383,6 +388,31 @@ namespace FieldMedic.Scenarios.SelfAid
             if (Lesson != null && !LessonComplete) StepLogic();
             if (Panel != null) PlacePanel(dt);
             MoveRescuers(dt);
+            UpdateStepGuide();
+        }
+
+        /// <summary>w10 step line (wrist + bottom of view): what to do now and with which button.</summary>
+        void UpdateStepGuide()
+        {
+            var r = Run;
+            if (r == null || r.Ended) return;
+            var tq = r.tq;
+            if (!r.InCover && r.CoverReachedAt < 0f)
+                StepGuide.Set(Arm ? "Сначала в укрытие: дверь дома А" : "Ползи в укрытие: дверь дома А (стик)", Arm ? "Алдымен баспанаға: А үйінің есігі" : "Баспанаға жорғала: А үйінің есігі (стик)", Arm ? ControlIcon.Hand : ControlIcon.Stick);
+            else if (!tq.OnLimb)
+                StepGuide.Set("X — аптечка. Свободной рукой возьми CAT (GRIP/КУРОК)", "X — қобдиша. Бос қолмен CAT ал (GRIP/ШҮРІППЕ)", ControlIcon.X, ControlIcon.Grip, ControlIcon.Trigger);
+            else if (!tq.Locked)
+                StepGuide.Set("Жгут высоко, затяни ленту, крути вороток, защёлкни", "Жгут жоғары, таспаны тарт, бұра, бекіт", ControlIcon.Grip);
+            else if (r.TimeMarkedAt < 0f)
+                StepGuide.Set("X — аптечка, маркер: КУРОК — пиши время на ленте", "X — қобдиша, маркер: ШҮРІППЕ — таспаға уақытты жаз", ControlIcon.X, ControlIcon.Grip, ControlIcon.Trigger);
+            else if (r.CheckPending)
+                StepGuide.Set("Зажми Y — ответь по рации", "Y-ты басып тұр — рациямен жауап бер", ControlIcon.Y);
+            else if (!r.ReportSent)
+                StepGuide.Set("Зажми Y — доклад: выбери строку, отпусти Y", "Y-ты басып тұр — баяндама: жолды таңда, Y жібер", ControlIcon.Y, ControlIcon.Trigger);
+            else if (!r.Blanket)
+                StepGuide.Set("X — аптечка: одеяло, прижми к груди", "X — қобдиша: көрпені кеудеңе бас", ControlIcon.X, ControlIcon.Grip);
+            else
+                StepGuide.Set("Жди своих в укрытии, отвечай по рации (Y)", "Өзіміздікілерді баспанада күт, рациямен жауап бер (Y)", ControlIcon.Y);
         }
 
         bool InCover()
@@ -492,6 +522,19 @@ namespace FieldMedic.Scenarios.SelfAid
             }
             if (RadioSet.Instance != null) RadioSet.Instance.ShowLine(GameSettings.T("«На связи.»", "«Байланыстамын.»"));
             return true;
+        }
+
+        /// <summary>w10: the Y radio panel — the report lines to choose from (null: a check-in answer / "on the air",
+        /// transmitted by the press itself).</summary>
+        RadioReport RadioLines()
+        {
+            if (Run == null || Run.Ended || Run.CheckPending || Run.ReportSent || Menu == null) return null;
+            bool kz = GameSettings.KZ;
+            var opts = Run.ReportOptions();
+            var r = new RadioReport { title = (kz ? "ДОКЛАД  " : "ДОКЛАД  ") + SelfAidRun.ReportStepTitle(Run.ReportStep, kz) };
+            foreach (var o in opts) r.Add(o.Text(kz));
+            r.send = i => Menu.ChooseFromRadio(i);
+            return r;
         }
 
         /// <summary>Radio PTT as the player would press it (tests, desktop key M).</summary>
@@ -666,7 +709,7 @@ namespace FieldMedic.Scenarios.SelfAid
             Crawl(false);
             if (_tremorL != null) _tremorL.amplitude = 0f;
             if (_tremorR != null) _tremorR.amplitude = 0f;
-            if (RadioSet.Instance != null) RadioSet.Instance.pttOverride = null;
+            if (RadioSet.Instance != null) { RadioSet.Instance.pttOverride = null; RadioSet.Instance.reportOverride = null; RadioSet.Instance.expectOverride = null; }
             if (Menu != null) Menu.Hide();
             if (Vision != null) Vision.bloodLoss = 0f;
             FieldMedic.Battle.BattleDirector.PlayerArmed = false;

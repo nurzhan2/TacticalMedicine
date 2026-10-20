@@ -70,7 +70,7 @@ namespace FieldMedic.Comfort
             Vector2 move = MoveOverride ?? (DesktopSimulator.XRActive ? OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick) : Vector2.zero);
             if (SmoothEnabled && !drag && move.sqrMagnitude > 0.02f) Move(move, dt);
 
-            if (TeleportEnabled && !drag) UpdateTeleport();
+            if (TeleportEnabled && !drag && !InputLocks.RightStickCaptured) UpdateTeleport();
             FollowGround(dt);
         }
 

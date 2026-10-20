@@ -194,6 +194,41 @@ namespace FieldMedic.Scenarios
             Proximity(dt);
             if (!LessonComplete) Guides();
             else _guide?.Hide();
+            UpdateStepGuide();
+        }
+
+        // ------------------------------------------------------------------ w10 step line (wrist + bottom of view)
+        void UpdateStepGuide()
+        {
+            var step = Progress.Step;
+            if (step == null || LessonComplete)
+            {
+                StepGuide.Set("Урок выполнен — итог на доске", "Сабақ орындалды — қорытынды тақтада", ControlIcon.Trigger);
+                return;
+            }
+            int ai = 0;
+            for (int i = 0; i < step.actions.Count; i++)
+                if (!(_sticky != null && i < _sticky.Length && _sticky[i])) { ai = i; break; }
+            var a = step.actions.Count > 0 ? step.actions[ai] : null;
+            string head = Progress.StepNumber + "/" + Progress.StepCount + "  ";
+            StepGuide.Set(head + step.ru + (a != null ? ": " + a.ru : ""), head + step.Text(true) + (a != null ? ": " + a.Text(true) : ""), IconsFor(step));
+        }
+
+        /// <summary>The buttons the current step needs: kit item still in the kit → X + grab; held tools with a trigger action
+        /// → GRIP + КУРОК; radio → Y; drags → grab; hands-only steps → hand.</summary>
+        ControlIcon[] IconsFor(LessonStep step)
+        {
+            if (step.item == "Radio") return new[] { ControlIcon.Y };
+            var kind = KindOf(step.item);
+            if (kind.HasValue)
+            {
+                var item = FindItem(step.item);
+                if (item != null && item.InPouch) return new[] { ControlIcon.X, ControlIcon.Grip, ControlIcon.Trigger };
+                if (kind is MedItemKind.Marker or MedItemKind.TraumaShears or MedItemKind.ChestSeal) return new[] { ControlIcon.Grip, ControlIcon.Trigger };
+                return new[] { ControlIcon.Grip };
+            }
+            if (step.id is "drag_grab" or "drag_cover" or "loaded" || step.item == "Smoke") return new[] { ControlIcon.Grip, ControlIcon.Trigger };
+            return new[] { ControlIcon.Hand };
         }
 
         bool _kz;
@@ -400,7 +435,10 @@ namespace FieldMedic.Scenarios
         void Guides()
         {
             var step = Progress.Step;
-            if (step == null || !GameSettings.Hints || _doneAt >= 0f) { _guide.Hide(); return; }
+            var tray = _pouch != null ? _pouch.Tray : null;
+            if (step == null || !GameSettings.Hints || _doneAt >= 0f) { _guide.Hide(); if (tray != null) tray.Wanted = null; return; }
+            // w10: the item the step needs glows in the tray (and the hip kit glows while the tray is closed)
+            if (tray != null) tray.Wanted = KindOf(step.item);
             // the first unticked action with its own check decides the motion (e.g. strap before windlass)
             string sub = null;
             for (int i = 0; i < step.actions.Count; i++)
@@ -410,6 +448,14 @@ namespace FieldMedic.Scenarios
             Vector3? target = Target(step.target);
             _guide.Show(has, from, to, item, target, Panel.Visibility > 0.5f || step.phase == "CUF", _t);
         }
+
+        public static MedItemKind? KindOf(string key) => key switch
+        {
+            "CAT" => MedItemKind.Tourniquet, "Gauze" => MedItemKind.HemostaticGauze, "Bandage" => MedItemKind.IsraeliBandage,
+            "ChestSeal" => MedItemKind.ChestSeal, "Needle" => MedItemKind.DecompressionNeedle, "Npa" => MedItemKind.NasalAirway,
+            "Gloves" => MedItemKind.NitrileGloves, "Shears" => MedItemKind.TraumaShears, "Marker" => MedItemKind.Marker,
+            "Blanket" => MedItemKind.ThermalBlanket, "Card" => MedItemKind.CasualtyCard, _ => (MedItemKind?)null,
+        };
 
         MedItem FindItem(string key)
         {
@@ -437,7 +483,7 @@ namespace FieldMedic.Scenarios
                 case "Wound": return WoundPoint(_wound);
                 case "Wound2": return _wound2 != null && _wound2.discovered ? WoundPoint(_wound2) : (Vector3?)null;
                 case "Wound3": return _wound3 != null ? WoundPoint(_wound3) : (Vector3?)null;
-                case "Ifak": return _pouch != null ? _pouch.transform.position : (Vector3?)null;
+                case "Ifak": return _pouch != null ? (_pouch.Tray != null ? _pouch.Tray.TargetPoint : _pouch.transform.position) : (Vector3?)null;
                 case "Foot": return HandTreatment.PulsePoint(rig, _wound.region.ToString().EndsWith("L") ? PulseSite.PedalL : PulseSite.PedalR);
                 case "TqLabel": return cat != null && cat.State.OnLimb ? cat.TimeLabelPoint : (Vector3?)null;
                 case "DragHandle": return C.Interaction != null && C.Interaction.Drag != null ? C.Interaction.Drag.transform.position : (Vector3?)null;
@@ -490,7 +536,9 @@ namespace FieldMedic.Scenarios
                 case "bandage2_on":
                 case "bandage2": if (_wound2 == null) return false; from = Item<BandageItem>(); to = WoundPoint(_wound2); return true;
                 case "seal_front": from = Item<ChestSealItem>(); to = wound; return true;
-                case "ifak_open": if (_pouch == null || _pouch.Flap == null || _pouch.Flap.Tab == null || _pouch.IsOpen) return false;
+                case "ifak_open":
+                    if (_pouch != null && _pouch.Tray != null) { if (_pouch.IsOpen) return false; from = hand; to = _pouch.Tray.Hip.position; return true; }
+                    if (_pouch == null || _pouch.Flap == null || _pouch.Flap.Tab == null || _pouch.IsOpen) return false;
                     from = _pouch.Flap.Tab.transform.position; to = from + (_pouch.transform.up - _pouch.transform.forward).normalized * 0.12f; return true;
                 case "gauze_grab": from = hand; to = Item<GauzeItem>(); return true;
                 case "packed2": if (_wound2 == null) return false; from = Item<GauzeItem>(); to = WoundPoint(_wound2); return true;
@@ -568,7 +616,11 @@ namespace FieldMedic.Scenarios
                     Vector3 dir = to - from; dir.y = 0f;
                     _ghostRoot.rotation = Quaternion.LookRotation(dir.sqrMagnitude > 1e-4f ? dir.normalized : Vector3.forward) * Quaternion.Euler(25f, 0f, 0f);
                     float grip = k < 0.15f ? k / 0.15f : k < 0.85f ? 1f : 1f - (k - 0.85f) / 0.15f;
-                    _ghost.gripCurl = _ghost.indexCurl = _ghost.thumbCurl = Mathf.Clamp01(grip) * 0.85f;
+                    // w10: a grip squeeze (middle..little finger + thumb); the index stays out — before, the ghost curled
+                    // every finger and read as a trigger press, which did not grab
+                    _ghost.gripCurl = Mathf.Clamp01(grip) * 0.9f;
+                    _ghost.indexCurl = Mathf.Clamp01(grip) * 0.25f;
+                    _ghost.thumbCurl = Mathf.Clamp01(grip) * 0.7f;
                     float a = k < 0.08f ? k / 0.08f : k > 0.9f ? (1f - k) / 0.1f : 1f;
                     _ghostMat.SetFloat("_Alpha", a);
                 }

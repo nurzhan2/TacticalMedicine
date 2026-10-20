@@ -82,8 +82,14 @@ namespace FieldMedic.Interaction
         }
 
         // ---------------- hover ----------------
+        /// <summary>w10: tint the object itself on hover (items). Handles on a body use only the hand's glow cue.</summary>
+        protected virtual bool AutoHighlight => false;
+        public bool IsHovered => _hoverCount > 0;
+
         internal void HoverEnter(HandGrabber hand)
         {
+            if (_highlight == null) _highlight = GetComponent<GrabHighlight>();
+            if (_highlight == null && AutoHighlight) _highlight = gameObject.AddComponent<GrabHighlight>();
             if (_hoverCount++ == 0 && _highlight != null) _highlight.SetHighlighted(true);
         }
 

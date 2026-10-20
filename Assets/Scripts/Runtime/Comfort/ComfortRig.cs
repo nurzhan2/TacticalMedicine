@@ -30,6 +30,7 @@ namespace FieldMedic.Comfort
 
             // snap turn
             float x = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick).x;
+            if (InputLocks.RightStickCaptured) x = 0f; // w10: the radio panel steps with the right stick
             if (_turnArmed && Mathf.Abs(x) > 0.75f)
             {
                 SnapTurn(Mathf.Sign(x) * ComfortSettings.SnapTurnDegrees);

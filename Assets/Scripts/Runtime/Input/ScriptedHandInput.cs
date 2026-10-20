@@ -15,6 +15,8 @@ namespace FieldMedic.Input
         public float Grip { get; set; }
         public float Trigger { get; set; }
         public bool PrimaryButton { get; set; }
+        public bool SecondaryButton { get; set; }
+        public bool StickClick { get; set; }
         public Vector2 Thumbstick { get; set; }
 
         /// <summary>Total haptic requests received (tests assert that feedback happened).</summary>

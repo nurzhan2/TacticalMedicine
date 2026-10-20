@@ -75,6 +75,9 @@ namespace FieldMedic.UI
                 var ray = new Ray(input.Position, input.Rotation * Quaternion.Euler(30f, 0f, 0f) * Vector3.forward);
                 var hit = Pick(ray, out float d);
                 bool trig = input.Trigger > 0.7f;
+                // w10: the trigger also grabs — a hand that is holding or hovering an item does not click far buttons
+                var grabber = rig.GetComponent<FieldMedic.Interaction.HandGrabber>();
+                if (grabber != null && (grabber.Held != null || grabber.Hovered != null)) hit = null;
                 if (hit != null)
                 {
                     hit.Hover();

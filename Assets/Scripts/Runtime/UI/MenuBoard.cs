@@ -136,6 +136,18 @@ namespace FieldMedic.UI
             Txt(GameSettings.T("Нажми кнопку пальцем или наведи луч и нажми курок.  ПК: наведи и щёлкни / Enter.",
                     "Түймені саусақпен бас немесе сәулемен көрсетіп, шүріппені бас."),
                 0f, -H / 2 + 0.06f, 0.014f, Dim, TextAnchor.LowerCenter, TextAlignment.Center);
+            // w10: controls tutorial (also runs by itself on the first launch)
+            var help = Btn("?", -W / 2 + 0.1f, -H / 2 + 0.16f, 0.1f, Steel, StartTutorial, 0.045f, GameSettings.T("УПРАВЛЕНИЕ", "БАСҚАРУ"), 0.017f);
+            help.name = "Btn_Tutorial";
+            Txt(GameSettings.T("X — аптечка   ·   Y (держать) — рация   ·   GRIP или КУРОК — взять", "X — қобдиша   ·   Y (ұста) — рация   ·   GRIP не ШҮРІППЕ — алу"),
+                0f, -H / 2 + 0.105f, 0.016f, Amber, TextAnchor.LowerCenter, TextAlignment.Center);
+        }
+
+        void StartTutorial()
+        {
+            Debug.Log("[FMVR] board: tutorial");
+            if (launchOverride != null) { launchOverride("tutorial"); return; }
+            FieldMedic.Scenarios.ControlsTutorial.Begin(FieldMedic.Scenarios.ScenarioDirector.Instance);
         }
 
         public void ShowScenarios()
@@ -173,8 +185,8 @@ namespace FieldMedic.UI
             Txt(GameSettings.T("Навыки:", "Дағдылар:"), -W / 2 + 0.06f, sy, 0.02f, Dim);
             Txt(sk, -W / 2 + 0.06f, sy - 0.04f, 0.018f, new Color(0.7f, 0.9f, 0.62f));
             if (def.selfAid)
-                Txt(GameSettings.T("Ты один. Помощь выдвинется после твоего доклада по рации (кнопка на левом плече).",
-                        "Сен жалғызсың. Көмек рациямен баяндағаннан кейін шығады (сол иықтағы түйме)."), -W / 2 + 0.06f, -H / 2 + 0.1f, 0.015f, Dim);
+                Txt(GameSettings.T("Ты один. Помощь выдвинется после твоего доклада по рации (зажми Y на левом контроллере).",
+                        "Сен жалғызсың. Көмек рациямен баяндағаннан кейін шығады (сол контроллердегі Y-ты басып тұр)."), -W / 2 + 0.06f, -H / 2 + 0.1f, 0.015f, Dim);
             else
             Txt(GameSettings.T("Эвакуация: ", "Эвакуация: ") + def.evacMinutes.ToString("0") + GameSettings.T(" мин после запроса по радио", " мин") +
                 (def.timeSkipMinutes.Length > 0 ? GameSettings.T("   ·   часы на руке: «+» — следующая веха", "   ·   сағат: «+»") : ""),

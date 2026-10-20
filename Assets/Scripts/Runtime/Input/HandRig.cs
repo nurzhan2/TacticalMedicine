@@ -10,7 +10,7 @@ namespace FieldMedic.Input
     [DefaultExecutionOrder(-50)]
     public sealed class HandRig : MonoBehaviour
     {
-        public enum Mode { Auto, OVR, Desktop, Scripted }
+        public enum Mode { Auto, OVR, Desktop, Scripted, XRDevice }
 
         public Handedness handedness = Handedness.Right;
         public Mode mode = Mode.Auto;
@@ -62,6 +62,27 @@ namespace FieldMedic.Input
             var s = new ScriptedHandInput(handedness, startPosition ?? transform.position) { Rotation = transform.rotation };
             SetInput(s, Mode.Scripted);
             return s;
+        }
+
+        /// <summary>w10: drive this hand from an Input System XR controller (PlayMode tests of the real device path).</summary>
+        public XRControllerHandInput UseXRDevice(UnityEngine.InputSystem.InputDevice device, Transform trackingSpace = null)
+        {
+            var x = new XRControllerHandInput(handedness, trackingSpace, device);
+            SetInput(x, Mode.XRDevice);
+            return x;
+        }
+
+        /// <summary>The player's input for a hand (first enabled rig of that side), null if none.</summary>
+        public static IHandInput Find(Handedness h)
+        {
+            foreach (var r in All) if (r != null && r.handedness == h && r.Input != null) return r.Input;
+            return null;
+        }
+
+        public static HandRig FindRig(Handedness h)
+        {
+            foreach (var r in All) if (r != null && r.handedness == h && r.Input != null) return r;
+            return null;
         }
 
         public void SetInput(IHandInput input, Mode activeMode)

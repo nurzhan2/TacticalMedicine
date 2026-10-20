@@ -39,7 +39,9 @@ namespace FieldMedic.Treatment
         public ArtModels.Spec ArtSpec => ArtModels.ByKind.TryGetValue(kind, out var s) ? s : null;
         public new HandGrabber Holder => PrimaryHolder;
         public IHandInput HolderInput => Holder != null ? Holder.Input : null;
-        public float Trigger => HolderInput != null ? HolderInput.Trigger : 0f;
+        /// <summary>Fine action of the held item (w10: re-armed after a trigger-started grab, see HandGrabber.ActionTrigger).</summary>
+        public float Trigger => Holder != null ? Holder.ActionTrigger : 0f;
+        protected override bool AutoHighlight => true;
         public Vector3 TipPosition => tip != null ? tip.position : transform.position;
         public bool IsHeld => IsGrabbed;
         /// <summary>Not in the kit, not held, not on the casualty, not used up.</summary>
@@ -144,6 +146,8 @@ namespace FieldMedic.Treatment
             if (homeSlot == null) return;
             InPouch = true;
             Pin();
+            // w10 tray: in the kit an item never shoves anything (hip, the casualty under the tray) — hover still finds it
+            if (pouch != null && pouch.Tray != null) SetSolid(false);
             transform.SetParent(homeSlot, false);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
@@ -219,9 +223,26 @@ namespace FieldMedic.Treatment
             homeSlot = null;
         }
 
+        bool[] _solidState;
+        Collider[] _ownColliders;
+
+        /// <summary>Root colliders solid (their original trigger flags) or all triggers.</summary>
+        void SetSolid(bool solid)
+        {
+            if (_ownColliders == null)
+            {
+                _ownColliders = GetComponents<Collider>();
+                _solidState = new bool[_ownColliders.Length];
+                for (int i = 0; i < _ownColliders.Length; i++) _solidState[i] = _ownColliders[i] != null && _ownColliders[i].isTrigger;
+            }
+            for (int i = 0; i < _ownColliders.Length; i++)
+                if (_ownColliders[i] != null) _ownColliders[i].isTrigger = solid ? _solidState[i] : true;
+        }
+
         void LeavePouch()
         {
             InPouch = false;
+            if (_ownColliders != null && !Attached) SetSolid(true);
             transform.SetParent(null, true);
             MakeFree();
             OnPouchState(false);
@@ -239,7 +260,7 @@ namespace FieldMedic.Treatment
         {
             if (IsGrabbed) return;
             if (Attached || Consumed || !isActiveAndEnabled) { OnItemReleased(hand); return; } // released by OnDisable: no re-parenting while deactivating
-            if (homeSlot != null && pouch != null && pouch.IsSlotOpen(homeSlot) && Vector3.Distance(transform.position, homeSlot.position) < returnDistance)
+            if (pouch != null && pouch.AcceptsReturn(this))
             {
                 ReturnToSlot();
                 OnItemReleased(hand);

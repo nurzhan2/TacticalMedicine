@@ -25,7 +25,12 @@ namespace FieldMedic.Input
         float Grip { get; }
         /// <summary>0..1, fine action (controller trigger / index pinch).</summary>
         float Trigger { get; }
+        /// <summary>A (right controller) / X (left controller). w10: left X = the kit tray.</summary>
         bool PrimaryButton { get; }
+        /// <summary>B (right controller) / Y (left controller). w10: hold left Y = radio push-to-talk.</summary>
+        bool SecondaryButton { get; }
+        /// <summary>Thumbstick pressed in (left: headlamp).</summary>
+        bool StickClick { get; }
         /// <summary>Primary thumbstick (zero for tracked hands / desktop). Used for pull-to-crawl.</summary>
         Vector2 Thumbstick { get; }
         /// <summary>Called once per frame by HandRig before anyone reads the values.</summary>

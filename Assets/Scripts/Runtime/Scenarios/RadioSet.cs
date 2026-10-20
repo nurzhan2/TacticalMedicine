@@ -26,6 +26,10 @@ namespace FieldMedic.Scenarios
         /// <summary>w9b self-aid: the PTT button answers check-ins / opens the report menu instead of the MEDEVAC lines.
         /// Return true when handled.</summary>
         public System.Func<bool> pttOverride;
+        /// <summary>w10 self-aid: the lines the Y panel offers (null result = nothing to choose, the press transmits).</summary>
+        public System.Func<RadioReport> reportOverride;
+        /// <summary>w10 self-aid: is a radio call expected right now (watch icon)?</summary>
+        public System.Func<bool> expectOverride;
 
         public int MedevacStep { get; private set; }
         public bool MedevacSent { get; private set; }
@@ -55,9 +59,9 @@ namespace FieldMedic.Scenarios
             ["evac_board"] = ("Раненый на борту. Садись, взлетаем!", "Жаралы бортта. Мін, ұшамыз!"),
             ["evac_away"] = ("Борт взлетел. Хорошая работа, медик.", "Борт ұшты. Жақсы жұмыс, медик."),
             ["sa_hit"] = ("Ты ранен. Сначала в укрытие, потом жгут.", "Сен жараландың. Алдымен баспанаға, сосын жгут."),
-            ["sa_tq"] = ("Жгут из быстрого подсумка. Свободной рукой. Высоко и туго.", "Жылдам подсумкадан жгут ал. Бос қолыңмен. Жоғары әрі қатты."),
+            ["sa_tq"] = ("Жгут из аптечки: нажми X. Свободной рукой. Высоко и туго.", "Жгут қобдишада: X бас. Бос қолыңмен. Жоғары әрі қатты."),
             ["sa_time"] = ("Запиши время на ленте жгута.", "Жгут таспасына уақытты жаз."),
-            ["sa_report"] = ("Доложи по рации: кто, где, что, что сделано.", "Рациямен баянда: кім, қайда, не болды, не істелді."),
+            ["sa_report"] = ("Доложи по рации: зажми Y. Кто, где, что, что сделано.", "Рациямен баянда: Y-ты басып тұр. Кім, қайда, не болды, не істелді."),
             ["sa_ack"] = ("Принял, трёхсотый. Группа выдвигается к тебе. Оставайся в укрытии, будь на связи.", "Қабылдадым. Топ саған шықты. Баспанада қал, байланыста бол."),
             ["sa_check"] = ("Медик, как ты? Ответь.", "Медик, қалайсың? Жауап бер."),
             ["sa_check2"] = ("Медик! Ответь! Не спи!", "Медик! Жауап бер! Ұйықтама!"),
@@ -80,6 +84,7 @@ namespace FieldMedic.Scenarios
             _src.maxDistance = 8f;
             _src.playOnAwake = false;
             Build();
+            RadioPanel.Ensure(this);
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -106,8 +111,7 @@ namespace FieldMedic.Scenarios
                 var rot = Quaternion.Euler(0f, _yaw, 0f);
                 transform.SetPositionAndRotation(head.position + rot * offsetFromHead, rot * Quaternion.Euler(20f, 25f, 0f));
             }
-            var kb = Keyboard.current;
-            if (!DesktopSimulator.XRActive && kb != null && kb.mKey.wasPressedThisFrame) PressToTalk();
+            // desktop M = hold left Y (DesktopSimulator) → RadioPanel
             if (Time.time > SubtitleUntil && Subtitle != null) { Subtitle = null; RefreshScreen(); }
         }
 
@@ -182,6 +186,44 @@ namespace FieldMedic.Scenarios
         }
 
         void Ack() => Say("medevac_ack");
+
+        /// <summary>w10: what the Y panel offers now. MEDEVAC: the four lines, the next one highlighted (they go out in
+        /// order, one per Y hold); after the request: a radio check.</summary>
+        public RadioReport CurrentReport()
+        {
+            if (reportOverride != null) return reportOverride();
+            bool kz = GameSettings.KZ;
+            if (MedevacSent)
+            {
+                var done = new RadioReport { title = GameSettings.T("РАЦИЯ  ·  эвакуация запрошена", "РАЦИЯ  ·  эвакуация сұралды") };
+                done.Add(GameSettings.T("«На связи. Как слышно?»", "«Байланыстамын. Қалай естілед?»"));
+                done.send = _ => ShowLine(GameSettings.T("«На связи.»", "«Байланыстамын.»"));
+                return done;
+            }
+            var c = FindCasualty();
+            string injuries = Injuries(c);
+            var lines = kz ? MedevacKz : MedevacRu;
+            var r = new RadioReport { title = GameSettings.T("РАЦИЯ  ·  запрос эвакуации, строка ", "РАЦИЯ  ·  эвакуация сұрау, жол ") + (MedevacStep + 1) + "/4", cursor = MedevacStep };
+            for (int i = 0; i < lines.Length; i++)
+                r.Add((i < MedevacStep ? "[+] " : "") + string.Format(lines[i], injuries), i == MedevacStep);
+            r.send = i => { if (i == MedevacStep) PressToTalk(); };
+            return r;
+        }
+
+        /// <summary>w10: the watch shows the radio icon while a report is expected.</summary>
+        public bool ReportExpected
+        {
+            get
+            {
+                if (expectOverride != null) return expectOverride();
+                if (MedevacSent) return false;
+                var t = TrainingDirector.Instance;
+                if (t != null && t.enabled && t.Progress != null) return t.Progress.Step != null && t.Progress.Step.id == "medevac";
+                var d = ScenarioDirector.Instance;
+                return d != null && !d.InMenu && d.Timeline != null &&
+                       (d.State == FieldMedic.Medical.ScenarioState.TacticalFieldCare || d.State == FieldMedic.Medical.ScenarioState.Evacuation);
+            }
+        }
 
         /// <summary>Test helper: send the whole request at once.</summary>
         public void SendMedevacNow() { while (!MedevacSent) PressToTalk(); }

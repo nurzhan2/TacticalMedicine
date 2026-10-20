@@ -6,7 +6,7 @@ namespace FieldMedic.Environment
 {
     /// <summary>
     /// Player's head torch on the helmet: red (light discipline) by default, white only on purpose.
-    /// VR: left-controller Y (Button.Four) toggles on/off, hold Y 1 s = switch red/white.
+    /// VR: left thumbstick click toggles on/off, hold it 1 s = switch red/white (w10: Y is the radio).
     /// Desktop: L toggles, Shift+L = red/white. The current mode is read by the <see cref="ThreatSystem"/>.
     /// </summary>
     [RequireComponent(typeof(Light))]
@@ -55,7 +55,9 @@ namespace FieldMedic.Environment
         {
             if (DesktopSimulator.XRActive)
             {
-                bool held = OVRInput.Get(OVRInput.Button.Four);
+                // w10: left Y is the radio now — the headlamp moved to the left thumbstick click
+                var left = FieldMedic.Input.HandRig.Find(FieldMedic.Input.Handedness.Left);
+                bool held = left != null && left.StickClick;
                 if (held)
                 {
                     _holdTime += Time.unscaledDeltaTime;

@@ -74,6 +74,13 @@ namespace FieldMedic.UI
             set { _snap = Mathf.RoundToInt(value); PlayerPrefs.SetInt("fm_snap", Mathf.RoundToInt(value)); }
         }
 
+        /// <summary>w10: the controls tutorial ran (or was skipped) once — it no longer starts by itself.</summary>
+        public static bool TutorialSeen
+        {
+            get => PlayerPrefs.GetInt("fm_tutorial_seen", 0) == 1;
+            set { PlayerPrefs.SetInt("fm_tutorial_seen", value ? 1 : 0); PlayerPrefs.Save(); }
+        }
+
         public static int BestScore(string scenarioId) => PlayerPrefs.GetInt("fm_best_" + scenarioId, -1);
         public static void SetBestScore(string scenarioId, int score) { PlayerPrefs.SetInt("fm_best_" + scenarioId, score); PlayerPrefs.Save(); }
 

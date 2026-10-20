@@ -101,6 +101,10 @@ namespace FieldMedic.Scenarios
             SetQuiet(0.35f);
             if (menuPlayerSpot != null) PlacePlayer(menuPlayerSpot);
             if (board != null) { if (last != null) board.ShowDebrief(last); else board.ShowMain(); }
+            FieldMedic.UI.StepGuide.Set("Меню: наведи луч на кнопку, КУРОК — нажать (или нажми пальцем)", "Мәзір: сәулені түймеге бағытта, ШҮРІППЕ — басу (не саусақпен)", FieldMedic.UI.ControlIcon.Trigger);
+            // w10: the very first launch on the headset starts with the controls tutorial (skippable, replay from the menu)
+            if (!testMode && !Application.isEditor && !FieldMedic.UI.GameSettings.TutorialSeen && last == null && ControlsTutorial.Instance == null)
+                ControlsTutorial.Begin(this);
         }
 
         /// <summary>Menu → scenario: reload the scene with a launch request (fresh casualty, no leftovers).</summary>
@@ -156,6 +160,9 @@ namespace FieldMedic.Scenarios
                 if (anchor.player != null) PlacePlayer(anchor.player);
             }
             if (board != null) board.ShowBriefing(def, variant, false);
+            // w10: controls on the wrist / bottom of the view (no medical answers in Combat/Exam)
+            FieldMedic.UI.StepGuide.Set("X — аптечка · Y (держать) — рация · GRIP / КУРОК — взять", "X — қобдиша · Y (ұста) — рация · GRIP / ШҮРІППЕ — алу",
+                FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Y, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger);
             if (minePath != null) minePath.gameObject.SetActive(def.incident == IncidentKind.Mine);
             Log("begin " + def.id + " " + variant);
             SetQuiet(def.incident == IncidentKind.None ? 0.6f : 0.8f);

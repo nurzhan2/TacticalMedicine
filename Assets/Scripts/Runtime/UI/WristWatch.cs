@@ -24,8 +24,12 @@ namespace FieldMedic.UI
         TextMesh _time, _info, _pulse, _golden;
         Transform _beat, _screen;
         Material _beatMat;
-        RoundButton _skip;
+        RoundButton _skip, _kit;
+        TextMesh _radioIcon;
         float _beatPhase;
+        /// <summary>w10: the radio icon is lit (a report is expected — hold Y).</summary>
+        public bool RadioIconShown => _radioIcon != null && _radioIcon.gameObject.activeSelf;
+        public RoundButton KitButton => _kit;
 
         public string PulseText => _pulse != null ? _pulse.text : "";
         public string GoldenText => _golden != null ? _golden.text : "";
@@ -51,11 +55,30 @@ namespace FieldMedic.UI
             _skip = RoundButton.Create(transform, "SkipTime", new Vector3(0.036f, 0f, -0.002f), 0.024f, new Color(0.25f, 0.35f, 0.5f), "+", 0.008f);
             _skip.Clicked += Skip;
             _skip.gameObject.SetActive(false);
+            // w10: «АПТЕЧКА» — summons / folds the kit tray (same as X); the radio icon lights when a report is expected
+            _kit = RoundButton.Create(transform, "KitButton", new Vector3(-0.036f, -0.047f, -0.002f), 0.026f, new Color(0.55f, 0.1f, 0.08f), "+", 0.012f,
+                GameSettings.T("АПТЕЧКА", "ДӘРІ"), 0.0035f);
+            _kit.Clicked += () => { var t = FieldMedic.Treatment.KitTray.Player; if (t != null) t.Toggle(); };
+            _radioIcon = WorldUI.Text(transform, "RadioIcon", "", new Vector3(0f, 0.031f, -0.004f), 0.0042f, new Color(1f, 0.72f, 0.25f), TextAnchor.MiddleCenter, TextAlignment.Center);
+            _radioIcon.gameObject.SetActive(false);
+            StepGuide.Ensure().wrist = transform;
         }
 
         void LateUpdate()
         {
             if (hand != null) transform.SetPositionAndRotation(hand.TransformPoint(localOffset), hand.rotation * FaceRotation);
+            if (_kit != null) _kit.gameObject.SetActive(FieldMedic.Treatment.KitTray.Player != null);
+            var radio = RadioSet.Instance;
+            bool expect = radio != null && radio.ReportExpected;
+            if (_radioIcon != null)
+            {
+                if (_radioIcon.gameObject.activeSelf != expect) _radioIcon.gameObject.SetActive(expect);
+                if (expect)
+                {
+                    _radioIcon.text = GameSettings.T("РАЦИЯ · зажми Y", "РАЦИЯ · Y бас");
+                    _radioIcon.color = Color.Lerp(new Color(1f, 0.72f, 0.25f), new Color(1f, 0.95f, 0.7f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f));
+                }
+            }
             var sa = FieldMedic.Scenarios.SelfAid.SelfAidDirector.Instance;
             if (sa != null && sa.Run != null && !sa.Run.Ended)
             {

@@ -89,6 +89,17 @@ namespace FieldMedic.Scenarios.SelfAid
             else Rebuild();
         }
 
+        /// <summary>w10: a line chosen on the Y radio panel (the list menu need not be open).</summary>
+        public void ChooseFromRadio(int index)
+        {
+            var opts = run.ReportOptions();
+            if (index < 0 || index >= opts.Count || run.ReportSent) return;
+            var o = opts[index];
+            run.ChooseReport(o);
+            Chosen?.Invoke(o);
+            if (Open) { if (run.ReportSent) Hide(); else Rebuild(); }
+        }
+
         /// <summary>Index of the right line (bots).</summary>
         public int CorrectIndex => Options.FindIndex(o => o.correct);
 

@@ -104,6 +104,19 @@ namespace FieldMedic.Scenarios.Bots
         /// <summary>Rip the IFAK lid open: grab the red pull tab and pull it up and toward the medic.</summary>
         public IEnumerator OpenPouch(IfakPouch pouch, HandGrabber h)
         {
+            if (pouch != null && pouch.Tray != null)
+            {
+                // w10: the kit tray — press X on the left controller, like the player
+                if (pouch.IsOpen) yield break;
+                lastStep = "open kit tray (X)";
+                var x = In(left);
+                x.PrimaryButton = true;
+                yield return Frame();
+                x.PrimaryButton = false;
+                yield return Frame();
+                for (int k = 0; k < 60 && pouch.Tray.Open01 < 1f; k++) yield return null;
+                yield break;
+            }
             if (pouch == null || pouch.IsOpen || pouch.Flap == null || pouch.Flap.Tab == null) yield break;
             lastStep = "open IFAK";
             var tab = pouch.Flap.Tab;
@@ -172,12 +185,17 @@ namespace FieldMedic.Scenarios.Bots
         public IEnumerator Release(HandGrabber h)
         {
             In(h).Grip = 0f;
+            In(h).Trigger = 0f; // w10: the trigger holds too — release = both buttons up
+            h.triggerGrabs = true;
             yield return Frame();
             yield return Frame();
         }
 
         public IEnumerator SetTrigger(HandGrabber h, float v)
         {
+            // empty-hand pinches (seal burp, door): the bot means the pinch, not a trigger grab of a nearby handle
+            if (h.Held == null && v > 0f) h.triggerGrabs = false;
+            else if (v <= 0f) h.triggerGrabs = true;
             In(h).Trigger = v;
             yield return Frame();
         }
