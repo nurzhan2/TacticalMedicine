@@ -58,6 +58,8 @@ namespace FieldMedic.Treatment
         {
             foreach (var cat in FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None))
                 if (cat.State.Secured && !cat.State.TimeMarked && Vector3.Distance(cat.TimeLabelPoint, t) < 0.04f) return cat;
+            foreach (var el in FindObjectsByType<ElasticTourniquetItem>(FindObjectsSortMode.None)) // w9d: Alpha / Esmarch band
+                if (el.CanWriteTime && Vector3.Distance(el.TimeLabelPoint, t) < 0.045f) return el;
             foreach (var st in FieldMedic.Scenarios.SelfAid.SelfTourniquet.All) // w9b: the band on your own arm
                 if (st != null && st.CanWrite && Vector3.Distance(st.TimeLabelPoint, t) < 0.045f) return st;
             foreach (var card in FindObjectsByType<CardItem>(FindObjectsSortMode.None))
@@ -80,6 +82,9 @@ namespace FieldMedic.Treatment
             {
                 case TourniquetCAT cat:
                     if (cat.WriteTime()) LastFeedback = cat.LastFeedback;
+                    break;
+                case ElasticTourniquetItem el:
+                    if (el.WriteTime()) LastFeedback = el.LastFeedback;
                     break;
                 case CardItem card:
                     card.Fill();

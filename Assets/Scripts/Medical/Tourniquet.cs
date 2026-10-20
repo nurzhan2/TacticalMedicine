@@ -64,6 +64,9 @@ namespace FieldMedic.Medical
         }
     }
 
+    /// <summary>Windlass tourniquet (CAT) or an elastic band wrapped under tension (Alpha, Esmarch) — w9d.</summary>
+    public enum TourniquetType { Windlass, Elastic }
+
     /// <summary>
     /// The physical state of one CAT (pure C#; the Unity layer feeds it gestures).
     /// Occlusion model: a strap pulled tight compresses veins but not arteries; the windlass adds the arterial
@@ -81,6 +84,10 @@ namespace FieldMedic.Medical
         public const float LockToleranceDeg = 35f;   // rod close enough to the clip to snap in
 
         public string id = "CAT";
+        public TourniquetType type = TourniquetType.Windlass;
+        /// <summary>Elastic band: turns laid around the limb, each weighted by how hard it was stretched (0..1).</summary>
+        public float elasticWraps;
+        public int elasticTurnsLaid;
         public TourniquetStage stage = TourniquetStage.InPouch;
         public string limbId;
         public float limbPosition = -1f;
@@ -109,12 +116,29 @@ namespace FieldMedic.Medical
 
         public float StrapTightness => Clamp01((InitialSlackCm - slackCm) / (InitialSlackCm - TightSlackCm));
 
+        /// <summary>Elastic: stretched turns needed for full arterial occlusion (thigh 4, upper arm / shin 3, forearm 2).</summary>
+        public static float ElasticWrapsNeeded(string limbId, float pos)
+        {
+            bool leg = LimbGeometry.IsLeg(limbId);
+            if (pos < 1f) return leg ? 4f : 3f;
+            return leg ? 3f : 2f;
+        }
+        /// <summary>A turn counts fully only when the band is stretched hard (≥ 60 % of the pull the band allows).</summary>
+        public static float StretchWeight(float stretch01) => stretch01 < 0.15f ? 0f : Math.Min(1f, (stretch01 - 0.15f) / 0.45f);
+        public bool IsElastic => type == TourniquetType.Elastic;
+
         /// 0 = no pressure, 1 = full arterial occlusion.
         public float Occlusion
         {
             get
             {
                 if (!OnLimb || stage < TourniquetStage.Positioned) return 0f;
+                if (IsElastic)
+                {
+                    float e = Clamp01(elasticWraps / ElasticWrapsNeeded(limbId, limbPosition));
+                    if (e > 0.985f) e = 1f;
+                    return OnJoint ? Math.Min(e, 0.5f) : e;
+                }
                 float strap = 0.45f * StrapTightness;
                 float twist = Clamp01((float)(Math.Abs(windlassDegrees) / 180.0) / HalfTurnsNeeded);
                 float occ = strap + (1f - strap) * twist;
@@ -301,6 +325,43 @@ namespace FieldMedic.Medical
             if (!Locked) limbPosition = Math.Min(2.55f, limbPosition + 0.02f * s); // loose bands creep distally
             return cm;
         }
+
+        // ------------------------------------------------------------------ elastic band (Alpha / Esmarch)
+        /// <summary>One more turn of the elastic band laid around the limb with the given stretch (0..1).</summary>
+        public float ElasticTurn(float stretch01)
+        {
+            if (!IsElastic || stage < TourniquetStage.Positioned || Locked) return 0f;
+            float w = StretchWeight(stretch01);
+            elasticWraps += w;
+            elasticTurnsLaid++;
+            windlassDegrees = elasticTurnsLaid * 180f; // pain model / debrief read "half-turns"
+            if (elasticTurnsLaid >= 1 && stage < TourniquetStage.WindlassTwisted) Set(TourniquetStage.WindlassTwisted);
+            return w;
+        }
+
+        /// <summary>The band end fixed (hooks of the Alpha / balls of the Esmarch tucked under the last turn).</summary>
+        public bool ElasticFix()
+        {
+            if (!IsElastic || Locked || elasticTurnsLaid < 1) return false;
+            Set(TourniquetStage.WindlassLocked);
+            Set(TourniquetStage.StrapSecured); // no strap to secure: the fixed end is the whole lock
+            return true;
+        }
+
+        /// <summary>Let go before fixing the end: the elastic band springs back off the limb (all turns lost).</summary>
+        public float ElasticRelease()
+        {
+            if (!IsElastic || Locked) return 0f;
+            float lost = elasticWraps;
+            elasticWraps = 0f;
+            elasticTurnsLaid = 0;
+            windlassDegrees = 0f;
+            if (stage == TourniquetStage.WindlassTwisted) { stage = TourniquetStage.Positioned; StageChanged?.Invoke(this, stage); }
+            return lost;
+        }
+
+        /// <summary>Thigh with an elastic band: holds when done right, but the windlass CAT is the preferred tool (TCCC).</summary>
+        public bool ElasticOnThigh => IsElastic && LimbGeometry.IsLeg(limbId) && limbPosition < 1f;
 
         static float Clamp01(float v) => v < 0f ? 0f : v > 1f ? 1f : v;
     }

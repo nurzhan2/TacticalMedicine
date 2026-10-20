@@ -8,6 +8,8 @@ namespace FieldMedic.Treatment
     {
         Tourniquet, HemostaticGauze, IsraeliBandage, ChestSeal, NasalAirway, Lubricant,
         DecompressionNeedle, TraumaShears, NitrileGloves, Marker, ThermalBlanket, CasualtyCard,
+        // w9d: the rest of the real two-echelon kit (Astra models)
+        AlphaTourniquet, EsmarchTourniquet, Splint, TriangularBandage, EyeShield, AntisepticWipes, DuctTape,
     }
 
     /// <summary>
@@ -206,9 +208,12 @@ namespace FieldMedic.Treatment
                 MedItemKind.Marker => go.AddComponent<MarkerItem>(),
                 MedItemKind.ThermalBlanket => go.AddComponent<BlanketItem>(),
                 MedItemKind.CasualtyCard => go.AddComponent<CardItem>(),
+                MedItemKind.AlphaTourniquet or MedItemKind.EsmarchTourniquet => go.AddComponent<ElasticTourniquetItem>(),
+                MedItemKind.Splint or MedItemKind.TriangularBandage or MedItemKind.EyeShield or MedItemKind.AntisepticWipes
+                    or MedItemKind.DuctTape => go.AddComponent<PropItem>(),
                 _ => go.AddComponent<MedItem>(),
             };
-            item.kind = kind;
+            item.kind = kind; // set before Awake: the look depends on it
             go.SetActive(true);
             return item;
         }
