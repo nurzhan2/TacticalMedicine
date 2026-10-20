@@ -667,3 +667,12 @@ Input System XR-контроллер как второй источник; 2) а
 - Руки: `Resources/FPHands/FPHands_L/R.fbx` из Soldier_KZ (кисть + 14 см рукава, 758 трис), пальцы от GRIP/КУРКА,
   запасной вариант — старые руки (`GloveHand.UseSoldierHands`).
 - EditMode 175/175.
+- 04:20: PlayMode целевые: Kit, W10InputDevice, W10Screens, GloveHand, SoldierHand (руки грузятся после Generic-рига),
+  W10dNoScream, W10cVoice, Battle, DemoFlow — зелёные. Найдено: CAT оборачивал первую конечность из списка, а не ближайшую
+  (у солдата стопы рядом → «не на раненой ноге») — исправлено. Падают бот-тесты под старое тело (список в W10_AUDIT.md).
+  Старые бот-тесты идут со строгими зонами (`StrictZonesSetUp`). APK собран (196 МБ, XR guard, libUnityOpenXR.so,
+  QuestSceneAudit OK), скопирован в FMVR_DEMO, установлен на шлем (шлем не надет → OpenXR на паузе, смоук без геймплея).
+  Логи сессии владельца 02:39 сохранены в logs/device/play_2110_w10c_0239/.
+- 04:25: финальный APK (с исправлением «жгут на ближайшую ногу») 196 МБ, QuestSceneAudit OK, XR guard, libUnityOpenXR.so →
+  `Desktop\FMVR_DEMO\FieldMedicVR_W10.apk`, установлен на шлем. Дальше: перенастроить ботов под тело солдата, прогон S1–S8+SA
+  настоящим вводом (пункт 10), подписи в аптечке без наложений, смоук-тест на надетом шлеме.

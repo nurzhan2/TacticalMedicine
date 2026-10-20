@@ -180,6 +180,7 @@ namespace FieldMedic.Treatment
             Vector3 p = transform.position;
             // w10d: forgiving wrap zones outside the exam (over the foot/hand 14 cm, up the limb 9 cm, under a lifted limb 18 cm)
             float overEnd = Forgiving.Scale(0.1f, 0.14f), upLimb = Forgiving.Scale(0.06f, 0.09f), under = Forgiving.Scale(0.14f, 0.18f);
+            float bestGap = float.MaxValue, bestPos = 0f; Limb bestLimb = default; bool haveBest = false;
             foreach (var limb in LimbMath.All)
             {
                 int i = (int)limb;
@@ -188,10 +189,10 @@ namespace FieldMedic.Treatment
                 float r = LimbMath.RadiusAt(limb, pos);
                 // 1) over the foot / hand: the loop passes the end of the limb, then travels up it
                 if (pos >= 2.3f && dist < r + overEnd) _nearEnd[i] = Time.time;
-                if (Time.time - _nearEnd[i] < Forgiving.Scale(3f, 5f) && pos < 2.25f && dist < r + upLimb)
+                // w10b: the NEAREST limb wins (the soldier's feet lie close together: first-in-list wrapped the wrong leg)
+                if (Time.time - _nearEnd[i] < Forgiving.Scale(3f, 5f) && pos < 2.25f && dist < r + upLimb && dist - r < bestGap)
                 {
-                    Wrap(c, limb, pos);
-                    return;
+                    bestGap = dist - r; bestLimb = limb; bestPos = pos; haveBest = true;
                 }
                 // 2) routed under a lifted limb from one side to the other
                 if (dist < r + under && LimbLifted(c, limb, pos, axisPt))
@@ -210,6 +211,7 @@ namespace FieldMedic.Treatment
                 }
                 else _sideValid[i] = false;
             }
+            if (haveBest) Wrap(c, bestLimb, bestPos);
         }
 
         static bool LimbLifted(CasualtyController c, Limb limb, float pos, Vector3 axisPt)

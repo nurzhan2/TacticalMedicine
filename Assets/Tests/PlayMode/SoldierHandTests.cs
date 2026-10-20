@@ -43,7 +43,7 @@ namespace FieldMedic.Tests
             g.gripCurl = 1f; g.thumbCurl = 1f; g.Pose();
             Vector3 fist = L(g.Tip(1)), thumbIn = L(g.Tip(4));
             Assert.That(fist.z, Is.LessThan(mid.z - 0.04f), "fist pulls the fingertip back");
-            Assert.That(fist.y, Is.LessThan(mid.y - 0.03f), "fingers fold under the palm (−y)");
+            Assert.That(fist.y, Is.LessThan(mid.y - 0.01f), "fingers fold under the palm (−y; the soldier rest pose is already half bent)");
             Assert.That(Vector3.Distance(thumbIn, fist), Is.LessThan(Vector3.Distance(thumb, fist)), "thumb closes toward the curled fingers");
 
             g.gripCurl = 0f; g.indexCurl = 1f; g.thumbCurl = 0f; g.Pose();
