@@ -24,7 +24,7 @@ namespace FieldMedic.Scenarios.SelfAid
         public List<SelfAidReportOption> Options { get; private set; } = new List<SelfAidReportOption>();
 
         Transform _content;
-        float _yaw;
+        float _yaw, _lockUntil;
         bool _yawInit;
         const float W = 0.3f;
 
@@ -61,6 +61,7 @@ namespace FieldMedic.Scenarios.SelfAid
             _content.SetParent(transform, false);
             bool kz = GameSettings.KZ;
             Options = run.ReportOptions();
+            _lockUntil = Time.time + 0.5f;
             float h = 0.07f + Options.Count * 0.05f;
             WorldUI.Quad(_content, "Card", new Vector3(0f, -h / 2f + 0.035f, 0.004f), new Vector2(W, h), WorldUI.Unlit(new Color(0.05f, 0.06f, 0.05f)));
             WorldUI.Text(_content, "Title", (kz ? "ДОКЛАД  " : "ДОКЛАД  ") + SelfAidRun.ReportStepTitle(run.ReportStep, kz), new Vector3(-W / 2 + 0.012f, 0.025f, 0f), 0.014f, new Color(1f, 0.78f, 0.38f));
@@ -71,6 +72,8 @@ namespace FieldMedic.Scenarios.SelfAid
                 var b = RoundButton.Create(_content, "Opt" + i, new Vector3(-W / 2 + 0.03f, y, 0f), 0.034f, new Color(0.24f, 0.32f, 0.4f), (i + 1).ToString(), 0.012f);
                 int k = i;
                 b.Clicked += () => Choose(k);
+                // the finger that pressed the previous line is still there: the new buttons wait until it is pulled back
+                b.interactable = false;
                 Buttons.Add(b);
                 WorldUI.Text(_content, "OptText" + i, WorldUI.Wrap(o.Text(kz), 34), new Vector3(-W / 2 + 0.055f, y + 0.011f, 0f), 0.0105f, new Color(0.93f, 0.91f, 0.84f));
             }
@@ -89,7 +92,12 @@ namespace FieldMedic.Scenarios.SelfAid
         /// <summary>Index of the right line (bots).</summary>
         public int CorrectIndex => Options.FindIndex(o => o.correct);
 
-        void LateUpdate() { if (Open) Follow(false); }
+        void LateUpdate()
+        {
+            if (!Open) return;
+            Follow(false);
+            if (Time.time >= _lockUntil) foreach (var b in Buttons) if (b != null && !b.interactable) b.interactable = true;
+        }
 
         void Follow(bool snap)
         {

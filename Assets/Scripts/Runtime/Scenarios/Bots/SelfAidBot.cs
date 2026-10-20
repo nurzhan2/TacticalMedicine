@@ -153,8 +153,9 @@ namespace FieldMedic.Scenarios.Bots
         public IEnumerator Report(int wrongLine = -1)
         {
             if (!d.Menu.Open) yield return PressRadio();
-            for (int k = 0; k < SelfAidRun.ReportSteps && !d.Run.ReportSent; k++)
+            for (int k = 0; k < SelfAidRun.ReportSteps * 2 && !d.Run.ReportSent; k++)
             {
+                yield return hands.Wait(0.55f); // the new line's buttons wake up after the finger is pulled back
                 int step = d.Run.ReportStep;
                 int idx = step == wrongLine ? (d.Menu.CorrectIndex == 0 ? 1 : 0) : d.Menu.CorrectIndex;
                 var b = d.Menu.Buttons[idx];
@@ -163,7 +164,6 @@ namespace FieldMedic.Scenarios.Bots
                 yield return hands.Poke(b, Free);
                 if (b.ClickCount == before && d.Run.ReportStep == step) b.Click();
                 for (int f = 0; f < 5 && d.Run.ReportStep == step; f++) yield return null;
-                yield return hands.Wait(0.4f);
             }
         }
 
