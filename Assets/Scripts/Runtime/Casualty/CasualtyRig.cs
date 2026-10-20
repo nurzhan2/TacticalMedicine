@@ -213,6 +213,10 @@ namespace FieldMedic.Casualty
         /// Finds the skin/clothing surface point of the current (skinned) pose: among mesh vertices close to
         /// the segment bone→child at `along`, takes the one furthest in direction `dirWorld`.
         /// </summary>
+        static float AllowedWeight(BoneWeight w, HashSet<int> allowed) =>
+            (allowed.Contains(w.boneIndex0) ? w.weight0 : 0f) + (allowed.Contains(w.boneIndex1) ? w.weight1 : 0f) +
+            (allowed.Contains(w.boneIndex2) ? w.weight2 : 0f) + (allowed.Contains(w.boneIndex3) ? w.weight3 : 0f);
+
         bool IsHumanBone(Transform t)
         {
             foreach (var kv in _bones) if (kv.Value == t) return true;
@@ -253,7 +257,8 @@ namespace FieldMedic.Casualty
             for (int i = 0; i < verts.Length; i++)
             {
                 // rigidly skinned to this bone only: the point then stays on the surface in every pose
-                if (weights != null && (!allowed.Contains(weights[i].boneIndex0) || weights[i].weight0 < 0.8f)) continue;
+                // (w10c: the weight of this bone + its twist bones together, Biped skin is blended over twist bones)
+                if (weights != null && AllowedWeight(weights[i], allowed) < 0.8f) continue;
                 Vector3 w = m.MultiplyPoint3x4(verts[i]);
                 Vector3 rel = w - c;
                 float ax = Vector3.Dot(rel, axis);
@@ -268,6 +273,7 @@ namespace FieldMedic.Casualty
             }
             if (bi < 0 && weights != null)
             {
+                Debug.Log($"[FMVR] rig: no rigid skin on {bone} for the wound, using the outermost vertex near the bone");
                 // no rigidly skinned vertex there (blended skin): take the outermost vertex anyway
                 for (int i = 0; i < verts.Length; i++)
                 {
@@ -277,6 +283,7 @@ namespace FieldMedic.Casualty
                     Vector3 radial = rel - axis * ax;
                     float t = Vector3.Dot(radial, dirWorld);
                     if (t <= 0f || radial.magnitude > 0.2f || (radial - dirWorld * t).magnitude > 0.035f) continue;
+                    if (AllowedWeight(weights[i], allowed) < 0.3f) continue; // never the other leg / a pouch
                     if (t > best) { best = t; bi = i; }
                 }
             }

@@ -80,3 +80,7 @@ Still wrong:
 - Owner presents the game on the morning of 16.10. Final demo APK + backup video must be ready by 07:30 local (stage w7-demo, runs right after w0b).
 - w0b-blackscreen: time-box to ~02:30 local. Skip 3_FULL_DEV.apk if short on time; HELLO + SAFE + FULL are enough.
 - Owner: Kazakhstan flag hangs UPSIDE DOWN - must be fixed (w7). Game must be fully interactive: grab/drag Erlan, treat by hand (w7).
+
+## 21.10 02:42 supervisor
+w10c stopped early to give w10b (owner feedback, 17 items in docs/prompts/w10b-fullgame.md section 0) the time until 07:00. Uncommitted w10c edits left in the tree: review with git diff first.
+

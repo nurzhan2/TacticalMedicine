@@ -1,5 +1,5 @@
 {
-  "_comment": "ElevenLabs voice ids per speaker (tools/eleven_tts.md). Paste the 20-character id from the ElevenLabs web UI (Voices -> the voice -> ... -> Copy voice ID). radio = the operator on the radio (calm, low male, military); instructor = training hints (calm, clear).",
-  "radio": "PASTE_RADIO_VOICE_ID",
-  "instructor": "PASTE_INSTRUCTOR_VOICE_ID"
+  "_comment": "ElevenLabs voice ids per speaker (tools/eleven_tts.md). Owner's choice 21.10: one voice for both roles - Egor Gadzhiyev (clear, commanding, made for games); the operator gets the radio filter, the instructor stays clean. Russian-only voice-over.",
+  "radio": "6A9D8WSMm4rFsg2DWFeE",
+  "instructor": "6A9D8WSMm4rFsg2DWFeE"
 }

@@ -221,6 +221,8 @@ namespace FieldMedic.Tests
                 .Invoke(npa, new object[] { false });
             npa.transform.SetPositionAndRotation(nostril + post * (NpaItem.Length * 0.5f - 0.004f), Quaternion.LookRotation(post, hu));
             yield return null;
+            // the kit may take its item back for a frame in this staged shot: put the tube in the nose right before the shot
+            npa.transform.SetPositionAndRotation(nostril + post * (NpaItem.Length * 0.5f - 0.004f), Quaternion.LookRotation(post, hu));
             var npaR = npa.GetComponentsInChildren<Renderer>(true);
             Debug.Log($"[FMVR] w10c npa: pos {npa.transform.position:F3} nostril {nostril:F3} attached {npa.Attached} active {npa.gameObject.activeInHierarchy} renderers {string.Join(",", npaR.Select(r => r.name + (r.enabled && r.gameObject.activeInHierarchy ? "+" : "-")))} scale {npa.transform.lossyScale:F3}");
             Shot("w10c_04_npa", nostril + faceDir * 0.3f - hu * 0.12f + rig.BodyRight * 0.08f, nostril, 35f, 0.005f, hu);
