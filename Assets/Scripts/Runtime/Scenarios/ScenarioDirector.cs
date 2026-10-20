@@ -113,6 +113,17 @@ namespace FieldMedic.Scenarios
         // ------------------------------------------------------------------ run
         public void Begin(ScenarioDefinition def, ScenarioVariant variant, bool exam = false)
         {
+            if (def != null && def.selfAid)
+            {
+                // w9b: the player is the casualty — a separate director, no Erlan, no TACEVAC
+                InMenu = false;
+                Exam = false;
+                Log("begin " + def.id + " (self-aid)");
+                var sa = SelfAid.SelfAidDirector.Ensure(this);
+                sa.Finished += r => { Report = r; Finished?.Invoke(r); };
+                sa.Begin(def, variant.seed != 0 ? variant.seed : System.Environment.TickCount);
+                return;
+            }
             InMenu = false;
             Exam = exam;
             FieldMedic.Battle.BattleDirector.Mode = exam ? FieldMedic.Battle.BattleMode.Exam : FieldMedic.Battle.BattleMode.Combat;

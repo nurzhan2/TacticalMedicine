@@ -23,6 +23,9 @@ namespace FieldMedic.Scenarios
         public bool bodyLocked = true;
         public Vector3 offsetFromHead = new Vector3(-0.17f, -0.32f, 0.14f);
         public bool muted;
+        /// <summary>w9b self-aid: the PTT button answers check-ins / opens the report menu instead of the MEDEVAC lines.
+        /// Return true when handled.</summary>
+        public System.Func<bool> pttOverride;
 
         public int MedevacStep { get; private set; }
         public bool MedevacSent { get; private set; }
@@ -51,6 +54,17 @@ namespace FieldMedic.Scenarios
             ["evac_arrived"] = ("Эвакуационная группа на месте. Передавай раненого.", "Эвакуация тобы келді. Жаралыны тапсыр."),
             ["evac_board"] = ("Раненый на борту. Садись, взлетаем!", "Жаралы бортта. Мін, ұшамыз!"),
             ["evac_away"] = ("Борт взлетел. Хорошая работа, медик.", "Борт ұшты. Жақсы жұмыс, медик."),
+            ["sa_hit"] = ("Ты ранен. Сначала в укрытие, потом жгут.", "Сен жараландың. Алдымен баспанаға, сосын жгут."),
+            ["sa_tq"] = ("Жгут из быстрого подсумка. Свободной рукой. Высоко и туго.", "Жылдам подсумкадан жгут ал. Бос қолыңмен. Жоғары әрі қатты."),
+            ["sa_time"] = ("Запиши время на ленте жгута.", "Жгут таспасына уақытты жаз."),
+            ["sa_report"] = ("Доложи по рации: кто, где, что, что сделано.", "Рациямен баянда: кім, қайда, не болды, не істелді."),
+            ["sa_ack"] = ("Принял, трёхсотый. Группа выдвигается к тебе. Оставайся в укрытии, будь на связи.", "Қабылдадым. Топ саған шықты. Баспанада қал, байланыста бол."),
+            ["sa_check"] = ("Медик, как ты? Ответь.", "Медик, қалайсың? Жауап бер."),
+            ["sa_check2"] = ("Медик! Ответь! Не спи!", "Медик! Жауап бер! Ұйықтама!"),
+            ["sa_blanket"] = ("Укройся одеялом. Не дай себе замёрзнуть.", "Көрпемен жабын. Тоңып қалма."),
+            ["sa_arrive"] = ("Держись, брат, свои!", "Шыда, бауырым, өзіміздікілер!"),
+            ["sa_drone"] = ("Дрон возвращается! Уходи с открытого места!", "Дрон қайта келе жатыр! Ашық жерден кет!"),
+            ["sa_heard"] = ("Слышу тебя. Держись, мы близко.", "Естіп тұрмын. Шыда, жақынбыз."),
             ["briefing"] = ("Внимание. Над позицией работает противник. Будь готов.", "Назар аударыңдар. Позиция үстінде жау жұмыс істеп жатыр."),
         };
 
@@ -97,7 +111,10 @@ namespace FieldMedic.Scenarios
         }
 
         /// <summary>Commander line by id (Resources/Radio/&lt;id&gt;_&lt;lang&gt;).</summary>
-        public void Say(string id)
+        public void Say(string id) => Say(id, 1f);
+
+        /// <summary>w9b: `volume` &gt; 1 = the operator calls louder (spatial blend drops so it cuts through).</summary>
+        public void Say(string id, float volume)
         {
             LastLine = id;
             Subtitle = Text(id);
@@ -110,8 +127,22 @@ namespace FieldMedic.Scenarios
             if (clip == null) return;
             _src.Stop();
             _src.clip = clip;
+            _src.volume = Mathf.Clamp01(volume);
+            _src.spatialBlend = volume > 1f ? 0.3f : 0.85f;
             _src.Play();
         }
+
+        /// <summary>Our own transmitted line on the radio screen (w9b report).</summary>
+        public void ShowLine(string text, float seconds = 5f)
+        {
+            Subtitle = text;
+            SubtitleUntil = Time.time + seconds;
+            RefreshScreen();
+            if (!muted && _src != null) UiAudio.Click(transform.position);
+        }
+
+        /// <summary>World position of the PTT button (bots, hints).</summary>
+        public Transform PttButton => _ptt != null ? _ptt.transform : transform;
 
         static readonly string[] MedevacRu =
         {
@@ -131,6 +162,7 @@ namespace FieldMedic.Scenarios
         /// <summary>One press of the PTT = one line of the MEDEVAC request.</summary>
         public void PressToTalk()
         {
+            if (pttOverride != null && pttOverride()) return;
             if (MedevacSent) { Say("report"); return; }
             var c = FindCasualty();
             string injuries = Injuries(c);

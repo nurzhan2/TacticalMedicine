@@ -58,6 +58,8 @@ namespace FieldMedic.Treatment
         {
             foreach (var cat in FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None))
                 if (cat.State.Secured && !cat.State.TimeMarked && Vector3.Distance(cat.TimeLabelPoint, t) < 0.04f) return cat;
+            foreach (var st in FieldMedic.Scenarios.SelfAid.SelfTourniquet.All) // w9b: the band on your own arm
+                if (st != null && st.CanWrite && Vector3.Distance(st.TimeLabelPoint, t) < 0.045f) return st;
             foreach (var card in FindObjectsByType<CardItem>(FindObjectsSortMode.None))
                 if (!card.Filled && Vector3.Distance(card.WritePoint, t) < 0.06f) return card;
             var c = NearestCasualty(t, 1.2f);
@@ -81,6 +83,9 @@ namespace FieldMedic.Treatment
                     break;
                 case CardItem card:
                     card.Fill();
+                    break;
+                case FieldMedic.Scenarios.SelfAid.SelfTourniquet st:
+                    st.WriteTime();
                     break;
                 case CasualtyController c:
                     WroteForehead = true;

@@ -258,7 +258,10 @@ namespace FieldMedic.Audio
         }
 
         /// <summary>Blast at a point: visual + correct-delay sound; near blasts hit the player's senses.</summary>
-        public void Detonate(Vector3 p, float charge)
+        public void Detonate(Vector3 p, float charge) => Detonate(p, charge, true);
+
+        /// <param name="shake">false = comfort-safe (w9b self-aid: the player is hit, no horizon shake)</param>
+        public void Detonate(Vector3 p, float charge, bool shake)
         {
             float d = Vector3.Distance(p, ListenerPos);
             if (d < 120f)
@@ -266,7 +269,7 @@ namespace FieldMedic.Audio
                 CombatVfx.Instance?.ExplosionNear(p, charge);
                 PlayAt(Pick(explosionNear), p, 1f, 8f, 600f, Random.Range(0.9f, 1.05f), EnvMath.SoundDelay(d));
                 if (d < 40f) PlayAt(Pick(debris), ListenerPos + Vector3.up * 0.8f, Mathf.Clamp01(1.2f - d / 40f), 1f, 20f, 1f, EnvMath.SoundDelay(d) + 0.4f);
-                if (d < 18f) NearBlast(d, charge);
+                if (d < 18f) NearBlast(d, charge, shake);
             }
             else
             {
@@ -277,7 +280,9 @@ namespace FieldMedic.Audio
         }
 
         /// <summary>Senses after a close blast: tinnitus loudness and muffle duration grow as distance shrinks.</summary>
-        public void NearBlast(float distance, float charge)
+        public void NearBlast(float distance, float charge) => NearBlast(distance, charge, true);
+
+        public void NearBlast(float distance, float charge, bool shake)
         {
             float k = Mathf.Clamp01((18f - distance) / 14f) * Mathf.Clamp01(charge);
             if (k <= 0.05f) return;
@@ -291,7 +296,7 @@ namespace FieldMedic.Audio
                 _tinnitus.Play();
             }
             if (muffledSnapshot != null) muffledSnapshot.TransitionTo(0.05f);
-            CameraShake.Add(EnvMath.ShakeAmplitude(distance, charge, ComfortSettings.ShakeLimit), 0.5f + 0.4f * k);
+            if (shake) CameraShake.Add(EnvMath.ShakeAmplitude(distance, charge, ComfortSettings.ShakeLimit), 0.5f + 0.4f * k);
             CombatVfx.Instance?.RoofDust(new Vector3(-8.2f, 1.9f, -1.4f), k);
         }
 

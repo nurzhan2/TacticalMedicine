@@ -79,6 +79,13 @@ namespace FieldMedic.Scenarios
             FieldMedic.Battle.BattleDirector.Mode = FieldMedic.Battle.BattleMode.Training; // battle far away, nobody targets the player
             FieldMedic.Battle.BattleDirector.PlayerArmed = false;
             var l = TrainingCatalog.Get(lessonId) ?? TrainingCatalog.Get("full") ?? TrainingCatalog.All[0];
+            if (l.selfAid)
+            {
+                // w9b "Жгут на себя": the trainee is the casualty — run by the self-aid director (no Erlan)
+                SelfAid.SelfAidDirector.Ensure(director).BeginLesson(l);
+                enabled = false;
+                return;
+            }
             Progress = new LessonProgress(l);
             GameSettings.HoldTimeScale = 6f;
             muted |= director.testMode;

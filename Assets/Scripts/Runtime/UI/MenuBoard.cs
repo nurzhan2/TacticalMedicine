@@ -131,7 +131,7 @@ namespace FieldMedic.UI
             Btn("4", 0.54f, y, d, Steel, ShowSettings, 0.06f, GameSettings.T("НАСТРОЙКИ", "БАПТАУЛАР"), 0.026f);
             float cy = y - 0.205f;
             Txt(GameSettings.T("белая подсказка,\nбой вдали, без провала", "ақ кеңес, шайқас алыста,\nсәтсіздік жоқ"), -0.54f, cy, 0.0135f, Dim, TextAnchor.UpperCenter, TextAlignment.Center);
-            Txt(GameSettings.T("сценарии S1–S8,\nпо тебе стреляют", "S1–S8 сценарийлері,\nсаған оқ атылады"), -0.18f, cy, 0.0135f, Dim, TextAnchor.UpperCenter, TextAlignment.Center);
+            Txt(GameSettings.T("сценарии S1–S8 + самопомощь,\nпо тебе стреляют", "S1–S8 + өзіне көмек,\nсаған оқ атылады"), -0.18f, cy, 0.0135f, Dim, TextAnchor.UpperCenter, TextAlignment.Center);
             Txt(GameSettings.T("случайный сценарий,\nоценка TCCC", "кездейсоқ сценарий,\nTCCC бағасы"), 0.18f, cy, 0.0135f, Dim, TextAnchor.UpperCenter, TextAlignment.Center);
             Txt(GameSettings.T("Нажми кнопку пальцем или наведи луч и нажми курок.  ПК: наведи и щёлкни / Enter.",
                     "Түймені саусақпен бас немесе сәулемен көрсетіп, шүріппені бас."),
@@ -146,13 +146,15 @@ namespace FieldMedic.UI
             for (int i = 0; i < all.Count; i++)
             {
                 var def = all[i];
-                int col = i % 4, row = i / 4;
-                float x = -0.54f + col * 0.36f, y = 0.17f - row * 0.36f;
+                // w9b: 9 scenarios (8 + self-aid) → 5 columns
+                int col = i % 5, row = i / 5;
+                float x = -0.6f + col * 0.3f, y = 0.17f - row * 0.36f;
                 int best = GameSettings.BestScore(def.id);
                 var color = def.polished ? Rust : Olive;
                 Btn(def.number.ToString(), x, y, 0.13f, color, () => ShowBriefing(def, ScenarioVariant.Default, true), 0.045f);
-                Txt(def.Title(GameSettings.KZ), x, y - 0.085f, 0.022f, Amber, TextAnchor.UpperCenter, TextAlignment.Center);
-                Txt(WorldUI.Wrap(def.Tagline(GameSettings.KZ), 30), x, y - 0.12f, 0.0125f, Ink, TextAnchor.UpperCenter, TextAlignment.Center);
+                var title = Txt(WorldUI.Wrap(def.Title(GameSettings.KZ), 20), x, y - 0.085f, def.selfAid ? 0.018f : 0.022f, Amber, TextAnchor.UpperCenter, TextAlignment.Center);
+                float ty = y - 0.12f - (title.text.Split('\n').Length - 1) * 0.024f;
+                Txt(WorldUI.Wrap(def.Tagline(GameSettings.KZ), 26), x, ty, 0.0118f, Ink, TextAnchor.UpperCenter, TextAlignment.Center);
                 if (best >= 0) Txt(GameSettings.T("лучший: ", "үздік: ") + best, x + 0.075f, y + 0.07f, 0.013f, Good, TextAnchor.UpperLeft);
             }
             Back(ShowMain);
@@ -170,6 +172,10 @@ namespace FieldMedic.UI
             string sk = string.Join("\n", (kz ? def.skillsKz : def.skillsRu).Select(s => "•  " + s));
             Txt(GameSettings.T("Навыки:", "Дағдылар:"), -W / 2 + 0.06f, sy, 0.02f, Dim);
             Txt(sk, -W / 2 + 0.06f, sy - 0.04f, 0.018f, new Color(0.7f, 0.9f, 0.62f));
+            if (def.selfAid)
+                Txt(GameSettings.T("Ты один. Помощь выдвинется после твоего доклада по рации (кнопка на левом плече).",
+                        "Сен жалғызсың. Көмек рациямен баяндағаннан кейін шығады (сол иықтағы түйме)."), -W / 2 + 0.06f, -H / 2 + 0.1f, 0.015f, Dim);
+            else
             Txt(GameSettings.T("Эвакуация: ", "Эвакуация: ") + def.evacMinutes.ToString("0") + GameSettings.T(" мин после запроса по радио", " мин") +
                 (def.timeSkipMinutes.Length > 0 ? GameSettings.T("   ·   часы на руке: «+» — следующая веха", "   ·   сағат: «+»") : ""),
                 -W / 2 + 0.06f, -H / 2 + 0.1f, 0.015f, Dim);
@@ -309,7 +315,8 @@ namespace FieldMedic.UI
                 }
                 if (y < -0.18f) break;
             }
-            MiniMap(r, new Vector2(0.505f, 0.075f), new Vector2(0.36f, 0.48f));
+            if (r.selfAid && r.checks.Count > 0) Checklist(r, 0.33f, H / 2 - 0.13f);
+            else MiniMap(r, new Vector2(0.505f, 0.075f), new Vector2(0.36f, 0.48f));
             TimelineStrip(r, -0.2f, 0.71f, -0.255f);
 
             // actions
@@ -318,6 +325,21 @@ namespace FieldMedic.UI
             var next = ScenarioCatalog.All.SkipWhile(d => d.id != r.scenarioId).Skip(1).FirstOrDefault();
             if (next != null)
                 Btn(GameSettings.T("ДАЛЕЕ", "КЕЛЕСІ"), lx + 0.49f, -H / 2 + 0.13f, 0.13f, Olive, () => Go("next:" + next.id, () => ScenarioLaunch.Scenario(next.id, ScenarioVariant.Default)), 0.02f, next.Title(kz), 0.014f);
+        }
+
+        /// <summary>w9b self-aid checklist (one row per TCCC self-aid step, green / red) in the right column.</summary>
+        void Checklist(DebriefReport r, float x, float y)
+        {
+            Txt(GameSettings.T("Самопомощь", "Өзіне көмек"), x, y, 0.024f, Amber);
+            y -= 0.05f;
+            foreach (var c in r.checks)
+            {
+                var col = c.ok ? new Color(0.3f, 0.62f, 0.28f) : new Color(0.75f, 0.2f, 0.15f);
+                WorldUI.Disc(_content, "Chk", new Vector3(x + 0.012f, y - 0.01f, -0.001f), 0.022f, 0.003f, WorldUI.Unlit(col));
+                Txt(c.ok ? "+" : "−", x + 0.012f, y - 0.01f, 0.014f, Color.white, TextAnchor.MiddleCenter, TextAlignment.Center).transform.localPosition = new Vector3(x + 0.012f, y - 0.01f, -0.004f);
+                Txt(WorldUI.Wrap(c.text, 30), x + 0.032f, y, 0.0135f, c.ok ? Ink : new Color(1f, 0.7f, 0.6f));
+                y -= 0.042f;
+            }
         }
 
         static Color MistakeColor(DebriefMistake m) => m.points >= 15 ? new Color(0.85f, 0.2f, 0.15f) : m.points >= 10 ? new Color(0.9f, 0.5f, 0.12f) : new Color(0.85f, 0.75f, 0.2f);

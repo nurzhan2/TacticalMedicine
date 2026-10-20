@@ -21,6 +21,8 @@ namespace FieldMedic.Interaction
         [Range(0f, 1f)] public float gripOn = 0.6f;
         [Range(0f, 1f)] public float gripOff = 0.35f;
         public LayerMask grabMask = ~0;
+        [Tooltip("w9b: the wounded hand of the self-aid drill cannot hold anything (bloody glove, no strength).")]
+        public bool gripDisabled;
 
         public static readonly List<HandGrabber> All = new List<HandGrabber>();
 
@@ -58,6 +60,13 @@ namespace FieldMedic.Interaction
             if (input == null) return;
 
             bool wasGripping = IsGripping;
+            if (gripDisabled)
+            {
+                IsGripping = false;
+                if (Held != null) Release();
+                SetHover(null, null);
+                return;
+            }
             IsGripping = IsGripping ? input.Grip > gripOff : input.Grip >= gripOn;
             bool gripPressed = IsGripping && !wasGripping;
 
@@ -117,7 +126,7 @@ namespace FieldMedic.Interaction
 
         public bool TryGrab(Grabbable g, GrabPoint point = null)
         {
-            if (g == null) return false;
+            if (g == null || gripDisabled) return false;
             if (Held != null) Release();
             if (!g.BeginGrab(this, point)) return false;
             SetHover(null, null);
