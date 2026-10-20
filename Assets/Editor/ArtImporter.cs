@@ -37,6 +37,9 @@ namespace FieldMedic.EditorTools
         public static readonly HashSet<string> Transparent = new HashSet<string> { "chestseal", "needle", "npa" };
         /// <summary>Thin single-sided sheets (foil blanket): both faces rendered.</summary>
         public static readonly HashSet<string> TwoSided = new HashSet<string> { "blanket" };
+        /// <summary>APK budget (≤ 200 MB): base colour 1024 only for the kit and the items held close to the face
+        /// all the time; everything else 512, normal + mask maps 512 ASTC 8×8.</summary>
+        public static readonly HashSet<string> HeroTextures = new HashSet<string> { "ifak", "tq" };
         static string ProjectRoot => Path.GetDirectoryName(Application.dataPath);
         public static string IncomingDir => Path.Combine(ProjectRoot, "SourceAssets", "Incoming");
 
@@ -126,7 +129,7 @@ namespace FieldMedic.EditorTools
             }
             PrepareTextures(dir, folder, texAbs);
             AssetDatabase.Refresh();
-            ApplyTextureSettings(dirAsset, IsCharacter(folder) ? 2048 : 1024);
+            ApplyTextureSettings(dirAsset, IsCharacter(folder) ? 2048 : HeroTextures.Contains(folder) ? 1024 : 512);
             ApplyModelSettings(fbxAsset, folder == ArtModels.Pouch.Source); // the kit combines its parts at runtime (draw calls)
             var model = AssetDatabase.LoadAssetAtPath<GameObject>(fbxAsset);
             if (model == null) { foreach (var r in results) r.notes.Add("model did not import"); return; }
@@ -152,7 +155,7 @@ namespace FieldMedic.EditorTools
             }
         }
 
-        /// <summary>BaseColor / Normal / packed Mask (R metallic, G AO, A smoothness) at ≤ 1024 via tools/art_pack_textures.py
+        /// <summary>BaseColor (× AO) / Normal / packed Mask (R metallic, G AO, A smoothness) at ≤ 1024 via tools/art_pack_textures.py
         /// (Anaconda python); without python the raw maps are copied as they are.</summary>
         static void PrepareTextures(string dir, string folder, string texAbs)
         {
@@ -192,13 +195,15 @@ namespace FieldMedic.EditorTools
                 string n = Path.GetFileNameWithoutExtension(path).ToLowerInvariant();
                 if (n.Contains("normal") || n.EndsWith("_n") || n.EndsWith("_nrm")) ti.textureType = TextureImporterType.NormalMap;
                 else if (n.EndsWith("_mask") || n.Contains("roughness") || n.Contains("metallic") || n.Contains("ambientocclusion")) ti.sRGBTexture = false;
+                bool detail = ti.textureType == TextureImporterType.NormalMap || n.EndsWith("_mask");
+                int size = detail && maxSize < 2048 ? (maxSize >= 1024 ? 512 : 256) : maxSize;
                 ti.isReadable = false;
                 ti.mipmapEnabled = true;
-                ti.maxTextureSize = Mathf.Min(ti.maxTextureSize, maxSize);
+                ti.maxTextureSize = Mathf.Min(Mathf.Max(ti.maxTextureSize, size), size);
                 var android = ti.GetPlatformTextureSettings("Android");
                 android.overridden = true;
-                android.maxTextureSize = maxSize;
-                android.format = TextureImporterFormat.ASTC_6x6;
+                android.maxTextureSize = size;
+                android.format = detail && maxSize < 2048 ? TextureImporterFormat.ASTC_8x8 : TextureImporterFormat.ASTC_6x6;
                 ti.SetPlatformTextureSettings(android);
                 ti.SaveAndReimport();
             }
@@ -235,6 +240,8 @@ namespace FieldMedic.EditorTools
             var nrm = Tex(dirAsset, folder, "Normal");
             var mask = Tex(dirAsset, folder, "Mask");
             var sh = Shader.Find("Universal Render Pipeline/Lit");
+            bool clear = Transparent.Contains(folder);
+            if (clear) { nrm = null; mask = null; } // clear plastic / gel: plain smooth transparent Lit (fewer shader variants)
             foreach (var name in names)
             {
                 string path = dirAsset + "/" + Safe(name) + ".mat";
@@ -250,11 +257,11 @@ namespace FieldMedic.EditorTools
                 m.SetTexture("_MetallicGlossMap", mask);
                 Kw(m, "_METALLICSPECGLOSSMAP", mask != null);
                 m.SetFloat("_Metallic", mask != null ? 1f : 0f);
-                m.SetFloat("_Smoothness", mask != null ? 0.9f : 0.35f);
+                m.SetFloat("_Smoothness", mask != null ? 0.9f : clear ? 0.82f : 0.35f);
                 m.SetFloat("_SmoothnessTextureChannel", 0f);
-                m.SetTexture("_OcclusionMap", mask); // AO packed in G (URP samples .g)
-                m.SetFloat("_OcclusionStrength", 1f);
-                Kw(m, "_OCCLUSIONMAP", mask != null);
+                // AO is multiplied into the base colour by the packer: no _OCCLUSIONMAP variant of URP/Lit (APK size)
+                m.SetTexture("_OcclusionMap", null);
+                Kw(m, "_OCCLUSIONMAP", false);
                 m.SetFloat("_WorkflowMode", 1f);
                 bool cut = name.ToLowerInvariant().Contains("mesh") && folder == "ifak";
                 bool transparent = Transparent.Contains(folder);

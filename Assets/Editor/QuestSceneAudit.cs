@@ -235,7 +235,7 @@ namespace FieldMedic.EditorTools
                     {
                         if (m == null) { p.Add($"art {pf.name}/{r.name}: missing material"); continue; }
                         mats.Add(m);
-                        foreach (var prop in new[] { "_BaseMap", "_BumpMap", "_MetallicGlossMap", "_OcclusionMap" })
+                        foreach (var prop in new[] { "_BaseMap", "_BumpMap", "_MetallicGlossMap" })
                         {
                             var tex = m.HasProperty(prop) ? m.GetTexture(prop) : null;
                             if (tex == null || !(AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) is TextureImporter ti)) continue;

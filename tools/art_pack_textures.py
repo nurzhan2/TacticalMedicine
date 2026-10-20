@@ -29,6 +29,12 @@ for folder in sorted(os.listdir(src_root)):
     size = min(cap, Image.open(bc).size[0])
     b = load(bc, "RGBA", size)
     a = np.asarray(b)[:, :, 3]
+    aop = find(full, "ambientocclusion")
+    if aop is not None:                         # AO baked into the albedo (no occlusion-map shader variant on Quest)
+        ao = np.asarray(load(aop, "L", size)).astype(np.float32) / 255.0
+        rgba = np.asarray(b).astype(np.float32)
+        rgba[:, :, :3] *= (1.0 - 0.7 * (1.0 - ao))[:, :, None]
+        b = Image.fromarray(np.clip(rgba, 0, 255).astype(np.uint8), "RGBA")
     if a.min() > 250: b = b.convert("RGB")      # no alpha needed
     b.save(os.path.join(out, folder + "_BaseColor.png"), optimize=True)
     nm = find(full, "normal")

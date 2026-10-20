@@ -45,10 +45,13 @@ What the importer does per folder (w9d):
 - **FBX re-export from the .blend** for folders in `ArtImporter.ReexportFromBlend` (`ifak`): Astra exported FMVR_IFAK.fbx with
   *Apply Transform*, which moved nested children (InnerPanel_Lower, LowerExtension and their Slot_* empties). A temporary
   COPY of the .blend is re-exported by `tools/art_reexport_fbx.py` (headless Blender); the delivery is untouched.
-- **Textures**: `tools/art_pack_textures.py` writes `<folder>_BaseColor`, `<folder>_Normal` and `<folder>_Mask`
-  (R metallic, G AO, A smoothness = 1 − roughness) at ≤ 1024 into `Assets/Art/Items/<folder>/Textures`; Android ASTC 6×6 ≤ 1024.
-- **Materials**: one URP/Lit per material name of the FBX (mask used as metallic-smoothness AND occlusion map);
-  alpha blend for `chestseal`, `needle`, `npa` (gel / clear plastic), cutout two-sided for `IFAK_Mesh`, two-sided blanket.
+- **Textures**: `tools/art_pack_textures.py` writes `<folder>_BaseColor` (AO multiplied in), `<folder>_Normal` and
+  `<folder>_Mask` (R metallic, G AO, A smoothness = 1 - roughness) into `Assets/Art/Items/<folder>/Textures`. Android (APK
+  <= 200 MB): BaseColor ASTC 6x6 1024 for `ArtImporter.HeroTextures` (ifak, tq), 512 for the rest; Normal/Mask ASTC 8x8
+  512 (hero) / 256 (rest).
+- **Materials**: one URP/Lit per material name of the FBX (mask = metallic-smoothness map; no occlusion map -> fewer
+  shader variants); plain smooth alpha blend without maps for `chestseal`, `needle`, `npa` (gel / clear plastic),
+  cutout two-sided for `IFAK_Mesh`, two-sided blanket.
 - **Axes**: Astra's front (Blender −Y) arrives as −Z in Unity; `Spec.euler` turns each model into the item frame
   (long side Z, printed front up +Y); `Spec.stack` re-poses states that were laid out side by side.
 - **Kit**: `IfakArt` folds the delivered open pose closed (wings ±90° about Y, extension and flap 180° about X), the pull tab
