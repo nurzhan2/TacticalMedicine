@@ -329,7 +329,13 @@ namespace FieldMedic.Scenarios
         }
 
         // ------------------------------------------------------------------ checks
-        TourniquetCAT Cat => FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None).OrderByDescending(c => c.State.stage).FirstOrDefault();
+        // w10 audit: only a CAT that is free or on THIS casualty (a band left on another body must never tick the lesson)
+        TourniquetCAT Cat => FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None)
+            .Where(c => c.Casualty == null || c.Casualty == C).OrderByDescending(c => c.State.stage).FirstOrDefault();
+
+        float _tqHighSince = -1f, _tqHighPos;
+        bool _tqHighLogged;
+        public const float TqHighSettleSeconds = 0.6f;
 
         public bool Satisfied(string id)
         {
@@ -343,7 +349,18 @@ namespace FieldMedic.Scenarios
                         Vector3.Distance(Flat(director.head.position), Flat(C.transform.position))) < 1.8f;
                 case "tq_grab": return cat != null && (cat.IsHeld || cat.State.OnLimb);
                 case "tq_on_limb": return cat != null && cat.State.OnLimb;
-                case "tq_high": return cat != null && cat.State.OnLimb && !cat.State.OnJoint && cat.State.limbId == _wound.LimbId && cat.State.limbPosition < _wound.LimbPos - 0.05f;
+                case "tq_high":
+                {
+                    // w10 audit: only a band that stays put counts — sliding up the leg toward the knee used to pass the
+                    // "high" check on the way and turn the step green before it came to rest on the joint
+                    bool high = cat != null && cat.State.OnLimb && !cat.State.OnJoint && cat.State.limbId == _wound.LimbId && cat.State.limbPosition < _wound.LimbPos - 0.05f;
+                    if (!high) { _tqHighSince = -1f; return false; }
+                    // still moving along the limb: restart the clock
+                    if (_tqHighSince < 0f || Mathf.Abs(cat.State.limbPosition - _tqHighPos) > 0.03f) { _tqHighSince = Time.time; _tqHighPos = cat.State.limbPosition; }
+                    bool settled = Time.time - _tqHighSince >= TqHighSettleSeconds;
+                    if (settled && !_tqHighLogged) { _tqHighLogged = true; Debug.Log($"[FMVR] training: band high at {cat.State.limbId} {cat.State.limbPosition:F2} (wound {_wound.LimbId} {_wound.LimbPos:F2})"); }
+                    return settled;
+                }
                 case "tq_strap": return cat != null && cat.State.stage >= TourniquetStage.StrapPulled;
                 case "tq_twist": return _wound.IsControlled;
                 case "tq_lock": return cat != null && cat.State.Secured && _wound.IsControlled;

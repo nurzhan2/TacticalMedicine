@@ -203,7 +203,8 @@ namespace FieldMedic.Tests
             yield return _bot.ApplyTourniquet(cat, C, Limb.RightLeg, 1.0f, 4, null);
             yield return Seconds(0.4f);
             Assert.AreEqual(HintPanel.Mood.Wrong, t.Panel.CurrentMood, "yellow card; step " + t.Progress.Step?.id + " " + _bot.lastStep);
-            Assert.AreEqual(TrainingCatalog.Reason("tq_on_joint", false), t.Panel.Reason);
+            // a band on the knee is both "on the joint" and "below a thigh wound" — either reason is right (the wound spot varies)
+            Assert.That(t.Panel.Reason, Is.EqualTo(TrainingCatalog.Reason("tq_on_joint", false)).Or.EqualTo(TrainingCatalog.Reason("tq_below_wound", false)));
             Assert.AreEqual("tq_high", t.Progress.Step.id, "does not advance past a wrong placement");
             Assert.GreaterOrEqual(t.WrongCount, 1);
         }
