@@ -31,6 +31,16 @@ namespace FieldMedic.Medical
         public DebriefPhase(string id, float start, float end) { this.id = id; this.start = start; this.end = end; }
     }
 
+    /// <summary>w9b self-aid checklist row ("Укрылся до самопомощи" ✓ / ✗).</summary>
+    [Serializable]
+    public sealed class DebriefCheck
+    {
+        public string text;
+        public bool ok;
+        public DebriefCheck() { }
+        public DebriefCheck(string text, bool ok) { this.text = text; this.ok = ok; }
+    }
+
     [Serializable]
     public sealed class DebriefEntry
     {
@@ -58,6 +68,9 @@ namespace FieldMedic.Medical
         public string endReason;
         /// <summary>w9: TACEVAC done by hand — the casualty was dragged to the helicopter door (protocol code evac_loaded).</summary>
         public bool evacLoaded;
+        /// <summary>w9b: the player was the casualty (self-aid drill); <see cref="checks"/> holds the checklist.</summary>
+        public bool selfAid;
+        public readonly List<DebriefCheck> checks = new();
         public readonly List<DebriefEntry> timeline = new();
         public readonly List<DebriefMistake> mistakes = new();
         public readonly List<DebriefPhase> phases = new();

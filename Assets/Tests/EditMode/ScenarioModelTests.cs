@@ -11,7 +11,11 @@ namespace FieldMedic.Medical.Tests
         [Test]
         public void Catalog_HasEightScenarios_WithTitlesAndWounds()
         {
-            Assert.AreEqual(8, ScenarioCatalog.All.Count);
+            // w9b: eight Erlan scenarios + the self-aid drill (the player is the casualty, no Erlan wounds)
+            Assert.AreEqual(9, ScenarioCatalog.All.Count);
+            Assert.AreEqual(8, ScenarioCatalog.All.Count(d => !d.selfAid));
+            var sa = ScenarioCatalog.Get("SA");
+            Assert.IsTrue(sa.selfAid && sa.number == 9 && sa.titleRu.StartsWith("Самопомощь") && sa.titleKz.StartsWith("Өзіне-өзі"));
             for (int i = 0; i < 8; i++)
             {
                 var d = ScenarioCatalog.All[i];

@@ -16,6 +16,8 @@ namespace FieldMedic.Medical
         // --- configuration ---
         public float bodyMassKg = 80f;
         public float startTempC = 36.8f;
+        /// Scales every wound's bleeding (w9b self-aid calibrates it to the configured time to bleed out).
+        public float bleedMultiplier = 1f;
 
         // --- state ---
         public readonly List<Wound> wounds = new();
@@ -153,7 +155,7 @@ namespace FieldMedic.Medical
         public float CurrentFlowMlPerSec(Wound w)
         {
             if (outcome == Outcome.Died) return 0f;
-            return w.BaseRateMlPerMin / 60f * w.ResidualFactor * OnsetFactor(w) * Perfusion * CoagulopathyMultiplier;
+            return bleedMultiplier * w.BaseRateMlPerMin / 60f * w.ResidualFactor * OnsetFactor(w) * Perfusion * CoagulopathyMultiplier;
         }
 
         /// Delayed onset (vasospasm in an amputation stump, a clot that lets go): only a trickle before the onset.

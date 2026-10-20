@@ -68,6 +68,8 @@ namespace FieldMedic.Medical
         public bool debrief;
         /// Erlan lies in the open (care under fire + drag) instead of inside the ruins.
         public bool inTheOpen;
+        /// w9b: the player puts the tourniquet on HIMSELF (one-handed self-aid, no Erlan) — run by the self-aid director.
+        public bool selfAid;
         public List<LessonStep> steps = new();
         public string Title(bool kz) => kz ? titleKz : titleRu;
         public int IndexOf(string stepId) => steps.FindIndex(s => s.id == stepId);
@@ -153,7 +155,7 @@ namespace FieldMedic.Medical
         public static TrainingLesson Get(string id) => All.FirstOrDefault(l => l.id == id);
 
         /// Topics on the Training page, in menu order.
-        public static readonly string[] Topics = { "full", "tq", "pack", "drag", "chest", "npa" };
+        public static readonly string[] Topics = { "full", "tq", "pack", "drag", "chest", "npa", "selftq" };
 
         /// Use an edited table (HintTable asset). Null/empty arguments keep the defaults.
         public static void Use(List<TrainingLesson> lessons, List<HintWrong> wrongs)
@@ -318,6 +320,34 @@ namespace FieldMedic.Medical
                     new LessonStep("pulse_foot", "Проверь пульс", "Пульсті тексер", "h_pulse").Show(null, "Foot", "pulse")
                         .Act("Два пальца на тыл стопы", "Екі саусақ табан үстіне")
                         .Act("Пульса нет — жгут работает", "Пульс жоқ — жгут жұмыс істейді"),
+                },
+            },
+            // ------------------------------------------------------------------ w9b: tourniquet on yourself, one hand
+            new TrainingLesson
+            {
+                id = "selftq", titleRu = "Жгут на себя", titleKz = "Өзіне жгут", woundType = WoundType.ArterialLimb, region = BodyRegion.ForearmL, selfAid = true,
+                steps =
+                {
+                    new LessonStep("s_grab", "Жгут — свободной рукой", "Жгут — бос қолмен", "t_stq_1").Show("CAT", null, "tq").In("CUF")
+                        .Act("Быстрый подсумок справа на поясе", "Белдегі оң жақ жылдам подсумка")
+                        .Act("Раненая рука не держит — только свободная", "Жаралы қол ұстамайды — тек бос қол"),
+                    new LessonStep("s_loop", "Петля на раненую руку", "Ілмек жаралы қолға", "t_stq_2").Show("CAT", "Wound", "tq").In("CUF")
+                        .Act("Надень петлю через кисть", "Ілмекті білезік арқылы кигіз", "s_on_arm")
+                        .Act("Раненую руку держи прямо перед собой", "Жаралы қолды алдыңда түзу ұста"),
+                    new LessonStep("s_high", "Высоко на плечо", "Иықтың жоғарысына", "t_stq_3").Show("CAT", "Wound", "tq").In("CUF")
+                        .Act("Сдвинь жгут к плечу, выше раны", "Жгутты иыққа, жарадан жоғары жылжыт", "s_high_pos")
+                        .Act("Отпусти — жгут на месте", "Жібер — жгут орнында"),
+                    new LessonStep("s_strap", "Затяни ленту", "Таспаны тарт", "t_stq_4").Show("CAT", "Wound", "tq").In("CUF")
+                        .Act("Возьми красный конец ленты", "Таспаның қызыл ұшын ұста")
+                        .Act("Потяни от себя до упора", "Соңына дейін тарт"),
+                    new LessonStep("s_twist", "Вороток", "Бұрағыш", "t_stq_5").Show("CAT", "Wound", "tq").In("CUF")
+                        .Act("Крути, пока кровь не остановится", "Қан тоқтағанша бұра", "s_stopped")
+                        .Act("Защёлкни вороток в клипсу", "Бұрағышты қысқышқа бекіт"),
+                    new LessonStep("s_secure", "Лента времени", "Уақыт таспасы", "t_tq_5").Show("CAT", "TqLabel", "tq")
+                        .Act("Перекинь белую ленту через клипсу", "Ақ таспаны қысқыш үстінен өткіз"),
+                    new LessonStep("s_time", "Запиши время", "Уақытты жаз", "sa_time").Show("Marker", "TqLabel", "marker")
+                        .Act("Открой аптечку, возьми маркер", "Аптечканы ашып, маркерді ал", "marker_grab")
+                        .Act("Курок — и пиши на ленте", "Шүріппені бас та, таспаға жаз"),
                 },
             },
             // ------------------------------------------------------------------ packing + pressure

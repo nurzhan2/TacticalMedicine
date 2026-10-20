@@ -94,6 +94,8 @@ namespace FieldMedic.Medical
         public bool polished;                  // showcase scenarios (S1, S2)
         /// Seconds after the incident by which a tourniquet must be on under fire (0 = no rule).
         public float tqDeadline;
+        /// w9b: the PLAYER is the casualty (self-aid drill, <see cref="SelfAidRun"/>) — no Erlan, no TACEVAC.
+        public bool selfAid;
 
         public string Title(bool kz) => kz ? titleKz : titleRu;
         public string Tagline(bool kz) => kz ? taglineKz : taglineRu;
@@ -295,6 +297,18 @@ namespace FieldMedic.Medical
                 skillsRu = new[] { "Переоценка жгута ≤ 2 ч", "Условия конверсии: нет шока, нет ампутации, < 6 ч", "Тампон + давящая повязка, затем ослабить жгут", "Тепло, не давать спать, записи времени" },
                 skillsKz = new[] { "Жгутты 2 сағатқа дейін бағалау", "Ауыстыру шарттары", "Таңғыш, сосын жгутты босату", "Жылу, ұйықтатпау" },
                 incidentDelay = 2f, evacMinutes = 30f, clockHour = 16, clockMinute = 25,
+            },
+            new ScenarioDefinition
+            {
+                id = "SA", number = 9, selfAid = true, polished = true,
+                titleRu = "Самопомощь: один под огнём", titleKz = "Өзіне-өзі көмек: оқ астында жалғыз",
+                taglineRu = "Тебя ранило, рядом никого: укрытие, жгут на себя, доклад", taglineKz = "Сен жараландың, қасыңда ешкім жоқ: баспана, өзіңе жгут, баяндау",
+                briefingRu = "14:05. Ты один несёшь ящик патронов от воронки к руинам. Над полем — FPV. Если тебя ранит: сначала уйди с открытого места (10–15 м до укрытия), затем жгут из быстрого подсумка свободной рукой — высоко и туго, время на ленте, доклад по рации, одеяло, будь на связи до прихода своих.",
+                briefingKz = "14:05. Сен жалғыз шұңқырдан қирандыға оқ-дәрі жәшігін алып келе жатырсың. Даланың үстінде FPV. Жараланса: алдымен ашық жерден кет (баспанаға 10–15 м), сосын жылдам подсумкадан бос қолмен жгут — жоғары әрі қатты, таспаға уақыт, рациямен баянда, көрпе, өзіңдікілер келгенше байланыста бол.",
+                incident = IncidentKind.Fpv, hit = HitKind.Explosion, spot = CasualtySpot.FireBay, startPhase = Phase.CareUnderFire,
+                skillsRu = new[] { "Сначала укрытие, потом жгут", "Жгут на себя одной рукой ≤ 60 с, высоко и туго", "Время на ленте, доклад: кто/где/что/что сделано", "Одеяло, связь каждые 25 с" },
+                skillsKz = new[] { "Алдымен баспана, сосын жгут", "Бір қолмен өзіңе жгут ≤ 60 с", "Таспаға уақыт, баяндау", "Көрпе, байланыс" },
+                incidentDelay = 8f, evacMinutes = 2f, clockHour = 14, clockMinute = 5, tqDeadline = 60f,
             },
         };
     }

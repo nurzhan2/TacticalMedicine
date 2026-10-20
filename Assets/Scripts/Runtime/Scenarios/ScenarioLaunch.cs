@@ -1,3 +1,4 @@
+using System.Linq;
 using FieldMedic.Medical;
 
 namespace FieldMedic.Scenarios
@@ -34,7 +35,7 @@ namespace FieldMedic.Scenarios
         public static void Exam(int seed)
         {
             var r = new System.Random(seed);
-            var all = ScenarioCatalog.All;
+            var all = ScenarioCatalog.All.Where(d => !d.selfAid).ToList(); // the exam grades care of Erlan
             Pending = new Request { mode = LaunchMode.Exam, scenarioId = all[r.Next(all.Count)].id, variant = ScenarioVariant.Random(seed) };
         }
 
