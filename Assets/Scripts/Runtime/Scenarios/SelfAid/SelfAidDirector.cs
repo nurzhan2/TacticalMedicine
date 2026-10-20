@@ -555,7 +555,7 @@ namespace FieldMedic.Scenarios.SelfAid
             if (string.IsNullOrEmpty(id)) return;
             Log("voice " + id);
             if (testMode || _voice == null) return;
-            var clip = Resources.Load<AudioClip>("Radio/" + id + (GameSettings.KZ ? "_kz" : "_ru")) ?? Resources.Load<AudioClip>("Radio/" + id + "_ru");
+            var clip = FieldMedic.Audio.VoiceOver.Clip(id);
             if (clip == null) return;
             _voice.Stop();
             _voice.clip = clip;

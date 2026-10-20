@@ -171,7 +171,7 @@ namespace FieldMedic.Scenarios
                 _voice.spatialBlend = 0f;
                 _voice.volume = 0.9f;
             }
-            var clip = Resources.Load<AudioClip>("Radio/" + id + (GameSettings.KZ ? "_kz" : "_ru"));
+            var clip = FieldMedic.Audio.VoiceOver.Clip(id);
             if (clip == null) return;
             _voice.Stop();
             _voice.clip = clip;
@@ -512,7 +512,7 @@ namespace FieldMedic.Scenarios
                 case "Cover": var cz = FindAnyObjectByType<CoverZone>(); return cz != null ? cz.transform.position : (Vector3?)null;
                 case "Chest": return rig.ChestBone.position + rig.BodyRight * 0.15f;
                 case "ChestBack": return _exit != null ? WoundPoint(_exit) : (Vector3?)null;
-                case "Nose": return rig.Bone(HumanBodyBones.Head).position + rig.BodyUp * 0.08f;
+                case "Nose": { FieldMedic.Treatment.NpaItem.Face(rig, out var nostril, out _, out _, out var post, out _); return nostril - post * 0.05f; }
                 case "Body": return Chest;
                 case "Stretcher":
                 case "HeliDoor": return TacevacController.Instance != null && TacevacController.Instance.Landed ? TacevacController.Instance.DoorPoint + Vector3.up * 1.1f : (Vector3?)null;

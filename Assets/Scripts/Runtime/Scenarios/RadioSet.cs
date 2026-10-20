@@ -141,8 +141,7 @@ namespace FieldMedic.Scenarios
             RefreshScreen();
             Debug.Log("[FMVR] radio: " + id + " — " + Subtitle);
             if (muted) return;
-            var lang = GameSettings.KZ ? "kz" : "ru";
-            var clip = Resources.Load<AudioClip>("Radio/" + id + "_" + lang) ?? Resources.Load<AudioClip>("Radio/" + id + "_ru");
+            var clip = FieldMedic.Audio.VoiceOver.Clip(id); // Russian voice-over in both UI languages (w10c)
             if (clip == null) return;
             _src.Stop();
             _src.clip = clip;

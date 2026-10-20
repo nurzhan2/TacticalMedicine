@@ -43,6 +43,7 @@ namespace FieldMedic.Casualty
         {
             if (muted || bank == null || voice == null) return false;
             if (voice.isPlaying && !interrupt) return false;
+            if (!VoiceOver.CasualtyTtsWords) return SayAsSound(id, interrupt);
             var clip = bank.Get(id, GameSettings.CasualtyKazakhShare, _rng);
             if (clip == null) return false;
             voice.pitch = 1f + (float)(_rng.NextDouble() - 0.5) * 0.06f;
@@ -50,6 +51,22 @@ namespace FieldMedic.Casualty
             voice.Play();
             LastLine = id;
             return true;
+        }
+
+        /// <summary>w10c: no TTS words - the line's intent as a real recorded pain sound.</summary>
+        bool SayAsSound(string id, bool interrupt)
+        {
+            switch (id)
+            {
+                case "hit_leg": case "hit_mixed": case "wounded": case "hurts": case "take_off":
+                    return Vocalise(bank.scream != null && bank.scream.Length > 0 ? bank.scream : bank.groan, 1f, interrupt);
+                case "cant_breathe": case "breathe":
+                    return Vocalise(bank.gasp != null && bank.gasp.Length > 0 ? bank.gasp : bank.groan, 0.9f, interrupt);
+                case "help": case "blood_much": case "will_i_die": case "dont_leave":
+                    return Vocalise(bank.groan, 0.75f, interrupt);
+                default: // quiet lines (cold, water, holding, brother, dizzy, tell_mom): a low groan or silence
+                    return Chance(0.5) && Vocalise(bank.groan, 0.45f, interrupt);
+            }
         }
 
         public bool Vocalise(AudioClip[] pool, float volume = 1f, bool interrupt = false)

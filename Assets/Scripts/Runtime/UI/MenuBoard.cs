@@ -220,6 +220,12 @@ namespace FieldMedic.UI
             Back(ShowMain);
         }
 
+        public static string Credits => GameSettings.T("АВТОРЫ", "АВТОРЛАР") + "\n" +
+            GameSettings.T("Голоса: ElevenLabs (озвучка на русском)", "Дауыстар: ElevenLabs (орыс тілінде)") + "\n" +
+            GameSettings.T("Звуки: freesound.org (CC0)  ·  Текстуры: Poly Haven (CC0)", "Дыбыстар: freesound.org (CC0)  ·  Текстуралар: Poly Haven (CC0)") + "\n" +
+            GameSettings.T("Модели: BlenderKit, Astra  ·  Солдат: модель MANARCH", "Модельдер: BlenderKit, Astra  ·  Сарбаз: MANARCH моделі") + "\n" +
+            "Voices: ElevenLabs  ·  ATTRIBUTION.md";
+
         public void ShowSettings()
         {
             Clear(); Page = "settings"; _refresh = ShowSettings;
@@ -241,6 +247,9 @@ namespace FieldMedic.UI
             Row(GameSettings.T("Режим", "Режим"), new[] { GameSettings.T("СТОЯ", "ТҰРЫП"), GameSettings.T("СИДЯ", "ОТЫРЫП") }, GameSettings.Seated ? 1 : 0, i => GameSettings.Seated = i == 1);
             Row(GameSettings.T("Ведущая рука", "Негізгі қол"), new[] { GameSettings.T("ПРАВАЯ", "ОҢ"), GameSettings.T("ЛЕВАЯ", "СОЛ") }, GameSettings.LeftHanded ? 1 : 0, i => GameSettings.LeftHanded = i == 1);
             Row(GameSettings.T("Поворот", "Бұрылу"), new[] { "30°", "45°" }, GameSettings.SnapTurnDegrees < 40f ? 0 : 1, i => GameSettings.SnapTurnDegrees = i == 0 ? 30f : 45f);
+            // w10c: credits (full list in ATTRIBUTION.md)
+            var credits = Txt(Credits, W / 2 - 0.05f, -H / 2 + 0.05f, 0.0125f, Dim, TextAnchor.LowerRight, TextAlignment.Right);
+            credits.name = "Credits";
             Back(ShowMain);
         }
 
