@@ -10,7 +10,7 @@ $out = & $adb install -r -g $Apk 2>&1; "install: $out" | Out-File $st -Append
 "launched $(Get-Date -Format HH:mm:ss)" | Out-File $st -Append
 Start-Sleep $Wait
 & $adb logcat -d -v time > "$d\${Tag}_logcat.txt"
-& $adb exec-out screencap -p > "$d\${Tag}_screen.png"
+& $adb shell screencap -p /sdcard/fmvr.png; & $adb pull /sdcard/fmvr.png "$d\${Tag}_screen.png" 2>&1 | Out-Null  # PS redirection corrupts binary PNGs
 & $adb pull "/sdcard/Android/data/$pkg/files/fmvr_log.txt" "$d\${Tag}_fmvr_log.txt" 2>&1 | Out-Null
 & $adb shell dumpsys activity activities | Select-String 'mResumedActivity|topResumedActivity' > "$d\${Tag}_activity.txt"
 "done $(Get-Date -Format HH:mm:ss)" | Out-File $st -Append

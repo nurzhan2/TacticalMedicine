@@ -24,7 +24,7 @@ if ($pkg) {
   "launched $(Get-Date -Format HH:mm:ss)" | Out-File $st -Append
   Start-Sleep 45
   & $adb logcat -d -v time > "$d\logcat_run.txt"
-  & $adb exec-out screencap -p > "$d\screen_run.png"
+  & $adb shell screencap -p /sdcard/fmvr.png; & $adb pull /sdcard/fmvr.png "$d\screen_run.png" 2>&1 | Out-Null  # PS redirection corrupts binary PNGs
   & $adb pull "/sdcard/Android/data/$pkg/files/fmvr_log.txt" "$d\fmvr_log_run.txt" 2>&1 | Out-Null
 }
 "done $(Get-Date -Format HH:mm:ss)" | Out-File $st -Append
