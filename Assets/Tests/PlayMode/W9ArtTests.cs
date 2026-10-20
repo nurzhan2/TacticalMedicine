@@ -261,6 +261,25 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
+        public IEnumerator AntisepticWipes_FromKit_WipeTheSkinBeforeTheSeal()
+        {
+            yield return Casualty(WoundType.PenetratingChest, BodyRegion.ChestR);
+            var care = _c.Interaction.Care(_c.Patient.wounds[0]);
+            var wipes = _pouch.Find(MedItemKind.AntisepticWipes);
+            yield return _bot.Grab(_bot.left, wipes);
+            Assert.AreEqual(wipes, _bot.left.Held);
+            Vector3 w = care.transform.position, n = care.Normal;
+            Vector3 side = Vector3.Cross(n, Vector3.up).sqrMagnitude > 0.01f ? Vector3.Cross(n, Vector3.up).normalized : Vector3.right;
+            int before = care.Wipes;
+            for (int k = 0; k < 3; k++)
+            {
+                yield return _bot.Move(_bot.left, w + n * 0.01f - side * 0.09f, false, 1.5f);
+                yield return _bot.Move(_bot.left, w + n * 0.01f + side * 0.09f, false, 0.5f);
+            }
+            Assert.Greater(care.Wipes, before, "wiping with the wipes pack counts like the open palm");
+        }
+
+        [UnityTest]
         public IEnumerator Elastic_WrappedWithoutPulling_DoesNotStopTheBleed_LetGoSpringsOff()
         {
             yield return Casualty(WoundType.ArterialLimb, BodyRegion.ThighR);

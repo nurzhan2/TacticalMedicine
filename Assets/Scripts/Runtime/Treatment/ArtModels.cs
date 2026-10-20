@@ -107,8 +107,8 @@ namespace FieldMedic.Treatment
         static readonly Dictionary<string, GameObject> Cache = new Dictionary<string, GameObject>();
         /// <summary>Optional override (tests): returns a prefab for an item id or null.</summary>
         public static System.Func<string, GameObject> Loader;
-        /// <summary>Tests: run the items with their procedural look only.</summary>
-        public static bool Disabled;
+        /// <summary>Tests / diagnostics: run the items with their procedural look only (also env FMVR_NO_ART=1).</summary>
+        public static bool Disabled = System.Environment.GetEnvironmentVariable("FMVR_NO_ART") == "1";
 
         public static GameObject Load(string id)
         {

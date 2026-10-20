@@ -8,6 +8,7 @@ Policy: only CC0 / CC-BY content is downloaded. Exceptions that were already in 
 | Meta XR SDK 207 | Meta | Oculus SDK License |
 | Erlan.fbx + textures (Assets/Art/Characters/Erlan) | Derived from Mixamo "Swat Guy": decimated, retinted to olive/khaki digital camo, plate carrier added (tools/blender/prepare_casualty.py) | Mixamo terms (as above) |
 | Mixamo animation FBX copies (Assets/Art/Characters/Erlan/Anims) | Adobe Mixamo | Mixamo terms |
+| IFAK kit + medical item models and PBR textures (Assets/Art/Items/*, Assets/Resources/Art/*): FMVR_IFAK, TQ_Windlass, TQ_Alpha, TQ_Esmarch, Shears, IsraeliBandage, HemoGauze, ChestSeal, NPA, DecompNeedle, GlovesPack, Marker, RescueBlanket, Splint, SmallItems | Generated for this project by the owner (MANARCH) with GPT-6 Astra (prompt summary: docs/prompts/w9d-art.md); imported by Assets/Editor/ArtImporter.cs (FMVR_IFAK.fbx re-exported from its .blend, textures repacked to ≤ 1024) | Project-owned (owner-provided) |
 | Gear models, amputation stump, blood/wound textures | Procedural, made for this project (tools/blender/prepare_casualty.py, tools/make_blood_textures.py) | Project-owned |
 | Voice placeholders (Assets/Audio/Voice) | Generated with Windows TTS "Microsoft Irina" + tools/voice_post.py; to be replaced by real recordings | Project-owned placeholder |
 | Radio commander + training instructor voices (Assets/Resources/Radio) | Generated with Windows TTS "Microsoft Irina" + tools/radio_post.py (radio band-pass/squelch); to be replaced by real recordings | Project-owned placeholder |

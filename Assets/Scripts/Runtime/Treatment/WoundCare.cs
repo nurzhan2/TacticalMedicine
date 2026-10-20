@@ -131,8 +131,8 @@ namespace FieldMedic.Treatment
                     }
                 }
 
-                // wiping: open palm swept across the area (before a chest seal)
-                bool open = h.Held == null && h.Input.Grip < 0.5f;
+                // wiping: open palm swept across the area (before a chest seal) — or the antiseptic wipes from the kit (w9d)
+                bool open = (h.Held == null && h.Input.Grip < 0.5f) || (h.Held is PropItem wipe && wipe.kind == MedItemKind.AntisepticWipes);
                 Vector3 palm = h.PalmPosition;
                 bool near = open && Lateral(palm) < 0.1f && Mathf.Abs(Height(palm)) < 0.06f;
                 if (near) _wipePath[i] += Vector3.ProjectOnPlane(palm - _lastPalm[i], Normal).magnitude;

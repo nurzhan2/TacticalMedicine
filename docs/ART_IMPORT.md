@@ -5,35 +5,58 @@ called **`Visual`**, the logic (grab points, tip, colliders, moving procedural p
 lives on the root and its other children. An imported model only replaces what is inside `Visual`, so new art never
 touches the logic.
 
-## 1. Drop folder
+## 1. Drop folder (w9d: the Astra deliveries)
 ```
-SourceAssets/Incoming/<item_id>/<anything>.fbx | .glb | .gltf   (+ textures next to it, png/jpg/tga)
+SourceAssets/Incoming/<folder>/<Name>.fbx | .glb | .gltf  +  Textures/*BaseColor*, *Normal*, *Roughness*, *Metallic*, *AmbientOcclusion*.png
 ```
-One folder per item, one model file per folder. The folder is git-ignored (licensed / large sources); the imported
-result under `Assets/Art/Items/<item_id>/` is what the game uses.
+One folder per delivery; a delivery may hold **several items** and **several states** of an item. The folder is git-ignored;
+the imported result under `Assets/Art/Items/<folder>/` (FBX, URP materials, packed textures) and
+`Assets/Resources/Art/<item_id>.prefab` is what the game uses. Folder → item mapping lives in code
+(`ArtModels.ByKind`, field `source`):
+
+| folder | item_id | game item | objects used (carried state **bold**, others kept inactive for the item's states) |
+|---|---|---|---|
+| `tq` | `tourniquet` | CAT | **TQ_Stowed**; TQ_Open/Windlass, WindlassClip, TimeTab, Buckle grafted onto the band on a limb |
+| `shears` | `shears` | trauma shears | **BladeA** (turns about the screw), **BladeB, Screw, Carabiner** |
+| `israeli` | `israeli_bandage` | Israeli bandage | **Pack**; in the hand Pack_Open (stacked onto the pack); Pad, Wrap, PressureBar, Clip kept |
+| `gauze` | `hemostatic_gauze` | hemostatic gauze | **Pack_Closed**; in the hand Pack_OpenBottom + Gauze_Roll |
+| `chestseal` | `chest_seal` | vented chest seal | **Pack**; Seal + Liner grafted onto the torn-out seal, liner peels |
+| `npa` | `npa` | NPA 28 Fr | **Package + Tube** (package stacked around the tube); in the hand Tube |
+| `npa` | `lubricant` | lube sachet | **LubeSachet** |
+| `needle` | `needle` | 14 G needle | **Case + Cap + Needle**; in the hand Needle |
+| `gloves` | `gloves` | nitrile gloves | **Pack_Closed**; in the hand Pack_Open |
+| `marker` | `marker` | marker | **Body, Cap** (cap posted on the back end while held) |
+| `blanket` | `blanket` | rescue blanket | **Blanket_Pack** (the sheet is procedural, draped on the body) |
+| `small` | `casualty_card`, `tri_bandage`, `eye_shield`, `wipes`, `tape` | card, triangular bandage, eye shield (+pack), wipes, duct tape | **CasualtyCard**, **TriBandage_Pack**, **EyeShield_Pack** (+EyeShield), **Wipes_Pack**, **Tape_Roll** |
+| `alpha` | `alpha_tq` | elastic "Alpha" tourniquet | **Alpha_Stowed**; Hook_1/2 grafted onto the fixed band |
+| `esmarch` | `esmarch_tq` | Esmarch tourniquet | **Esmarch_Stowed**; Ball_1/2 grafted onto the fixed band |
+| `splint` | `splint` | roll splint | **Splint_Rolled** (Splint_Flat kept) |
+| `ifak` | `ifak` | the player's kit | Body, Flap, InnerPanel_Upper/Lower(+wings, extension), QuickPouch, BackPanel, PullTab, **Slot_*** empties = item seats |
 
 Then in Unity: **FieldMedic → Art → Import Incoming** (or batch:
 `-executeMethod FieldMedic.EditorTools.ArtImporter.ImportIncomingBatch`). Report: `logs/art_import.txt`.
 
-| item_id | item | real size (longest side) | required sub-parts (object names in the model) |
-|---|---|---|---|
-| `tourniquet` | CAT tourniquet (folded, as carried) | 0.17 m | `Strap`, `Windlass`, `WindlassClip`, `TimeTab`, `Buckle` |
-| `shears` | trauma shears | 0.19 m | `BladeA`, `BladeB` (pivot of both at the screw) |
-| `israeli_bandage` | Israeli bandage (packed) | 0.17 m | `Pad`, `Wrap`, `PressureBar`, `Clip` |
-| `hemostatic_gauze` | hemostatic gauze (packed) | 0.14 m | `Pack` |
-| `chest_seal` | vented chest seal (package) | 0.20 m | `Package` |
-| `npa` | nasopharyngeal airway 28 Fr | 0.15 m | `Tube`, `Flange` |
-| `needle` | 14 G decompression needle | 0.16 m | `Needle`, `Hub`, `Cap` |
-| `gloves` | nitrile gloves pair (folded) | 0.15 m | `Gloves` |
-| `marker` | permanent marker | 0.14 m | `Body`, `Cap` |
-| `blanket` | thermal blanket (folded) | 0.13 m | `Pack` |
-| `casualty_card` | TCCC casualty card | 0.14 m | `Card` |
-| `lubricant` | lubricant sachet | 0.06 m | `Sachet` |
-| `ifak` | the kit (main pouch) | 0.42 m | `Body`, `Lid` (or `Flap`), `QuickPouch`, `Slots` |
-
-Names are matched case-insensitively and may carry a suffix (`Strap.001`, `Strap_LOD0` are fine).
+Required names (`ArtModels.ByKind[...].parts`) are matched case-insensitively; an exact name wins, export suffixes are
+accepted (`Strap.001`, `Strap_LOD0`), other states are not suffixes (`Pack_Open` is not `Pack`).
 If a required name is missing the importer **does not change anything in the game** and lists what is missing in
 the report and the Unity console — rename the objects in Blender and import again.
+
+What the importer does per folder (w9d):
+- **FBX re-export from the .blend** for folders in `ArtImporter.ReexportFromBlend` (`ifak`): Astra exported FMVR_IFAK.fbx with
+  *Apply Transform*, which moved nested children (InnerPanel_Lower, LowerExtension and their Slot_* empties). A temporary
+  COPY of the .blend is re-exported by `tools/art_reexport_fbx.py` (headless Blender); the delivery is untouched.
+- **Textures**: `tools/art_pack_textures.py` writes `<folder>_BaseColor`, `<folder>_Normal` and `<folder>_Mask`
+  (R metallic, G AO, A smoothness = 1 − roughness) at ≤ 1024 into `Assets/Art/Items/<folder>/Textures`; Android ASTC 6×6 ≤ 1024.
+- **Materials**: one URP/Lit per material name of the FBX (mask used as metallic-smoothness AND occlusion map);
+  alpha blend for `chestseal`, `needle`, `npa` (gel / clear plastic), cutout two-sided for `IFAK_Mesh`, two-sided blanket.
+- **Axes**: Astra's front (Blender −Y) arrives as −Z in Unity; `Spec.euler` turns each model into the item frame
+  (long side Z, printed front up +Y); `Spec.stack` re-poses states that were laid out side by side.
+- **Kit**: `IfakArt` folds the delivered open pose closed (wings ±90° about Y, extension and flap 180° about X), the pull tab
+  rips it open, the quick pouch rides on the side when closed; items sit on seats under the `Slot_*` empties
+  (`IfakArt.Layout`). Settled (closed or open) the kit is drawn as one combined mesh per material (2 draws; the kit FBX is
+  imported readable for this).
+- **Budget** (`QuestSceneAudit.ArtRules`, run by every build): ≤ 4 000 tris per item (all states), ≤ 8 000 kit, ≤ 60 000
+  total, ≤ 2 materials per renderer, textures ASTC ≤ 1024, no mesh colliders. Current: 20 prefabs, 31 198 tris, 16 materials.
 
 ## 2. Model rules
 - **Units**: 1 unit = 1 m. Export from Blender with *Apply Unit* / scale 1.0 (FBX: "FBX Units Scale").
