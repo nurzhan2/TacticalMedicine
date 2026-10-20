@@ -287,7 +287,9 @@ namespace FieldMedic.EditorTools
                 var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(path);
                 (m.Groups["lang"].Value == "ru" ? e.ru : e.kz).Add(clip);
             }
-            bank.lines = lines.OrderBy(k => k.Key).Select(k => new VoiceBank.Line { id = k.Key, ru = k.Value.ru.ToArray(), kz = k.Value.kz.ToArray() }).ToArray();
+            // w10c: the TTS word placeholders are not played (VoiceOver.CasualtyTtsWords) → keep the ids, ship no clips
+            bool words = VoiceOver.CasualtyTtsWords;
+            bank.lines = lines.OrderBy(k => k.Key).Select(k => new VoiceBank.Line { id = k.Key, ru = words ? k.Value.ru.ToArray() : new AudioClip[0], kz = words ? k.Value.kz.ToArray() : new AudioClip[0] }).ToArray();
             bank.groan = Pool("pain_groan");
             bank.scream = Pool("pain_scream");
             bank.gasp = Pool("gasp_choke");
@@ -341,8 +343,10 @@ namespace FieldMedic.EditorTools
 
         public static GameObject BuildPrefab()
         {
-            var model = AssetDatabase.LoadAssetAtPath<GameObject>(ErlanFbx);
-            if (model == null) throw new Exception("Erlan.fbx not imported");
+            // w10c: the owner's soldier (Soldier_KZ, Biped → Humanoid) is Erlan unless ProjectSettings/FMVR_OLD_ERLAN exists
+            bool soldier = SoldierKZImport.Enabled;
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>(soldier ? SoldierKZImport.Fbx : ErlanFbx);
+            if (model == null) throw new Exception((soldier ? SoldierKZImport.Fbx : ErlanFbx) + " not imported");
             var root = new GameObject("Erlan");
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(model, root.transform);
             inst.name = "Model";
@@ -350,8 +354,11 @@ namespace FieldMedic.EditorTools
             anim.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(ControllerPath);
             anim.applyRootMotion = false;
             anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
-            var body = inst.GetComponentsInChildren<SkinnedMeshRenderer>().FirstOrDefault(r => r.name.Contains("Body"));
-            var pc = inst.GetComponentsInChildren<SkinnedMeshRenderer>().FirstOrDefault(r => r.name.Contains("PlateCarrier"));
+            var smrs = inst.GetComponentsInChildren<SkinnedMeshRenderer>();
+            var body = soldier
+                ? smrs.OrderByDescending(r => r.sharedMaterials.Any(m => m != null && m.name.Contains("_Body")) ? 1 : 0).ThenByDescending(r => r.sharedMesh != null ? r.sharedMesh.vertexCount : 0).FirstOrDefault()
+                : smrs.FirstOrDefault(r => r.name.Contains("Body"));
+            var pc = soldier ? null : smrs.FirstOrDefault(r => r.name.Contains("PlateCarrier"));
             foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>())
             {
                 smr.updateWhenOffscreen = false;
@@ -369,7 +376,7 @@ namespace FieldMedic.EditorTools
             rig.animator = anim;
             rig.bodyRenderer = body;
             var soak = root.AddComponent<BloodSoak>();
-            soak.targets = new Renderer[] { body, pc }.Where(r => r != null).ToArray();
+            soak.targets = soldier ? smrs.Cast<Renderer>().ToArray() : new Renderer[] { body, pc }.Where(r => r != null).ToArray();
             root.AddComponent<BloodPoolManager>();
             var voice = root.AddComponent<CasualtyVoice>();
             voice.bank = AssetDatabase.LoadAssetAtPath<VoiceBank>(VoiceBankPath);
@@ -385,7 +392,7 @@ namespace FieldMedic.EditorTools
             ctrl.soak = soak;
             ctrl.PoolManager = root.GetComponent<BloodPoolManager>();
 
-            AttachGear(anim);
+            if (soldier) { MeasureSoldier(rig, smrs); StripNvg(rig, smrs); AttachGearSoldier(anim, rig); } else AttachGear(anim);
 
             Directory.CreateDirectory(Path.GetDirectoryName(PrefabPath));
             var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
@@ -421,6 +428,188 @@ namespace FieldMedic.EditorTools
                     ifak.transform.TransformPoint(new Vector3(-0.09f, 0.03f, 0.035f)), ifak.transform.rotation * Quaternion.Euler(0f, 90f, 0f));
                 if (cat != null) { cat.name = "CAT_Erlan"; cat.transform.localScale = Vector3.one * 0.8f; }
             }
+        }
+
+        /// <summary>w10c: measure the soldier's mesh in the bind pose: vest surface depth (evac handle, IFAK) and the
+        /// nose / ear positions in the head frame used by <see cref="FieldMedic.Treatment.NpaItem.Face"/>.</summary>
+        static void MeasureSoldier(CasualtyRig rig, SkinnedMeshRenderer[] smrs)
+        {
+            rig.Init();
+            var verts = new List<Vector3>();
+            var headVerts = new List<Vector3>(); // only the face/head submesh (not the helmet or the gear)
+            foreach (var r in smrs)
+            {
+                var m = new Mesh();
+                r.BakeMesh(m, true);
+                var mat = r.transform.localToWorldMatrix;
+                var vs = m.vertices;
+                foreach (var v in vs) verts.Add(mat.MultiplyPoint3x4(v));
+                for (int sm = 0; sm < m.subMeshCount && sm < r.sharedMaterials.Length; sm++)
+                    if (r.sharedMaterials[sm] != null && r.sharedMaterials[sm].name.Contains("_Head"))
+                        foreach (var i in m.GetIndices(sm).Distinct()) headVerts.Add(mat.MultiplyPoint3x4(vs[i]));
+                Object.DestroyImmediate(m);
+            }
+            Vector3 up = rig.BodyUp, fwd = rig.BodyForward, right = rig.BodyRight;
+            var chest = rig.ChestBone.position;
+            var spine = rig.Bone(HumanBodyBones.Spine).position;
+            float Depth(Vector3 at, Vector3 dir, float halfH, float halfW) => verts
+                .Where(v => Mathf.Abs(Vector3.Dot(v - at, up)) < halfH && Mathf.Abs(Vector3.Dot(v - at, right)) < halfW)
+                .Select(v => Vector3.Dot(v - at, dir)).DefaultIfEmpty(0.15f).Max();
+            // the evac handle sits just below the collar: the back surface at that height (not the pack's deepest point)
+            var neckP = rig.Bone(HumanBodyBones.Neck).position;
+            SoldierKZImport.VestBackDepth = Mathf.Clamp(Depth(Vector3.Lerp(chest, neckP, 0.55f), -fwd, 0.035f, 0.08f), 0.06f, 0.3f);
+            SoldierKZImport.VestFrontDepth = Mathf.Clamp(Depth(spine, fwd, 0.05f, 0.18f), 0.08f, 0.3f);
+
+            // head frame exactly as NpaItem.Face builds it
+            var head = rig.Bone(HumanBodyBones.Head);
+            var chestT = rig.ChestBone;
+            Quaternion rel = head.rotation * Quaternion.Inverse(chestT != null ? chestT.rotation : rig.transform.rotation);
+            Vector3 hf = (rel * fwd).normalized, hu = (rel * up).normalized, hr = Vector3.Cross(hu, hf).normalized;
+            Vector3 hp = head.position;
+            var face = headVerts.Where(v => (v - hp).sqrMagnitude < 0.2f * 0.2f && Vector3.Dot(v - hp, hu) > -0.02f && Vector3.Dot(v - hp, hu) < 0.14f
+                                        && Mathf.Abs(Vector3.Dot(v - hp, hr)) < 0.03f).ToList();
+            if (face.Count > 0)
+            {
+                // nose tip = the most forward face vertex; the nostril sits ~1.2 cm behind, 1.5 cm below, 0.8 cm to the right
+                var tip = face.OrderByDescending(v => Vector3.Dot(v - hp, hf)).First();
+                Vector3 d = tip - hp;
+                var n = new Vector3(0.008f, Vector3.Dot(d, hu) - 0.015f, Vector3.Dot(d, hf) - 0.012f);
+                float halfWidth = headVerts.Where(v => (v - hp).sqrMagnitude < 0.16f * 0.16f && Mathf.Abs(Vector3.Dot(v - hp, hu) - n.y) < 0.03f
+                                                   && Mathf.Abs(Vector3.Dot(v - hp, hf) - (n.z - 0.09f)) < 0.04f)
+                    .Select(v => Mathf.Abs(Vector3.Dot(v - hp, hr))).DefaultIfEmpty(0.075f).Max();
+                rig.faceNostril = n;
+                rig.faceEar = new Vector3(Mathf.Clamp(halfWidth, 0.06f, 0.1f), n.y - 0.01f, n.z - 0.095f);
+            }
+            // limb thickness vs the old body's radius profile (90th percentile of the uniform around the axis)
+            float Thickness(Limb limb, float pos)
+            {
+                Vector3 a = LimbMath.PointAt(rig, limb, pos), dir = LimbMath.AxisAt(rig, limb, pos);
+                var ds = verts.Where(v => Mathf.Abs(Vector3.Dot(v - a, dir)) < 0.025f)
+                    .Select(v => Vector3.ProjectOnPlane(v - a, dir).magnitude).Where(d => d < (LimbMath.IsLeg(limb) ? 0.15f : 0.1f)).OrderBy(d => d).ToList();
+                // RadiusAt is the skin; the band/shears add the cloth allowance on top → skin = cloth surface - allowance
+                float cloth = ds.Count > 20 ? ds[(int)(ds.Count * 0.9f)] : LimbMath.RadiusAtBase(limb, pos) + FieldMedic.Treatment.ElasticTourniquetItem.ClothAllowanceFor(limb, pos);
+                Debug.Log($"[FMVR] soldier {limb} @{pos}: cloth radius {cloth:F3} (old skin {LimbMath.RadiusAtBase(limb, pos):F3})");
+                return cloth - FieldMedic.Treatment.ElasticTourniquetItem.ClothAllowanceFor(limb, pos);
+            }
+            rig.legRadiusScale = Mathf.Clamp(Mathf.Max(Thickness(Limb.RightLeg, 0.35f) / LimbMath.RadiusAtBase(Limb.RightLeg, 0.35f),
+                                                       Thickness(Limb.LeftLeg, 0.35f) / LimbMath.RadiusAtBase(Limb.LeftLeg, 0.35f)), 0.9f, 1.5f);
+            rig.armRadiusScale = Mathf.Clamp(Mathf.Max(Thickness(Limb.RightArm, 0.6f) / LimbMath.RadiusAtBase(Limb.RightArm, 0.6f),
+                                                       Thickness(Limb.LeftArm, 0.6f) / LimbMath.RadiusAtBase(Limb.LeftArm, 0.6f)), 0.9f, 1.5f);
+            var hipsT = rig.Bone(HumanBodyBones.Hips).position;
+            SoldierKZImport.HipSide = verts.Where(v => Mathf.Abs(Vector3.Dot(v - hipsT, up)) < 0.05f && Mathf.Abs(Vector3.Dot(v - hipsT, fwd)) < 0.1f && Mathf.Abs(Vector3.Dot(v - hipsT, right)) < 0.3f)
+                .Select(v => Vector3.Dot(v - hipsT, right)).DefaultIfEmpty(0.18f).Max();
+            Debug.Log($"[FMVR] soldier limbs: leg x{rig.legRadiusScale:F2} arm x{rig.armRadiusScale:F2} hip side {SoldierKZImport.HipSide:F3}");
+            Debug.Log($"[FMVR] soldier measure: vest back {SoldierKZImport.VestBackDepth:F3} front {SoldierKZImport.VestFrontDepth:F3} nostril {rig.faceNostril:F3} ear {rig.faceEar:F3} (face verts {face.Count}, head {headVerts.Count}, total {verts.Count})");
+        }
+
+        /// <summary>w10c: the helmet's night-vision monocular hangs in front of the right eye and blocks the nose (NPA)
+        /// and the face. A medic flips it away: a copy of the mesh without the helmet-submesh triangles in front of the face.</summary>
+        static void StripNvg(CasualtyRig rig, SkinnedMeshRenderer[] smrs)
+        {
+            var head = rig.Bone(HumanBodyBones.Head);
+            var chestT = rig.ChestBone;
+            Quaternion rel = head.rotation * Quaternion.Inverse(chestT != null ? chestT.rotation : rig.transform.rotation);
+            Vector3 hf = (rel * rig.BodyForward).normalized, hu = (rel * rig.BodyUp).normalized;
+            Vector3 hp = head.position;
+            float noseZ = rig.faceNostril.z + 0.012f, noseY = rig.faceNostril.y;
+            foreach (var r in smrs)
+            {
+                var src = r.sharedMesh;
+                if (src == null || !src.isReadable) continue;
+                int helmet = System.Array.FindIndex(r.sharedMaterials, m => m != null && m.name.Contains("_Helmet"));
+                if (helmet < 0 || helmet >= src.subMeshCount) continue;
+                var baked = new Mesh();
+                r.BakeMesh(baked, true);
+                var bv = baked.vertices;
+                var l2w = r.transform.localToWorldMatrix;
+                var idx = src.GetIndices(helmet);
+                // mesh islands of the helmet submesh (vertices welded by position): the NVG monocular and its mount
+                // are separate islands hanging in front of the face; the shell, straps and covers stay
+                var wp = bv.Select(v => l2w.MultiplyPoint3x4(v)).ToArray();
+                var weld = new Dictionary<Vector3Int, int>();
+                var parent = new int[bv.Length];
+                for (int i = 0; i < parent.Length; i++) parent[i] = i;
+                int Find(int x) { while (parent[x] != x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+                void Union(int x, int y) { x = Find(x); y = Find(y); if (x != y) parent[x] = y; }
+                foreach (int i in idx.Distinct())
+                {
+                    var key = Vector3Int.RoundToInt(wp[i] * 2000f); // 0.5 mm
+                    if (weld.TryGetValue(key, out int j)) Union(i, j); else weld[key] = i;
+                }
+                for (int t = 0; t + 2 < idx.Length; t += 3) { Union(idx[t], idx[t + 1]); Union(idx[t], idx[t + 2]); }
+                var islands = new Dictionary<int, List<int>>();
+                for (int t = 0; t + 2 < idx.Length; t += 3)
+                {
+                    int r0 = Find(idx[t]);
+                    if (!islands.TryGetValue(r0, out var l)) islands[r0] = l = new List<int>();
+                    l.Add(t);
+                }
+                int total = idx.Length / 3;
+                var drop = new HashSet<int>();
+                foreach (var kv in islands)
+                {
+                    if (kv.Value.Count > total * 0.25f) continue; // the shell
+                    Vector3 c = Vector3.zero; int n = 0;
+                    foreach (int t in kv.Value) { c += wp[idx[t]] + wp[idx[t + 1]] + wp[idx[t + 2]]; n += 3; }
+                    c /= n;
+                    float z = Vector3.Dot(c - hp, hf), y = Vector3.Dot(c - hp, hu);
+                    // in front of the eyes, below the top of the helmet
+                    if (z > noseZ - 0.05f && y < noseY + 0.12f) drop.Add(kv.Key);
+                }
+                var keep = new List<int>();
+                int removed = 0;
+                for (int t = 0; t + 2 < idx.Length; t += 3)
+                {
+                    if (drop.Contains(Find(idx[t]))) { removed++; continue; }
+                    keep.Add(idx[t]); keep.Add(idx[t + 1]); keep.Add(idx[t + 2]);
+                }
+                Debug.Log($"[FMVR] soldier helmet islands {islands.Count}, dropped {drop.Count}");
+                Object.DestroyImmediate(baked);
+                if (removed == 0) continue;
+                var copy = Object.Instantiate(src);
+                copy.name = src.name + "_noNVG";
+                copy.SetIndices(keep.ToArray(), MeshTopology.Triangles, helmet);
+                string path = SoldierKZImport.Dir + "/Soldier_KZ_noNVG.asset";
+                AssetDatabase.DeleteAsset(path);
+                AssetDatabase.CreateAsset(copy, path);
+                r.sharedMesh = copy;
+                Debug.Log($"[FMVR] soldier: NVG removed ({removed} helmet triangles in front of the face) -> {path}");
+            }
+        }
+
+        /// <summary>w10c: the soldier has his own vest but no evac handle / IFAK of ours: place them from the bones
+        /// (the old gear_attach.json offsets belong to the Mixamo body).</summary>
+        static void AttachGearSoldier(Animator anim, CasualtyRig rig)
+        {
+            rig.Init();
+            Transform chest = anim.GetBoneTransform(HumanBodyBones.UpperChest) ?? anim.GetBoneTransform(HumanBodyBones.Chest);
+            Transform spine = anim.GetBoneTransform(HumanBodyBones.Spine);
+            Transform neck = anim.GetBoneTransform(HumanBodyBones.Neck);
+            Vector3 up = rig.BodyUp, fwd = rig.BodyForward, right = rig.BodyRight;
+            Quaternion bodyRot = Quaternion.LookRotation(fwd, up);
+            float back = SoldierKZImport.VestBackDepth, front = SoldierKZImport.VestFrontDepth;
+            // evac handle: top of the back panel, just below the collar
+            Vector3 handlePos = Vector3.Lerp(chest.position, neck.position, 0.55f) - fwd * back;
+            var drag = Spawn(MixamoImport.GearDir + "DragHandle.fbx", chest, handlePos, bodyRot);
+            if (drag != null)
+            {
+                drag.name = "DragHandle";
+                var gp = new GameObject("DragHandle_GrabPoint");
+                gp.transform.SetParent(drag.transform, false);
+                gp.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            }
+            // IFAK on the right hip of the belt, its face outward
+            var hips = anim.GetBoneTransform(HumanBodyBones.Hips);
+            Vector3 ifakPos = hips.position + right * (SoldierKZImport.HipSide + 0.03f) + up * 0.02f;
+            var ifak = Spawn(MixamoImport.GearDir + "IFAK_Pouch.fbx", hips, ifakPos, Quaternion.LookRotation(right, up));
+            if (ifak != null)
+            {
+                ifak.name = "IFAK";
+                var cat = Spawn(MixamoImport.GearDir + "CAT_Tourniquet.fbx", ifak.transform,
+                    ifak.transform.TransformPoint(new Vector3(-0.09f, 0.03f, 0.035f)), ifak.transform.rotation * Quaternion.Euler(0f, 90f, 0f));
+                if (cat != null) { cat.name = "CAT_Erlan"; cat.transform.localScale = Vector3.one * 0.8f; }
+            }
+            Debug.Log($"[FMVR] soldier gear: handle {handlePos:F3} ifak {ifakPos:F3} up {up:F2} fwd {fwd:F2}");
         }
 
         static GameObject Spawn(string path, Transform parent, Vector3 worldPos, Quaternion worldRot)

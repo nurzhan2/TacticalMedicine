@@ -62,7 +62,14 @@ namespace FieldMedic.Casualty
         }
 
         /// <summary>Approximate limb radius (flesh + uniform) at a position (m).</summary>
-        public static float RadiusAt(Limb limb, float pos)
+        /// <summary>w10c: per-model thickness (the owner's soldier wears a thicker uniform than the old body);
+        /// set from <see cref="CasualtyRig.legRadiusScale"/> / <see cref="CasualtyRig.armRadiusScale"/>.</summary>
+        public static float LegScale = 1f, ArmScale = 1f;
+
+        public static float RadiusAt(Limb limb, float pos) => RadiusAtBase(limb, pos) * (IsLeg(limb) ? LegScale : ArmScale);
+
+        /// <summary>The old Mixamo body's radius profile (scale 1).</summary>
+        public static float RadiusAtBase(Limb limb, float pos)
         {
             bool leg = IsLeg(limb);
             if (leg)

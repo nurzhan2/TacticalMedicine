@@ -160,6 +160,8 @@ namespace FieldMedic.EditorTools.SceneBuilders
         {
             var model = ModelPrefab("soldiers", "soldier_agent");
             if (model == null) return null;
+            // w10c: our side (friendly line, self-aid rescuers) wears the owner's KZ soldier, carrying the agent's rifle
+            if (team == Team.Friendly && SoldierKZImport.LodReady) return KzFriendlyPrefab(model, ctrl);
             var inst = (GameObject)Object.Instantiate(model);
             try
             {
@@ -194,6 +196,102 @@ namespace FieldMedic.EditorTools.SceneBuilders
                 return PrefabUtility.SaveAsPrefabAsset(inst, path);
             }
             finally { Object.DestroyImmediate(inst); }
+        }
+
+        /// <summary>w10c: the KZ soldier (LOD1) with the BlenderKit agent's rifle as a rigid mesh in the grip hand.</summary>
+        static GameObject KzFriendlyPrefab(GameObject agentModel, AnimatorController ctrl)
+        {
+            var agent = (GameObject)Object.Instantiate(agentModel);
+            var inst = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(SoldierKZImport.LodFbx));
+            try
+            {
+                inst.name = "FriendlySoldier";
+                var aAnim = agent.GetComponentInChildren<Animator>();
+                var kAnim = inst.GetComponentInChildren<Animator>();
+                // the rifle vertices of the agent in its bind pose (world) + which hand holds it
+                var verts = new List<Vector3>(); var uvs = new List<Vector2>(); var tris = new List<int>();
+                Material weaponMat = null;
+                var weights = new Dictionary<Transform, int>();
+                foreach (var smr in agent.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    var mesh = smr.sharedMesh;
+                    if (mesh == null) continue;
+                    var bones = smr.bones; var bps = mesh.bindposes; var bw = mesh.boneWeights; var mats = smr.sharedMaterials;
+                    var v = mesh.vertices; var uv = mesh.uv;
+                    var l2w = new Matrix4x4[bones.Length];
+                    for (int b = 0; b < bones.Length; b++) l2w[b] = bones[b] != null ? bones[b].localToWorldMatrix * bps[b] : Matrix4x4.identity;
+                    for (int s = 0; s < mesh.subMeshCount && s < mats.Length; s++)
+                    {
+                        if (mats[s] == null || !mats[s].name.ToLowerInvariant().Contains("weapon")) continue;
+                        weaponMat = mats[s];
+                        var map = new Dictionary<int, int>();
+                        foreach (int i in mesh.GetIndices(s))
+                        {
+                            if (!map.TryGetValue(i, out int ni))
+                            {
+                                var w = bw[i];
+                                Vector3 p = l2w[w.boneIndex0].MultiplyPoint3x4(v[i]) * w.weight0 + l2w[w.boneIndex1].MultiplyPoint3x4(v[i]) * w.weight1
+                                          + l2w[w.boneIndex2].MultiplyPoint3x4(v[i]) * w.weight2 + l2w[w.boneIndex3].MultiplyPoint3x4(v[i]) * w.weight3;
+                                ni = verts.Count; map[i] = ni;
+                                verts.Add(p); uvs.Add(uv != null && uv.Length > i ? uv[i] : Vector2.zero);
+                                var bt = bones[w.boneIndex0];
+                                if (bt != null) weights[bt] = weights.TryGetValue(bt, out int c) ? c + 1 : 1;
+                            }
+                            tris.Add(ni);
+                        }
+                    }
+                }
+                if (verts.Count < 10) Debug.LogWarning("[FMVR] battle: KZ friendly - no rifle found on the agent");
+                var top = weights.Count > 0 ? weights.OrderByDescending(kv => kv.Value).First().Key : null;
+                bool left = top != null && top == aAnim.GetBoneTransform(HumanBodyBones.LeftHand);
+                var aHand = aAnim.GetBoneTransform(left ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand);
+                var kHand = kAnim.GetBoneTransform(left ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand);
+                // same grip: move the rifle from the agent's hand to the soldier's hand (both models face +Z)
+                Vector3 shift = kHand.position - aHand.position;
+                var local = verts.Select(p => kHand.InverseTransformPoint(p + shift)).ToArray();
+                var rifleMesh = new Mesh { name = "SoldierKZ_Rifle" };
+                rifleMesh.vertices = local; rifleMesh.uv = uvs.ToArray(); rifleMesh.SetTriangles(tris, 0);
+                rifleMesh.RecalculateNormals(); rifleMesh.RecalculateBounds();
+                string meshPath = LDir + "/Meshes/SoldierKZ_Rifle.asset";
+                AssetDatabase.DeleteAsset(meshPath);
+                AssetDatabase.CreateAsset(rifleMesh, meshPath);
+                var rifle = new GameObject("Rifle");
+                rifle.transform.SetParent(kHand, false);
+                rifle.AddComponent<MeshFilter>().sharedMesh = rifleMesh;
+                var rr = rifle.AddComponent<MeshRenderer>();
+                rr.sharedMaterial = weaponMat;
+                rr.shadowCastingMode = ShadowCastingMode.Off;
+                // muzzle = farthest from the hand; butt = farthest from the muzzle (same rule as CalibrateRifle)
+                Vector3 axis = Vector3.forward, muzzle = new Vector3(0f, 0f, 0.8f);
+                if (local.Length > 10)
+                {
+                    muzzle = local.OrderByDescending(p => p.sqrMagnitude).First();
+                    Vector3 butt = local.OrderByDescending(p => (p - muzzle).sqrMagnitude).First();
+                    axis = (muzzle - butt).normalized;
+                }
+                kAnim.runtimeAnimatorController = ctrl;
+                kAnim.applyRootMotion = false;
+                kAnim.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
+                foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                {
+                    smr.quality = SkinQuality.Bone2;
+                    smr.updateWhenOffscreen = false;
+                    smr.shadowCastingMode = ShadowCastingMode.Off;
+                    smr.receiveShadows = true;
+                }
+                var poser = inst.AddComponent<SoldierPoser>();
+                poser.animator = kAnim;
+                poser.rifleAxisLocal = axis;
+                poser.muzzleLocal = muzzle;
+                poser.rifleInLeftHand = left;
+                var sa = inst.AddComponent<SoldierAgent>();
+                sa.team = Team.Friendly;
+                sa.animator = kAnim;
+                sa.poser = poser;
+                Debug.Log($"[FMVR] battle: KZ friendly, rifle {verts.Count} verts in the {(left ? "left" : "right")} hand, axis {axis:F2}, muzzle {muzzle:F2}");
+                return PrefabUtility.SaveAsPrefabAsset(inst, LDir + "/" + inst.name + ".prefab");
+            }
+            finally { Object.DestroyImmediate(inst); Object.DestroyImmediate(agent); }
         }
 
         // ================================================================== vehicle splitting

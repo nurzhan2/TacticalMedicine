@@ -29,6 +29,12 @@ namespace FieldMedic.Casualty
         [Tooltip("Lift the animated model so no body part sinks below the floor (root y).")]
         public bool groundClamp = true;
         public int colliderLayer = 0;
+        [Tooltip("w10c: right nostril from the head bone in the head frame (x right, y up, z forward), metres. Measured on the mesh by the prefab builder.")]
+        public Vector3 faceNostril = new Vector3(0.008f, 0.025f, 0.1f);
+        [Tooltip("Ear lobe from the head bone (x = ±right, y up, z forward).")]
+        public Vector3 faceEar = new Vector3(0.075f, 0.02f, 0f);
+        [Tooltip("w10c: limb thickness vs the old body (LimbMath radius profile), measured by the prefab builder.")]
+        public float legRadiusScale = 1f, armRadiusScale = 1f;
 
         public readonly List<CasualtyBodyPart> Parts = new List<CasualtyBodyPart>();
         readonly Dictionary<HumanBodyBones, Transform> _bones = new Dictionary<HumanBodyBones, Transform>();
@@ -56,6 +62,8 @@ namespace FieldMedic.Casualty
             if (_initialized) return;
             if (animator == null) animator = GetComponentInChildren<Animator>();
             if (bodyRenderer == null) bodyRenderer = GetComponentInChildren<SkinnedMeshRenderer>();
+            LimbMath.LegScale = legRadiusScale;
+            LimbMath.ArmScale = armRadiusScale;
             _bones.Clear();
             if (animator != null && animator.isHuman)
             {

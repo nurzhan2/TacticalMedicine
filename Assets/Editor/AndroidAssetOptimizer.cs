@@ -42,6 +42,7 @@ namespace FieldMedic.EditorTools
             string p = path.Replace('\\', '/').ToLowerInvariant();
             if (p.Contains("/resources/ui/") || p.Contains("hinticons") || p.Contains("/fonts/")) return 1024;
             if (p.Contains("/characters/erlan/")) return normalMap ? 1024 : 2048;
+            if (p.Contains("/characters/soldierkz/")) return SoldierKZImport.AndroidSize(System.IO.Path.GetFileName(path)); // w10c
             if (Regex.IsMatch(p, @"(ground|soil|dirt|mud|terrain|grass_|aerial_|forrest_ground|rocky_trail)") && !p.Contains("/blenderkit/")) return normalMap ? 1024 : 2048;
             if (p.EndsWith(".hdr") || p.EndsWith(".exr")) return 1024;
             if (Regex.IsMatch(p, @"(casing|bullet|shell|grenade|flashbang|jerrycan|fuel_drum|oil_drum|crate|tire|bucket|bottle|can_|debris_small|helmet)")) return 512;

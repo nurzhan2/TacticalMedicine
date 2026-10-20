@@ -51,10 +51,12 @@ namespace FieldMedic.Treatment
             Vector3 fwd = (rel * rig.BodyForward).normalized;
             headUp = (rel * rig.BodyUp).normalized;
             Vector3 right = Vector3.Cross(headUp, fwd).normalized;
-            Vector3 c = head.position + headUp * 0.06f;
-            nostril = c + fwd * 0.1f - headUp * 0.035f + right * 0.008f;
-            earL = c - right * 0.075f - headUp * 0.04f;
-            earR = c + right * 0.075f - headUp * 0.04f;
+            // per-model offsets (w10c: measured on the soldier's face by the prefab builder)
+            Vector3 n = rig.faceNostril, e = rig.faceEar;
+            Vector3 h = head.position;
+            nostril = h + right * n.x + headUp * n.y + fwd * n.z;
+            earL = h - right * e.x + headUp * e.y + fwd * e.z;
+            earR = h + right * e.x + headUp * e.y + fwd * e.z;
             posterior = -fwd;
         }
 

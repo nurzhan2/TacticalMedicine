@@ -102,6 +102,44 @@ namespace FieldMedic.Treatment
             return top;
         }
 
+        /// <summary>w10c: top of the real skinned mesh (uniform, vest, pouches, helmet) over each grid point, so the sheet
+        /// lies on the soldier's gear instead of cutting through it. One bake per drape.</summary>
+        static float[] MeshTops(CasualtyController c, Vector3 center, Vector3 along, Vector3 across, int nx, int nz)
+        {
+            var tops = new float[(nx + 1) * (nz + 1)];
+            var head = c.rig != null ? c.rig.Bone(HumanBodyBones.Head) : null;
+            for (int i = 0; i < tops.Length; i++) tops[i] = float.MinValue;
+            var baked = new Mesh();
+            var buf = new List<Vector3>();
+            foreach (var smr in c.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (!smr.enabled || smr.sharedMesh == null) continue;
+                smr.BakeMesh(baked, true);
+                baked.GetVertices(buf);
+                var m = smr.transform.localToWorldMatrix;
+                foreach (var lv in buf)
+                {
+                    var v = m.MultiplyPoint3x4(lv);
+                    if (head != null && (v - head.position).sqrMagnitude < 0.2f * 0.2f) continue; // the head stays out
+                    float gx = (Vector3.Dot(v - center, across) / W + 0.5f) * nx;
+                    float gz = (Vector3.Dot(v - center, along) / (L * 0.95f) + 0.5f) * nz;
+                    int x0 = Mathf.RoundToInt(gx), z0 = Mathf.RoundToInt(gz);
+                    for (int z = z0 - 1; z <= z0 + 1; z++)
+                    for (int x = x0 - 1; x <= x0 + 1; x++)
+                    {
+                        if (x < 0 || x > nx || z < 0 || z > nz) continue;
+                        // nearer grid points take the full height, the neighbours a little lower (soft tenting)
+                        float d = Mathf.Abs(x - gx) + Mathf.Abs(z - gz);
+                        float y = v.y - Mathf.Max(0f, d - 0.7f) * 0.03f;
+                        int i = z * (nx + 1) + x;
+                        if (y > tops[i]) tops[i] = y;
+                    }
+                }
+            }
+            Destroy(baked);
+            return tops;
+        }
+
         /// <summary>Conform the sheet to the body: a grid dropped onto the casualty (body colliders) and ground.</summary>
         public void Drape(CasualtyController c)
         {
@@ -117,11 +155,15 @@ namespace FieldMedic.Treatment
             var verts = new Vector3[(nx + 1) * (nz + 1)];
             var uv = new Vector2[verts.Length];
             float floor = c.transform.position.y;
+            var meshTop = MeshTops(c, center, along, across, nx, nz);
+            var neck = rig.Bone(HumanBodyBones.Neck);
             for (int z = 0; z <= nz; z++)
             for (int x = 0; x <= nx; x++)
             {
                 Vector3 p = center + across * ((x / (float)nx - 0.5f) * W) + along * ((z / (float)nz - 0.5f) * L * 0.95f);
-                float y = Mathf.Max(floor + 0.01f, BodyTop(rig, p) + 0.03f);
+                float y = Mathf.Max(floor + 0.01f, Mathf.Max(BodyTop(rig, p), meshTop[z * (nx + 1) + x]) + 0.03f);
+                // w10c: up to the collar, the face stays free (beyond the neck the sheet lies on the ground under the head)
+                if (neck != null && Vector3.Dot(p - neck.position, along) > 0.02f) y = floor + 0.01f;
                 verts[z * (nx + 1) + x] = new Vector3(p.x, y, p.z);
                 uv[z * (nx + 1) + x] = new Vector2(x / (float)nx, z / (float)nz);
             }
