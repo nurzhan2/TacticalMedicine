@@ -24,7 +24,9 @@ namespace FieldMedic.UI
         TextMesh _time, _info, _pulse, _golden;
         Transform _beat, _screen;
         Material _beatMat;
-        RoundButton _skip, _kit;
+        RoundButton _skip, _kit, _skipStep;
+        /// <summary>w10b: «ПРОПУСК» — skips the current step (same as holding A); hidden in the exam.</summary>
+        public RoundButton SkipStepButton => _skipStep;
         TextMesh _radioIcon;
         float _beatPhase;
         /// <summary>w10: the radio icon is lit (a report is expected — hold Y).</summary>
@@ -61,6 +63,10 @@ namespace FieldMedic.UI
             _kit.Clicked += () => { var t = FieldMedic.Treatment.KitTray.Player; if (t != null) t.Toggle(); };
             _radioIcon = WorldUI.Text(transform, "RadioIcon", "", new Vector3(0f, 0.031f, -0.004f), 0.0042f, new Color(1f, 0.72f, 0.25f), TextAnchor.MiddleCenter, TextAlignment.Center);
             _radioIcon.gameObject.SetActive(false);
+            _skipStep = RoundButton.Create(transform, "SkipStepButton", new Vector3(0.04f, -0.047f, -0.002f), 0.026f, new Color(0.15f, 0.42f, 0.24f), ">>", 0.009f,
+                GameSettings.T("ПРОПУСК", "ӨТКІЗУ"), 0.0035f);
+            _skipStep.Clicked += () => StepSkip.Request();
+            _skipStep.gameObject.SetActive(false);
             StepGuide.Ensure().wrist = transform;
         }
 
@@ -68,6 +74,11 @@ namespace FieldMedic.UI
         {
             if (hand != null) transform.SetPositionAndRotation(hand.TransformPoint(localOffset), hand.rotation * FaceRotation);
             if (_kit != null) _kit.gameObject.SetActive(FieldMedic.Treatment.KitTray.Player != null);
+            if (_skipStep != null)
+            {
+                bool canStep = StepSkip.Available;
+                if (_skipStep.gameObject.activeSelf != canStep) _skipStep.gameObject.SetActive(canStep);
+            }
             var radio = RadioSet.Instance;
             bool expect = radio != null && radio.ReportExpected;
             if (_radioIcon != null)

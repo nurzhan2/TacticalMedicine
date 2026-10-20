@@ -13,6 +13,9 @@ namespace FieldMedic.Treatment
     public sealed class ShearsItem : MedItem
     {
         public const float CutNeeded = 0.22f;
+        /// <summary>w10d: cut length that opens the clothing outside the exam (shorter, ~15 cm).</summary>
+        public const float ForgivingCutNeeded = 0.15f;
+        public static float CutNeededNow => Forgiving.Scale(CutNeeded, ForgivingCutNeeded);
         public readonly Dictionary<BodyRegion, float> CutLength = new Dictionary<BodyRegion, float>();
         public Feedback LastFeedback { get; private set; }
 
@@ -94,10 +97,10 @@ namespace FieldMedic.Treatment
             var c = NearestCasualty(TipPosition, 1.4f);
             if (c == null || c.rig == null || c.Interaction == null) { _hasLast = false; return; }
             // tip on the clothing of a body region
-            CasualtyBodyPart part = null; float best = 0.045f; Vector3 surf = Vector3.zero;
+            CasualtyBodyPart part = null; float best = Forgiving.Scale(0.045f, 0.07f); Vector3 surf = Vector3.zero; // w10d: forgiving 7 cm
             BodyRegion region = BodyRegion.Abdomen;
             // limbs: skeleton geometry of the current pose (sleeve / trouser leg)
-            if (LimbMath.Nearest(c.rig, TipPosition, out var limb, out float lpos, out float skin) && skin < 0.04f)
+            if (LimbMath.Nearest(c.rig, TipPosition, out var limb, out float lpos, out float skin) && skin < Forgiving.Scale(0.04f, 0.07f))
             {
                 region = LimbGeometry.RegionAt(LimbMath.Id(limb), Mathf.Min(lpos, 2.4f));
                 part = c.rig.Part(region);
@@ -129,7 +132,7 @@ namespace FieldMedic.Treatment
                     CutLength[region] = len;
                     Haptics.Play(HolderInput, Haptics.Contact, 1.2f);
                     if (Mathf.Floor(len / 0.03f) > Mathf.Floor(before / 0.03f)) Mark(surf, part);
-                    if (before < CutNeeded && len >= CutNeeded) Open(c, region);
+                    if (before < CutNeededNow && len >= CutNeededNow) Open(c, region);
                 }
             }
             _lastTip = t;

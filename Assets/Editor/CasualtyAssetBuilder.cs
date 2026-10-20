@@ -419,15 +419,33 @@ namespace FieldMedic.EditorTools
                 gp.transform.SetParent(drag.transform, false);
                 gp.transform.localPosition = new Vector3(0f, 0.04f, 0f);
             }
-            var ifak = Spawn(MixamoImport.GearDir + "IFAK_Pouch.fbx", spine, modelRoot.TransformPoint(V(json.ifak_unity)), modelRoot.rotation);
-            if (ifak != null)
+            BeltKitAnchor(spine, modelRoot.TransformPoint(V(json.ifak_unity)), modelRoot.rotation);
+        }
+
+        /// <summary>
+        /// w10d (owner: "remove the kit from Erlan, that ugly home-made thing"): no IFAK pouch mesh on the casualty any
+        /// more. An empty "IFAK" anchor stays where the pouch was (CasualtyInteraction builds his kit logic on it: his
+        /// own CAT for TCCC "use the casualty's tourniquet", his dressings revealed when a hand reaches in) with his CAT
+        /// on the belt in the exact pose it had in the pouch's side holder (windlass up).
+        /// </summary>
+        static void BeltKitAnchor(Transform parent, Vector3 pos, Quaternion rot)
+        {
+            // the pouch model is spawned only to keep the CAT pose / anchor frame identical, then removed
+            var pouch = Spawn(MixamoImport.GearDir + "IFAK_Pouch.fbx", parent, pos, rot);
+            var anchor = new GameObject("IFAK").transform;
+            anchor.SetParent(parent, false);
+            if (pouch != null)
             {
-                ifak.name = "IFAK";
-                // his own CAT rides in the open holder on the side of the pouch, windlass up
-                var cat = Spawn(MixamoImport.GearDir + "CAT_Tourniquet.fbx", ifak.transform,
-                    ifak.transform.TransformPoint(new Vector3(-0.09f, 0.03f, 0.035f)), ifak.transform.rotation * Quaternion.Euler(0f, 90f, 0f));
-                if (cat != null) { cat.name = "CAT_Erlan"; cat.transform.localScale = Vector3.one * 0.8f; }
+                anchor.localPosition = pouch.transform.localPosition;
+                anchor.localRotation = pouch.transform.localRotation;
+                anchor.localScale = pouch.transform.localScale;
             }
+            else anchor.SetPositionAndRotation(pos, rot);
+            Vector3 catPos = anchor.TransformPoint(new Vector3(-0.09f, 0.03f, 0.035f));
+            Quaternion catRot = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
+            if (pouch != null) Object.DestroyImmediate(pouch);
+            var cat = Spawn(MixamoImport.GearDir + "CAT_Tourniquet.fbx", anchor, catPos, catRot);
+            if (cat != null) { cat.name = "CAT_Erlan"; cat.transform.localScale = Vector3.one * 0.8f; }
         }
 
         /// <summary>w10c: measure the soldier's mesh in the bind pose: vest surface depth (evac handle, IFAK) and the
@@ -601,14 +619,7 @@ namespace FieldMedic.EditorTools
             // IFAK on the right hip of the belt, its face outward
             var hips = anim.GetBoneTransform(HumanBodyBones.Hips);
             Vector3 ifakPos = hips.position + right * (SoldierKZImport.HipSide + 0.03f) + up * 0.02f;
-            var ifak = Spawn(MixamoImport.GearDir + "IFAK_Pouch.fbx", hips, ifakPos, Quaternion.LookRotation(right, up));
-            if (ifak != null)
-            {
-                ifak.name = "IFAK";
-                var cat = Spawn(MixamoImport.GearDir + "CAT_Tourniquet.fbx", ifak.transform,
-                    ifak.transform.TransformPoint(new Vector3(-0.09f, 0.03f, 0.035f)), ifak.transform.rotation * Quaternion.Euler(0f, 90f, 0f));
-                if (cat != null) { cat.name = "CAT_Erlan"; cat.transform.localScale = Vector3.one * 0.8f; }
-            }
+            BeltKitAnchor(hips, ifakPos, Quaternion.LookRotation(right, up)); // w10d: logic anchor + his CAT, no pouch mesh
             Debug.Log($"[FMVR] soldier gear: handle {handlePos:F3} ifak {ifakPos:F3} up {up:F2} fwd {fwd:F2}");
         }
 

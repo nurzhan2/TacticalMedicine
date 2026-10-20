@@ -41,6 +41,10 @@ namespace FieldMedic.Scenarios
         public float boardRadius = 1.3f;
         [Tooltip("Trigger at the door boards from this far (m).")]
         public float triggerBoardRadius = 3.2f;
+        /// <summary>w10d: door / boarding zones 1.5x outside the exam (the ring still marks the strict door zone).</summary>
+        public float DoorRadiusNow => FieldMedic.Interaction.Forgiving.Mul(doorRadius, 1.5f);
+        public float BoardRadiusNow => FieldMedic.Interaction.Forgiving.Mul(boardRadius, 1.5f);
+        public float TriggerBoardRadiusNow => FieldMedic.Interaction.Forgiving.Mul(triggerBoardRadius, 1.3f);
         public float takeAboardSeconds = 2.4f;
         public float doorCloseSeconds = 1.6f;
         [Tooltip("Flight before the fade to black (s).")]
@@ -388,8 +392,8 @@ namespace FieldMedic.Scenarios
             var head = Head();
             if (head == null) return false;
             Vector3 d = head.position - DoorPoint; d.y = 0f;
-            if (d.magnitude < boardRadius) return true;
-            if (d.magnitude > triggerBoardRadius) return false;
+            if (d.magnitude < BoardRadiusNow) return true;
+            if (d.magnitude > TriggerBoardRadiusNow) return false;
             foreach (var h in HandGrabber.All)
                 if (h != null && h.Input != null && h.Input.Trigger > 0.8f && h.Held == null) return true;
             return false;
@@ -501,7 +505,7 @@ namespace FieldMedic.Scenarios
                 case Stage.Landed:
                     RotorWash(0.9f);
                     SetArms(Mathf.Clamp01(1.6f - CasualtyDoorDistance() / 3f) * 0.5f); // crew leans out when he is close
-                    if (CasualtyDoorDistance() < doorRadius) TakeAboard();
+                    if (CasualtyDoorDistance() < DoorRadiusNow) TakeAboard();
                     break;
                 case Stage.TakingAboard:
                 {

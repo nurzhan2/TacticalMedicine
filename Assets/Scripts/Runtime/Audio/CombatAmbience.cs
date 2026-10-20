@@ -113,7 +113,9 @@ namespace FieldMedic.Audio
 
         void Start()
         {
-            if (nightBed != null && nightBed.Length > 0) { _bed.clip = Pick(nightBed); _bed.Play(); }
+            nightBed = BackgroundAudioPolicy.Filter(nightBed); // w10d: beds never carry voices
+            rainBed = BackgroundAudioPolicy.Filter(rainBed);
+            if (nightBed.Length > 0) { _bed.clip = Pick(nightBed); ClipLog.Record(_bed.clip); _bed.Play(); }
         }
 
         void OnDestroy() { if (Instance == this) Instance = null; }
@@ -140,6 +142,7 @@ namespace FieldMedic.Audio
         public AudioSource PlayAt(AudioClip clip, Vector3 pos, float volume, float minDist = 2f, float maxDist = 500f, float pitch = 1f, float delay = 0f)
         {
             if (clip == null) return null;
+            if (!BackgroundAudioPolicy.Allowed(clip)) return null; // w10d: only bullets/explosions/drones in the background
             var s = _pool[_next];
             _next = (_next + 1) % _pool.Count;
             s.transform.position = pos;
@@ -150,6 +153,7 @@ namespace FieldMedic.Audio
             s.maxDistance = maxDist;
             s.spatialBlend = 1f;
             if (delay > 0f) s.PlayDelayed(delay); else s.Play();
+            ClipLog.Record(clip);
             EventsPlayed++;
             return s;
         }
@@ -292,6 +296,7 @@ namespace FieldMedic.Audio
             if (tinnitus != null && tinnitus.Length > 0)
             {
                 _tinnitus.clip = Pick(tinnitus);
+                ClipLog.Record(_tinnitus.clip);
                 _tinnitus.volume = 0.25f + 0.45f * k;
                 _tinnitus.Play();
             }
@@ -372,7 +377,7 @@ namespace FieldMedic.Audio
 
         public void SetRain(bool on)
         {
-            if (on && rainBed != null && rainBed.Length > 0) { _rain.clip = Pick(rainBed); _rain.Play(); }
+            if (on && rainBed != null && rainBed.Length > 0) { _rain.clip = Pick(rainBed); ClipLog.Record(_rain.clip); _rain.Play(); }
             else _rain.Stop();
             CombatVfx.Instance?.SetRain(on);
         }

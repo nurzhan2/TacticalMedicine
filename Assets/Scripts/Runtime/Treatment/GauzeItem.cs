@@ -53,7 +53,7 @@ namespace FieldMedic.Treatment
                 if (s == null) continue;
                 var care = s.GetComponent<WoundCare>();
                 if (care == null || !care.CanPack || care.Packing.Complete) continue;
-                if (care.Lateral(TipPosition) > 0.05f || Mathf.Abs(care.Height(TipPosition)) > 0.04f) continue;
+                if (care.Lateral(TipPosition) > FieldMedic.Interaction.Forgiving.Scale(0.05f, WoundCare.ForgivingPackRadius) || Mathf.Abs(care.Height(TipPosition)) > FieldMedic.Interaction.Forgiving.Scale(0.04f, 0.08f)) continue;
                 if (!care.SkinAccessible)
                 {
                     if (_hintCooldown <= 0f)

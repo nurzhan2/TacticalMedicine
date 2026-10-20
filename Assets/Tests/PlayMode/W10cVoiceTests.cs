@@ -69,7 +69,13 @@ namespace FieldMedic.Tests
                 v.bank.scream = new[] { groan };
                 v.bank.groan = new[] { groan };
                 v.voice = FieldMedic.Casualty.CasualtyVoice.MakeSource(go, false);
+                // w10d: a line with a real ElevenLabs recording plays it (never the TTS bank clip)
                 Assert.IsTrue(v.Say("hit_leg", true));
+                Assert.AreEqual("hit_leg", v.LastLine);
+                Assert.AreNotEqual(tts, v.voice.clip);
+                Assert.AreEqual("hit_leg_ru", v.voice.clip.name);
+                // a line without a recording: still no TTS words - a real groan (screams map to groans too)
+                Assert.IsTrue(v.Vocalise(v.bank.scream, 1f, true));
                 Assert.AreEqual("groan_real", v.LastLine);
                 Assert.AreNotEqual(tts, v.voice.clip);
             }

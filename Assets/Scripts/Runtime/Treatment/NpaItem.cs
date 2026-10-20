@@ -80,15 +80,20 @@ namespace FieldMedic.Treatment
             if (!Engaged)
             {
                 // measuring: flange at the nostril, tip at an ear lobe
-                bool atEar = Vector3.Distance(TipPosition, earL) < 0.045f || Vector3.Distance(TipPosition, earR) < 0.045f;
-                if (!Npa.measured && atEar && Vector3.Distance(flange, nostril) < 0.04f)
+                // w10d: forgiving sizes outside the exam (ear 7 cm, flange 7 cm, nostril 5 cm)
+                float ear = Forgiving.Scale(0.045f, 0.07f);
+                bool atEar = Vector3.Distance(TipPosition, earL) < ear || Vector3.Distance(TipPosition, earR) < ear;
+                if (!Npa.measured && atEar && Vector3.Distance(flange, nostril) < Forgiving.Scale(0.04f, 0.07f))
                 {
                     _measureHold += Time.deltaTime;
                     if (_measureHold > 0.4f) { Npa.measured = true; Haptics.Play(HolderInput, Haptics.PressClick); }
                 }
                 else _measureHold = 0f;
                 Lube();
-                if (Vector3.Distance(TipPosition, nostril) < 0.025f) Engage(nostril);
+                float toNose = Vector3.Distance(TipPosition, nostril);
+                if (Forgiving.On && toNose < 0.3f)
+                    ZoneGlow.Show(this, nostril, toNose < 0.05f ? 0.07f : 0.05f, toNose < 0.05f ? ZoneGlow.Green : ZoneGlow.Gold, toNose < 0.05f ? 0.9f : 0.5f);
+                if (toNose < Forgiving.Scale(0.025f, 0.05f)) Engage(nostril);
                 return;
             }
             Advance(nostril, post);
@@ -100,7 +105,7 @@ namespace FieldMedic.Treatment
             foreach (var h in HandGrabber.All)
             {
                 if (h == null || h.Held == null || h.Held.GetComponent<MedItem>() is not MedItem m || m.kind != MedItemKind.Lubricant) continue;
-                if (h.Input.Trigger > 0.6f && Vector3.Distance(m.TipPosition, TipPosition) < 0.05f)
+                if (h.Input.Trigger > 0.6f && Vector3.Distance(m.TipPosition, TipPosition) < Forgiving.Scale(0.05f, 0.09f))
                 {
                     Npa.lubed = true;
                     var gloss = Kit.Mat("NpaLubed", new Color(0.9f, 0.62f, 0.3f), 0.95f);
@@ -151,7 +156,7 @@ namespace FieldMedic.Treatment
             transform.SetPositionAndRotation(nostril + dir * (Npa.depthCm / 100f - Length * 0.5f), Quaternion.LookRotation(dir, transform.up));
             // pulled back out
             Vector3 handMove = Holder.PalmPosition - _palmAtEngage;
-            if (Vector3.Dot(handMove, transform.forward) < -0.05f || Vector3.ProjectOnPlane(handMove, transform.forward).magnitude > 0.1f)
+            if (Vector3.Dot(handMove, transform.forward) < -0.05f || Vector3.ProjectOnPlane(handMove, transform.forward).magnitude > Forgiving.Scale(0.1f, 0.15f))
             { Disengage(); return; }
             if (!Npa.Inserted) return;
             var head = _c.rig.Bone(HumanBodyBones.Head);

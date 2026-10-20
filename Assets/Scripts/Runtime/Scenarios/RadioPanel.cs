@@ -214,7 +214,7 @@ namespace FieldMedic.Scenarios
             for (int i = 0; i < n; i++)
             {
                 float y = -0.02f - i * RowH;
-                var b = RoundButton.Create(_content, "Line" + i, new Vector3(-W / 2 + 0.035f, y, 0f), 0.04f,
+                var b = RoundButton.Create(_content, "Line" + i, new Vector3(-W / 2 + 0.035f, y, 0f), FieldMedic.Interaction.Forgiving.Scale(0.04f, 0.05f), // w10d: bigger outside the exam
                     r.enabled[i] ? new Color(0.24f, 0.32f, 0.4f) : new Color(0.2f, 0.2f, 0.2f), (i + 1).ToString(), 0.014f);
                 b.interactable = r.enabled[i];
                 int k = i;

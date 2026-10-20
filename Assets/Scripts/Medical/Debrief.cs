@@ -48,6 +48,8 @@ namespace FieldMedic.Medical
         public string clock;
         public string text;
         public Severity severity;
+        /// <summary>w10b: the game did this action for the player (skip step) — shown as «пропущен».</summary>
+        public bool skipped;
     }
 
     /// <summary>The after-action review shown on the dugout board (GDD §1 pillar 4, §3).</summary>
@@ -76,6 +78,9 @@ namespace FieldMedic.Medical
         public readonly List<DebriefEntry> timeline = new();
         public readonly List<DebriefMistake> mistakes = new();
         public readonly List<DebriefPhase> phases = new();
+        /// <summary>w10b: steps the player skipped (hold A) — listed on the debrief as «пропущен».</summary>
+        public readonly List<string> skippedSteps = new();
+        public int SkippedCount => skippedSteps.Count;
         /// Timeline strip range (patient seconds): the injury → the end of the run.
         public float startTime, endTime;
         /// Casualty fall point / treatment spot on the mini map (x, z), when known.
@@ -142,7 +147,10 @@ namespace FieldMedic.Medical
             foreach (var e in protocol.log)
             {
                 if (string.IsNullOrEmpty(e.text) || e.code is "noop" or "ended" or "pulse" or "limb_lift") continue;
-                r.timeline.Add(new DebriefEntry { time = e.time, clock = clock(e.time), text = e.text, severity = e.severity });
+                string text = e.text;
+                if (e.skipped && e.code != CareProtocol.SkippedCode) text += kz ? " (өткізілді)" : " (пропущен)";
+                r.timeline.Add(new DebriefEntry { time = e.time, clock = clock(e.time), text = text, severity = e.severity, skipped = e.skipped });
+                if (e.code == CareProtocol.SkippedCode) r.skippedSteps.Add(e.text);
             }
             // first moment all life threats were controlled
             r.bleedControlSeconds = FirstControlTime(protocol, incidentAt);

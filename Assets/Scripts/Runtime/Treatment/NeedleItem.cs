@@ -102,6 +102,8 @@ namespace FieldMedic.Treatment
             (NeedleSite.FifthIcsAal, true), (NeedleSite.FifthIcsAal, false), (NeedleSite.MedialToNippleLine, true),
         };
 
+        static readonly string[] GlowKeys = { "needle_site_0", "needle_site_1", "needle_site_2", "needle_site_3" };
+
         void RefreshLandmarks()
         {
             if (Time.time - _cacheTime < 1f && _cacheTime >= 0f) return; // mesh baking is not free
@@ -118,12 +120,16 @@ namespace FieldMedic.Treatment
             if (!_engaged)
             {
                 // the tip touches the chest wall: find which landmark it is on
-                int best = -1; float bd = 0.035f;
+                // w10d: forgiving landmark zones outside the exam (6 cm instead of 3.5 cm, touching = within 2.5 cm of the skin)
+                int best = -1; float bd = Forgiving.Scale(0.035f, 0.06f);
+                float touch = Forgiving.Scale(0.01f, 0.025f);
                 for (int i = 0; i < Sites.Length; i++)
                 {
                     float lat = Vector3.ProjectOnPlane(t - _sitePos[i], _siteNrm[i]).magnitude;
                     float h = Vector3.Dot(t - _sitePos[i], _siteNrm[i]);
-                    if (h < 0.01f && h > -0.02f && lat < bd) { bd = lat; best = i; }
+                    if (i < 4 && Forgiving.On && FieldMedic.UI.GameSettings.Hints && lat < 0.15f && h < 0.15f)
+                        ZoneGlow.Show(GlowKeys[i], _sitePos[i], lat < bd ? 0.07f : 0.05f, lat < bd ? ZoneGlow.Green : ZoneGlow.Gold, lat < bd ? 0.85f : 0.45f);
+                    if (h < touch && h > -0.02f && lat < bd) { bd = lat; best = i; }
                 }
                 Vector3 sternum = _sitePos[4];
                 if (best < 0)
@@ -131,7 +137,7 @@ namespace FieldMedic.Treatment
                     // touching the chest somewhere else
                     float hs = Vector3.Dot(t - sternum, _siteNrm[4]);
                     float ls = Vector3.ProjectOnPlane(t - sternum, _siteNrm[4]).magnitude;
-                    if (hs < 0.01f && hs > -0.02f && ls < 0.14f)
+                    if (hs < touch && hs > -0.02f && ls < 0.14f)
                     {
                         best = 4;
                         LastSite = Mathf.Abs(Vector3.Dot(t - sternum, _c.rig.BodyRight)) < 0.06f ? NeedleSite.MedialToNippleLine : NeedleSite.Other;
@@ -147,7 +153,7 @@ namespace FieldMedic.Treatment
             }
             DepthCm = Mathf.Max(0f, -Vector3.Dot(t - _entry, _normal) * 100f);
             LastAngle = Vector3.Angle(transform.forward, -_normal);
-            if (DepthCm < -1f || Vector3.ProjectOnPlane(t - _entry, _normal).magnitude > 0.05f) { _engaged = false; return; }
+            if (DepthCm < -1f || Vector3.ProjectOnPlane(t - _entry, _normal).magnitude > Forgiving.Scale(0.05f, 0.07f)) { _engaged = false; return; }
             Haptics.Tension(HolderInput, Mathf.Clamp01(DepthCm / 6f) * 0.5f);
             if (_evaluated || DepthCm < NeedleRules.MinDepthCm) return;
             _evaluated = true;

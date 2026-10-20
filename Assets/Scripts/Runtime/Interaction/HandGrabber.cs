@@ -21,6 +21,8 @@ namespace FieldMedic.Interaction
     public sealed class HandGrabber : MonoBehaviour
     {
         public const float HoverRadius = 0.09f;
+        /// <summary>w10d: grab reach outside the exam (owner: "маленькая зона взаимодействия").</summary>
+        public const float ForgivingRadius = 0.13f;
         /// <summary>Distance advantage per priority level (m): nearer wins unless the other is a "better" handle close by.</summary>
         public const float PriorityMetres = 0.02f;
 
@@ -62,6 +64,9 @@ namespace FieldMedic.Interaction
         /// <summary>Trigger value for the held item's fine action (cut, write, peel). 0 until the trigger that started the
         /// grab has been let go once (hold on with the grip, then squeeze again).</summary>
         public float ActionTrigger => Input == null ? 0f : Held == null || _triggerArmed ? Input.Trigger : 0f;
+
+        /// <summary>Reach used for hover/grab now: <see cref="grabRadius"/> in the exam, at least 13 cm everywhere else.</summary>
+        public float EffectiveGrabRadius => Forgiving.Scale(grabRadius, Mathf.Max(grabRadius, ForgivingRadius));
 
         public Vector3 PalmPosition => transform.TransformPoint(palmOffset);
         public Vector3 FingertipPosition => transform.TransformPoint(fingertipOffset);
@@ -146,7 +151,8 @@ namespace FieldMedic.Interaction
         {
             best = null; bestPoint = null; bestCollider = null;
             Vector3 palm = PalmPosition;
-            int n = Physics.OverlapSphereNonAlloc(palm, grabRadius, _buffer, grabMask, QueryTriggerInteraction.Collide);
+            float reach = EffectiveGrabRadius;
+            int n = Physics.OverlapSphereNonAlloc(palm, reach, _buffer, grabMask, QueryTriggerInteraction.Collide);
             float bestScore = float.NegativeInfinity;
             _seen.Clear();
             for (int i = 0; i < n; i++)
@@ -155,6 +161,8 @@ namespace FieldMedic.Interaction
                 if (col == null || !col.enabled) continue;
                 var g = col.GetComponentInParent<Grabbable>();
                 if (g == null || !g.CanBeGrabbedBy(this)) continue;
+                // w10d: the step needs one specific item -> other kit items are not taken by accident
+                if (!StepFocus.Allows(g)) continue;
 
                 // inside several handles at once: the one whose centre is nearest wins
                 float colDist = Vector3.Distance(SafeClosestPoint(col, palm), palm) + 0.1f * Vector3.Distance(col.bounds.center, palm);
@@ -168,7 +176,7 @@ namespace FieldMedic.Interaction
                     {
                         if (p == null || !p.isActiveAndEnabled || !p.Allows(Handedness)) continue;
                         float d = p.Distance(palm);
-                        if (d <= p.radius && d < pointDist) { pointDist = d; point = p; }
+                        if (d <= Forgiving.Mul(p.radius, 1.5f) && d < pointDist) { pointDist = d; point = p; }
                     }
                 }
                 if (point == null && g.requireGrabPoint) continue;
@@ -227,8 +235,8 @@ namespace FieldMedic.Interaction
                 float d = Vector3.Distance(SafeClosestPoint(_buffer[i], palm), palm);
                 if (d < nd) { nd = d; near = g; }
             }
-            string why = near == null ? "" : near.CanBeGrabbedBy(this) ? " (out of reach)" : " (not grabbable now)";
-            Debug.Log($"[FMVR] grab miss {Side} ({with}): nothing within {grabRadius * 100f:0} cm" +
+            string why = near == null ? "" : !near.CanBeGrabbedBy(this) ? " (not grabbable now)" : !StepFocus.Allows(near) ? " (not the item this step needs)" : " (out of reach)";
+            Debug.Log($"[FMVR] grab miss {Side} ({with}): nothing within {EffectiveGrabRadius * 100f:0} cm" +
                       (near != null ? $"; nearest {near.name} at {nd * 100f:0} cm{why}" : ""));
         }
 
@@ -296,7 +304,7 @@ namespace FieldMedic.Interaction
         void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.cyan;
-            Gizmos.DrawWireSphere(PalmPosition, grabRadius);
+            Gizmos.DrawWireSphere(PalmPosition, EffectiveGrabRadius);
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(FingertipPosition, 0.01f);
         }

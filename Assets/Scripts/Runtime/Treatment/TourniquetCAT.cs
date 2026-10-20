@@ -178,6 +178,8 @@ namespace FieldMedic.Treatment
             var c = NearestCasualty(transform.position, 2.2f);
             if (c == null || c.rig == null || !c.IsDown) return;
             Vector3 p = transform.position;
+            // w10d: forgiving wrap zones outside the exam (over the foot/hand 14 cm, up the limb 9 cm, under a lifted limb 18 cm)
+            float overEnd = Forgiving.Scale(0.1f, 0.14f), upLimb = Forgiving.Scale(0.06f, 0.09f), under = Forgiving.Scale(0.14f, 0.18f);
             foreach (var limb in LimbMath.All)
             {
                 int i = (int)limb;
@@ -185,14 +187,14 @@ namespace FieldMedic.Treatment
                 if (dist == float.MaxValue) continue;
                 float r = LimbMath.RadiusAt(limb, pos);
                 // 1) over the foot / hand: the loop passes the end of the limb, then travels up it
-                if (pos >= 2.3f && dist < r + 0.1f) _nearEnd[i] = Time.time;
-                if (Time.time - _nearEnd[i] < 3f && pos < 2.25f && dist < r + 0.06f)
+                if (pos >= 2.3f && dist < r + overEnd) _nearEnd[i] = Time.time;
+                if (Time.time - _nearEnd[i] < Forgiving.Scale(3f, 5f) && pos < 2.25f && dist < r + upLimb)
                 {
                     Wrap(c, limb, pos);
                     return;
                 }
                 // 2) routed under a lifted limb from one side to the other
-                if (dist < r + 0.14f && LimbLifted(c, limb, pos, axisPt))
+                if (dist < r + under && LimbLifted(c, limb, pos, axisPt))
                 {
                     Vector3 axis = LimbMath.AxisAt(c.rig, limb, pos);
                     Vector3 sideDir = Vector3.Cross(axis, Vector3.up).normalized;
@@ -416,7 +418,7 @@ namespace FieldMedic.Treatment
             _timeWasHeld = held;
             if (!held) return;
             _timeMax = Mathf.Max(_timeMax, TimeStrapHandle.PalmDelta.magnitude);
-            if (_timeMax >= 0.06f && State.SecureStrap()) Haptics.Play(TimeStrapHandle.Input, Haptics.PressClick);
+            if (_timeMax >= Forgiving.Scale(0.06f, 0.04f) && State.SecureStrap()) Haptics.Play(TimeStrapHandle.Input, Haptics.PressClick);
         }
 
         /// <summary>Marker stroke on the TIME strap: writes the scenario clock (needs the windlass locked).</summary>

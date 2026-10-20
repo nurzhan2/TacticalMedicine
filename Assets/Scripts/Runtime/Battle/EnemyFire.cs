@@ -42,6 +42,16 @@ namespace FieldMedic.Battle
 
         public event Action<string> PlayerHit;
 
+        /// <summary>w10b (owner: "только вышел — уже сразу пиздец"): no aimed fire at the player before this time
+        /// (Time.time) — set by the scenario director for a few calm seconds after the injury (never in the exam).</summary>
+        public static float CalmUntil = -1f;
+        /// <summary>w10b: outside the exam the player may stay exposed this many times longer before being hit.</summary>
+        public const float NonExamExposureFactor = 2.2f;
+        float _baseLimit = 4f;
+
+        /// <summary>The exposure limit in force now (strict in the exam, forgiving elsewhere).</summary>
+        public float ExposureLimitNow => BattleDirector.Mode == BattleMode.Exam ? _baseLimit : _baseLimit * NonExamExposureFactor;
+
         float _checkAcc, _nextNearMiss, _nextCoverHit;
         Vector3 _lastShooter;
         bool _hasShooter;
@@ -51,7 +61,8 @@ namespace FieldMedic.Battle
         {
             Instance = this;
             if (head == null && Camera.main != null) head = Camera.main.transform;
-            Tracker = new ExposureTracker(settings != null ? settings.exposureWindow : 10f, settings != null ? settings.exposureLimit : 4f);
+            _baseLimit = settings != null ? settings.exposureLimit : 4f;
+            Tracker = new ExposureTracker(settings != null ? settings.exposureWindow : 10f, _baseLimit);
             _rayMask = CoverMath.CoverMask;
         }
 
@@ -79,6 +90,7 @@ namespace FieldMedic.Battle
         {
             if (targetableOverride != null) return targetableOverride();
             if (BattleDirector.Mode == BattleMode.Training) return false;
+            if (BattleDirector.Mode != BattleMode.Exam && Time.time < CalmUntil) return false;
             return BattleDirector.PlayerArmed ?? armedWithoutScenario;
         }
 
@@ -90,6 +102,8 @@ namespace FieldMedic.Battle
             if (head == null) return;
             float dt = Time.deltaTime;
             PlayerTargetable = ComputeTargetable() && !PlayerWasHit;
+            float limit = ExposureLimitNow;
+            if (!Mathf.Approximately(Tracker.Limit, limit)) Tracker.Limit = limit;
             float rate = settings != null ? settings.checkRate : 10f;
             _checkAcc += dt;
             if (_checkAcc >= 1f / rate)

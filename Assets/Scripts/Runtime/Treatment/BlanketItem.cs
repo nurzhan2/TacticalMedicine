@@ -45,7 +45,7 @@ namespace FieldMedic.Treatment
         {
             if (Draped || Unfolded || HolderCount < 2) return;
             var a = holders[0].Hand; var b = holders[1].Hand;
-            if (Vector3.Distance(a.PalmPosition, b.PalmPosition) < 0.55f) return;
+            if (Vector3.Distance(a.PalmPosition, b.PalmPosition) < Forgiving.Scale(0.55f, 0.4f)) return; // w10d: forgiving unfold
             Unfolded = true;
             _folded.gameObject.SetActive(false);
             ShowCarriedLook(false);
@@ -62,7 +62,7 @@ namespace FieldMedic.Treatment
             if (c == null || c.rig == null) return;
             var hips = c.rig.Bone(HumanBodyBones.Hips);
             Vector3 flat = transform.position - hips.position; flat.y = 0f;
-            if (flat.magnitude > 0.9f || transform.position.y < hips.position.y) return;
+            if (flat.magnitude > Forgiving.Scale(0.9f, 1.3f) || transform.position.y < hips.position.y - Forgiving.Scale(0f, 0.08f)) return; // w10d: forgiving drape zone
             Drape(c);
         }
 

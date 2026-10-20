@@ -126,7 +126,8 @@ namespace FieldMedic.Treatment
                 if (s == null || s.Wound == null || !s.Wound.IsChest) continue;
                 var care = s.GetComponent<WoundCare>();
                 if (care == null || care.Seal != null) continue;
-                if (care.Lateral(TipPosition) > 0.05f || care.Height(TipPosition) > 0.025f) continue;
+                // w10d: forgiving placement outside the exam (10 cm around the wound, up to 5 cm above the skin)
+                if (care.Lateral(TipPosition) > Forgiving.Scale(0.05f, 0.10f) || care.Height(TipPosition) > Forgiving.Scale(0.025f, 0.05f)) continue;
                 Proc.wipes = care.Wipes;
                 bool exhaling = c.rig == null || c.rig.BreathSignal <= 0.1f;
                 if (!Proc.Place(exhaling))
@@ -161,7 +162,7 @@ namespace FieldMedic.Treatment
                 {
                     float lat = care.Lateral(p), height = care.Height(p);
                     // edge press: fingers run around the rim
-                    if (Proc.step == ChestSealProcedure.Step.Placed && lat > 0.03f && lat < 0.08f && height < 0.012f && h.Input.Trigger < 0.6f)
+                    if (Proc.step == ChestSealProcedure.Step.Placed && lat > Forgiving.Scale(0.03f, 0.02f) && lat < Forgiving.Scale(0.08f, 0.12f) && height < Forgiving.Scale(0.012f, 0.03f) && h.Input.Trigger < 0.6f)
                     {
                         Vector3 v = Vector3.ProjectOnPlane(p - care.transform.position, care.Normal);
                         float ang = Vector3.SignedAngle(care.transform.up, v, care.Normal) + 180f;
@@ -177,9 +178,9 @@ namespace FieldMedic.Treatment
                 // burp: pinch the edge and lift it
                 Vector3 f = h.FingertipPosition;
                 float fl = care.Lateral(f), fh = care.Height(f);
-                if (Proc.step == ChestSealProcedure.Step.Sealed && h.Input.Trigger > 0.6f && fl > 0.035f && fl < 0.09f)
+                if (Proc.step == ChestSealProcedure.Step.Sealed && h.Input.Trigger > 0.6f && fl > Forgiving.Scale(0.035f, 0.02f) && fl < Forgiving.Scale(0.09f, 0.13f))
                 {
-                    if (!_pinching && fh < 0.02f) { _pinching = true; _pinchStartH = fh; }
+                    if (!_pinching && fh < Forgiving.Scale(0.02f, 0.04f)) { _pinching = true; _pinchStartH = fh; }
                     else if (_pinching && fh - _pinchStartH > 0.015f)
                     {
                         _pinching = false;

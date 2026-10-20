@@ -39,6 +39,8 @@ namespace FieldMedic.Medical
         public Severity severity;
         public string code;
         public string text;
+        /// <summary>w10b: done by "skip step" (hold A) — the game did it for the player; the debrief marks it «пропущен».</summary>
+        public bool skipped;
     }
 
     /// Checks trainee actions against TCCC/MARCH teaching and applies valid ones to the physiology.
@@ -156,8 +158,28 @@ namespace FieldMedic.Medical
         /// A scenario note for the debrief timeline (no score effect).
         public void Note(string code, string text, Severity sev = Severity.Info)
         {
-            log.Add(new LoggedAction { time = patient.secondsSinceStart, action = MedAction.Scenario, severity = sev, code = code, text = text });
+            log.Add(new LoggedAction { time = patient.secondsSinceStart, action = MedAction.Scenario, severity = sev, code = code, text = text, skipped = Skipping });
         }
+
+        // ------------------------------------------------------------------ w10b skip step
+        /// <summary>True while the game performs a skipped step for the player: every logged action is marked skipped.</summary>
+        public bool Skipping { get; private set; }
+        /// <summary>Step ids the player skipped (hold A), in order.</summary>
+        public readonly List<string> skippedSteps = new();
+        public const string SkippedCode = "step_skipped";
+
+        /// <summary>Start a skipped step: logs «Шаг пропущен: …» and marks every action until <see cref="EndSkip"/>.</summary>
+        public void BeginSkip(string stepId, string stepText)
+        {
+            Skipping = true;
+            skippedSteps.Add(stepId ?? "");
+            Note(SkippedCode, "Шаг пропущен: " + (string.IsNullOrEmpty(stepText) ? stepId : stepText), Severity.Warning);
+        }
+
+        public void EndSkip() => Skipping = false;
+
+        /// <summary>Was this step id skipped at least once?</summary>
+        public bool WasSkipped(string stepId) => skippedSteps.Contains(stepId);
 
         public bool medevacRequested;
         public float medevacRequestedAt = -1f;
@@ -176,7 +198,7 @@ namespace FieldMedic.Medical
             {
                 time = patient.secondsSinceStart, action = action,
                 target = target != null ? target.region.ToString() : site?.ToString(),
-                severity = fb.severity, code = fb.code, text = fb.text,
+                severity = fb.severity, code = fb.code, text = fb.text, skipped = Skipping,
             });
             if (Penalty.ContainsKey(fb.code)) AddPenalty(fb.code);
             return fb;
@@ -507,7 +529,7 @@ namespace FieldMedic.Medical
         void Log(MedAction a, string target, Feedback fb)
         {
             log.Add(new LoggedAction { time = patient.secondsSinceStart, action = a, target = target,
-                severity = fb.severity, code = fb.code, text = fb.text });
+                severity = fb.severity, code = fb.code, text = fb.text, skipped = Skipping });
             if (Penalty.ContainsKey(fb.code)) AddPenalty(fb.code);
         }
 
@@ -524,7 +546,7 @@ namespace FieldMedic.Medical
             w.control = BleedControl.PackedAndHeld;
             log.Add(new LoggedAction { time = patient.secondsSinceStart, action = MedAction.DirectPressure,
                 target = w.region.ToString(), severity = Severity.Ok, code = "hold_done",
-                text = "Давление удержано 3 минуты. Закрепите давящей повязкой." });
+                text = "Давление удержано 3 минуты. Закрепите давящей повязкой.", skipped = Skipping });
             return true;
         }
 

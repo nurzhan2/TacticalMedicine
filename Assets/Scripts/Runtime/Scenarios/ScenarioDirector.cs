@@ -73,10 +73,16 @@ namespace FieldMedic.Scenarios
 
         void Awake() => Instance = this;
 
+        /// <summary>w10b: outside the exam the helicopter wait (30–40 game minutes) passes in about this many seconds.</summary>
+        public const float NonExamEvacWaitSeconds = 10f;
+        /// <summary>w10b: calm seconds after the injury before enemy fire may target the player (not in the exam).</summary>
+        public const float NonExamCalmSeconds = 8f;
+        /// <summary>The casualty's physiology never runs faster than this during the shortened wait (big steps).</summary>
+        public const float MaxEvacSimSpeed = 20f;
+
         // ------------------------------------------------------------------ w10 controls line (no medical answers)
         float _dragScanAt;
         CasualtyDrag _drag;
-        bool _dragLine;
 
         // w10 audit: there was no way out of a run (the board is hidden while playing) — hold B for 2 s → menu
         float _bHeld;
@@ -105,19 +111,118 @@ namespace FieldMedic.Scenarios
             if (InMenu || Timeline == null || casualty == null) return;
             if (_drag == null && Time.time > _dragScanAt) { _dragScanAt = Time.time + 2f; _drag = casualty.GetComponentInChildren<CasualtyDrag>(true); }
             bool dragging = _drag != null && _drag.AnyHeld;
-            if (dragging == _dragLine) return;
-            _dragLine = dragging;
-            if (dragging)
+            Coach();
+            if (State == ScenarioState.Debrief) return;
+            if (dragging && (_coach == null || _coach.id is "drag_cover" or "loaded" or "board" or "wait"))
+            {
                 FieldMedic.UI.StepGuide.Set("Тащи: держи хват, стик назад — ползти с раненым", "Сүйре: ұстап тұр, стикті артқа — жаралымен жорғалау",
                     FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Stick);
-            else
-                FieldMedic.UI.StepGuide.Set(ControlsLineRu, ControlsLineKz,
-                    FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Y, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger);
+                return;
+            }
+            if (Coaching)
+            {
+                if (_coach != null) { FieldMedic.UI.StepGuide.Set(CoachLine(false), CoachLine(true), CoachIcons(_coach)); return; }
+                if (State == ScenarioState.Briefing || State == ScenarioState.Incident || IncidentPatientTime < 0f)
+                {
+                    FieldMedic.UI.StepGuide.Set(FirstStepRu, FirstStepKz, FieldMedic.UI.ControlIcon.Hand);
+                    return;
+                }
+            }
+            FieldMedic.UI.StepGuide.Set(ControlsLineRu, ControlsLineKz,
+                FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Y, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger);
         }
+
+        // ------------------------------------------------------------------ w10b coach: step-by-step hints outside the exam
+        /// <summary>w10b (owner: "сделай подсказки даже в сценарии, и только в экзамене без подсказок"): the next MARCH step
+        /// of this run (null in the exam / before the injury / after the end).</summary>
+        public CoachStep CurrentStep => _coach;
+        /// <summary>Hints are shown in this run (every mode except the exam).</summary>
+        public bool Coaching => !Exam && Run != null && !InMenu;
+        CoachStep _coach;
+        float _coachAt;
+
+        void Coach()
+        {
+            if (!Coaching || State == ScenarioState.Debrief || IncidentPatientTime < 0f || casualty.Protocol == null)
+            {
+                if (_coach != null || State == ScenarioState.Debrief) SetWanted(null);
+                _coach = null;
+                return;
+            }
+            if (Time.time < _coachAt) return;
+            _coachAt = Time.time + 0.25f;
+            var tac = TacevacController.Instance;
+            var evac = tac == null || !tac.Called ? (casualty.Protocol.medevacRequested ? CoachEvac.Waiting : CoachEvac.None)
+                : tac.CasualtyAboard ? CoachEvac.Aboard : tac.Landed ? CoachEvac.Landed : CoachEvac.Waiting;
+            var next = ScenarioCoach.Next(casualty.Protocol, evac, Run.def.EndsWithTacevac);
+            if (next != null && (_coach == null || _coach.id != next.id)) Log("coach step " + next.id);
+            _coach = next;
+            SetWanted(next != null ? TrainingDirector.KindOf(next.item) : null);
+        }
+
+        static void SetWanted(MedItemKind? kind)
+        {
+            if (KitTray.Player != null) KitTray.Player.Wanted = kind;
+            StepFocus.WantedItem = kind;
+        }
+
+        string CoachLine(bool kz)
+        {
+            string t = _coach.Text(kz);
+            if (_coach.id == "wait" && Run.def.EndsWithTacevac)
+                t += kz ? " (Ұрыста тікұшақты " + Mathf.RoundToInt(Run.def.evacMinutes) + " минут күтеді. Мұнда — 10 секунд.)"
+                        : " (В бою вертолёт ждут " + Mathf.RoundToInt(Run.def.evacMinutes) + " минут. Здесь — 10 секунд.)";
+            if (_coach.skippable) t += kz ? "   · A ұста — қадамды өткізу" : "   · держи A — пропустить шаг";
+            return t;
+        }
+
+        static FieldMedic.UI.ControlIcon[] CoachIcons(CoachStep s)
+        {
+            if (s.item == "Radio") return new[] { FieldMedic.UI.ControlIcon.Y };
+            if (s.id is "drag_cover" or "loaded") return new[] { FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Stick };
+            if (s.id is "rolled" or "recovery") return new[] { FieldMedic.UI.ControlIcon.Grip };
+            if (!string.IsNullOrEmpty(s.item))
+                return s.item is "Marker" or "Shears" or "ChestSeal"
+                    ? new[] { FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger }
+                    : new[] { FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Grip };
+            if (s.id == "tq_twist") return new[] { FieldMedic.UI.ControlIcon.Grip };
+            return new[] { FieldMedic.UI.ControlIcon.Hand };
+        }
+
+        string FirstStepRu => Run != null && Run.def.startPhase == Phase.CareUnderFire
+            ? "Пока тихо. Когда Ерлана ранит: сначала жгут «высоко и туго», потом тащи его в укрытие. Подсказки — здесь и на часах."
+            : "Пока тихо. Когда Ерлана ранит: перчатки, затем осмотр по MARCH. Подсказки — здесь и на часах.";
+        string FirstStepKz => Run != null && Run.def.startPhase == Phase.CareUnderFire
+            ? "Әзірге тыныш. Ерлан жараланса: алдымен жгут «жоғары әрі қатты», сосын баспанаға сүйре. Кеңестер — осында және сағатта."
+            : "Әзірге тыныш. Ерлан жараланса: қолғап, сосын MARCH бойынша тексеру. Кеңестер — осында және сағатта.";
+
+        /// <summary>w10b skip step (hold A / watch button): the game performs the current coached step.</summary>
+        public bool SkipStep()
+        {
+            if (Exam || InMenu || Timeline == null || casualty == null || casualty.Protocol == null || State == ScenarioState.Debrief) return false;
+            _coachAt = 0f;
+            Coach();
+            var step = _coach;
+            if (step == null || !step.skippable) return false;
+            var proto = casualty.Protocol;
+            proto.BeginSkip(step.id, step.ru);
+            bool ok;
+            try { ok = StepAutoDo.Do(step.id, casualty, step.wound, this); }
+            finally { proto.EndSkip(); }
+            Log("skip step " + step.id + (ok ? "" : " (nothing done)"));
+            _coachAt = 0f;
+            return ok;
+        }
+
+        bool CanSkipStep() => Coaching && _coach != null && _coach.skippable && State != ScenarioState.Debrief;
 
         const string ControlsLineRu = "X — аптечка · Y (держать) — рация · GRIP / КУРОК — взять · B (держать) — меню";
         const string ControlsLineKz = "X — қобдиша · Y (ұста) — рация · GRIP / ШҮРІППЕ — алу · B (ұста) — мәзір";
-        void OnDestroy() { if (Instance == this) Instance = null; }
+        void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            StepSkip.Unregister(SkipStep);
+        }
 
         IEnumerator Start()
         {
@@ -198,8 +303,13 @@ namespace FieldMedic.Scenarios
             startMin = (startMin + 24 * 60) % (24 * 60);
             ScenarioClock.StartHour = startMin / 60;
             ScenarioClock.StartMinute = startMin % 60;
-            GameSettings.HoldTimeScale = testMode ? GameSettings.HoldTimeScale : 1f;
+            // w10b: the 3-minute hold is 10 s outside the exam (the hint says "в бою — 3 минуты"); the exam keeps real times
+            GameSettings.HoldTimeScale = testMode ? GameSettings.HoldTimeScale : HoldTimes.ScaleFor(exam);
+            if (!exam && !testMode) Timeline.evacTimeScale = Mathf.Max(Timeline.evacTimeScale, def.evacMinutes * 60f / NonExamEvacWaitSeconds);
             if (Exam) GameSettings.OverrideHintsForRun(false);
+            _coach = null;
+            if (!exam) { StepSkip.Ensure(gameObject); StepSkip.Register(SkipStep, CanSkipStep); }
+            else StepSkip.Unregister(StepSkip.Handler);
 
             var anchor = spots.FirstOrDefault(s => s.spot == def.spot);
             if (anchor != null)
@@ -261,6 +371,7 @@ namespace FieldMedic.Scenarios
                 if (def.incident == IncidentKind.Barrage && !testMode) IncidentProps.Spawn(IncidentKind.Barrage, CasualtyPos, CasualtyPos);
                 Timeline.Incident();
                 Timeline.CasualtyDown(def.startPhase);
+                CalmStart();
                 HideBoardForRun();
                 yield break;
             }
@@ -313,10 +424,19 @@ namespace FieldMedic.Scenarios
             casualty.Protocol.phase = def.startPhase;
             Timeline.Incident();
             Timeline.CasualtyDown(def.startPhase);
+            CalmStart();
             if (def.startPhase == Phase.CareUnderFire && ThreatSystem.Instance != null) ThreatSystem.Instance.underFire = true;
             if (amb != null) amb.intensity = 1.2f;
             HideBoardForRun();
             Log("incident " + def.incident);
+        }
+
+        /// <summary>w10b: a few seconds of calm after the injury (no aimed fire at the medic) outside the exam.</summary>
+        void CalmStart()
+        {
+            if (Exam || testMode) return;
+            FieldMedic.Battle.EnemyFire.CalmUntil = Time.time + NonExamCalmSeconds;
+            if (FieldMedic.Battle.EnemyFire.Instance != null) FieldMedic.Battle.EnemyFire.Instance.ResetExposure();
         }
 
         void ApplyWounds(bool alreadyDown)
@@ -381,8 +501,9 @@ namespace FieldMedic.Scenarios
                 // only the wait for the helicopter is time-compressed; from touchdown on the drag to the door, the
                 // hand-over and the boarding are played in real time (w9)
                 var landed = TacevacController.Instance != null && TacevacController.Instance.Landed;
-                casualty.simulationSpeed = landed ? 1f : Mathf.Max(casualty.simulationSpeed, Timeline.evacTimeScale);
-                evacDt = dt * casualty.simulationSpeed;
+                casualty.simulationSpeed = landed ? 1f : Mathf.Max(casualty.simulationSpeed, Exam || testMode ? Timeline.evacTimeScale : Mathf.Min(Timeline.evacTimeScale, MaxEvacSimSpeed));
+                // w10b: outside the exam the wait clock runs faster than his physiology (about 10 s of waiting, stable integration)
+                evacDt = landed ? dt : dt * (Exam || testMode ? casualty.simulationSpeed : Timeline.evacTimeScale);
             }
             // the schedule follows the casualty's clock (tests and time-compression speed it up together)
             var due = Timeline.Tick(dt * Mathf.Max(0f, Timeline.State == ScenarioState.Evacuation ? 1f : casualty.simulationSpeed), proto.phase, proto.medevacRequested, casualty.Patient.outcome, _hit, evacDt);
@@ -633,6 +754,8 @@ namespace FieldMedic.Scenarios
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.3f;
             Log($"debrief {Run.def.id}: {Timeline.EndReason}, score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
             if (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) FieldMedic.Treatment.KitTray.Player.Close();
+            SetWanted(null);
+            _coach = null;
             if (board != null) { board.gameObject.SetActive(true); board.ShowDebrief(Report, head); }
             FieldMedic.UI.StepGuide.Set("Итог на доске: наведи луч, КУРОК — кнопка", "Қорытынды тақтада: сәулені бағытта, ШҮРІППЕ — түйме", FieldMedic.UI.ControlIcon.Trigger);
             Finished?.Invoke(Report);

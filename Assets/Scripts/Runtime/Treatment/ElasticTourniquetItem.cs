@@ -127,7 +127,8 @@ namespace FieldMedic.Treatment
             float along = Mathf.Abs(Vector3.Dot(d, axis));
             float radial = Vector3.ProjectOnPlane(d, axis).magnitude;
             _lastNear = $"radial {radial - r:F3} m off the skin, {along:F3} m along";
-            return radial < r + 0.08f && along < 0.08f;
+            float zone = Forgiving.Scale(0.08f, 0.13f); // w10d: forgiving fix zone outside the exam
+            return radial < r + zone && along < zone;
         }
         string _lastNear;
 
@@ -145,7 +146,7 @@ namespace FieldMedic.Treatment
             var c = NearestCasualty(transform.position, 2.2f);
             if (c == null || c.rig == null || !c.IsDown) { _pinTimer = 0f; return; }
             bool near = LimbMath.Nearest(c.rig, transform.position, out var limb, out float pos, out float skin);
-            if (!near || skin > 0.05f || pos > 2.3f)
+            if (!near || skin > Forgiving.Scale(0.05f, 0.08f) || pos > 2.3f)
             { _pinTimer = 0f; return; }
             if (limb != _pinLimb) { _pinLimb = limb; _pinTimer = 0f; }
             _pinTimer += Time.deltaTime;

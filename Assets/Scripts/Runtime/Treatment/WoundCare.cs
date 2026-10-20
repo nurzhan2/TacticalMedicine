@@ -17,6 +17,11 @@ namespace FieldMedic.Treatment
     public sealed class WoundCare : MonoBehaviour
     {
         public const float PressureThreshold = 0.35f;
+        /// <summary>w10d: outside the exam the palm presses / the gauze starts packing anywhere within ~12 cm of the wound.</summary>
+        public const float ForgivingPressureRadius = 0.12f;
+        public const float ForgivingPackRadius = 0.12f;
+        /// <summary>w10d: fingertip packing strokes count within this lateral distance outside the exam.</summary>
+        public const float ForgivingStrokeRadius = 0.10f;
 
         public CasualtyController casualty;
         public WoundSite site;
@@ -85,8 +90,57 @@ namespace FieldMedic.Treatment
                 }
             }
 
+            if (Forgiving.On) ForgivingAssist();
             DetectStrokesAndWipes();
             UpdateVisuals();
+        }
+
+        // ------------------------------------------------------------------ w10d forgiving zones
+        GauzeItem _assistGauze;
+        int _glowFrame = -1;
+        float _glowStrength;
+
+        /// <summary>Glow on the wound this frame (hands / gauze near it). Called by <see cref="HandTreatment"/> too.</summary>
+        public void ShowTargetGlow(float strength)
+        {
+            if (!Forgiving.On || site == null) return;
+            if (_glowFrame == Time.frameCount && strength <= _glowStrength) return;
+            _glowFrame = Time.frameCount;
+            _glowStrength = strength;
+            float size = Mathf.Max(0.1f, site.size * 2.2f);
+            ZoneGlow.Show(this, transform.position + Normal * 0.01f, size, strength >= 0.6f ? ZoneGlow.Green : ZoneGlow.Red, strength);
+        }
+
+        bool NeedsHands => Wound != null && Wound.discovered && (Wound.posterior == false || casualty.rolledOnSide) &&
+                           (!Wound.IsControlled || (Wound.control == BleedControl.Packed && Wound.packingHoldSeconds < Wound.PackingHoldRequired));
+
+        /// <summary>Outside the exam: a held gauze anywhere near the wound starts the packing (the item's own check
+        /// needs its tip within 5 cm), and the bleeding wound glows while a hand / the gauze approaches it.</summary>
+        void ForgivingAssist()
+        {
+            bool needsHands = NeedsHands;
+            for (int i = 0; i < HandGrabber.All.Count && i < 2; i++)
+            {
+                var h = HandGrabber.All[i];
+                if (h == null || h.Input == null) continue;
+                Vector3 palm = h.PalmPosition;
+                if (h.Held is GauzeItem g)
+                {
+                    if (!CanPack || Packing.Complete) continue;
+                    Vector3 tipP = g.TipPosition;
+                    float lat = Mathf.Min(Lateral(tipP), Lateral(palm));
+                    float hgt = Mathf.Min(Mathf.Abs(Height(tipP)), Mathf.Abs(Height(palm)));
+                    if (lat < 0.3f && SkinAccessible) ShowTargetGlow(lat < ForgivingPackRadius ? 0.8f : 0.45f);
+                    if (g.PackingInto != null || !SkinAccessible) continue;
+                    if (lat < ForgivingPackRadius && hgt < 0.08f && !Packing.started && StartPacking())
+                    {
+                        _assistGauze = g;
+                        Haptics.Play(h.Input, Haptics.Grab);
+                    }
+                }
+                else if (h.Held == null && needsHands && Lateral(palm) < 0.3f && Mathf.Abs(Height(palm)) < 0.2f)
+                    ShowTargetGlow(0.45f);
+            }
         }
 
         // ------------------------------------------------------------------ packing
@@ -110,8 +164,9 @@ namespace FieldMedic.Treatment
                 bool free = h.Held == null || h.Held is GauzeItem;
                 Vector3 f = h.FingertipPosition;
                 float depth = -Height(f);
-                bool over = Lateral(f) < Mathf.Max(0.045f, site.size * 0.8f);
-                if (free && over && Packing.started && !Packing.Complete && depth > 0.012f)
+                bool easy = Forgiving.On;
+                bool over = Lateral(f) < Mathf.Max(easy ? ForgivingStrokeRadius : 0.045f, site.size * 0.8f);
+                if (free && over && Packing.started && !Packing.Complete && depth > (easy ? 0.008f : 0.012f))
                 {
                     _inStroke[i] = true;
                     _strokeDepth[i] = Mathf.Max(_strokeDepth[i], depth);
@@ -119,14 +174,21 @@ namespace FieldMedic.Treatment
                 else if (_inStroke[i] && (depth < 0.004f || !over))
                 {
                     _inStroke[i] = false;
-                    float used = Packing.Stroke(_strokeDepth[i] * 100f);
+                    // w10d: outside the exam any clear push into the wound counts as a full stroke
+                    float used = Packing.Stroke(easy ? Mathf.Max(_strokeDepth[i] * 100f, 3f) : _strokeDepth[i] * 100f);
                     _strokeDepth[i] = 0f;
                     if (used > 0f)
                     {
                         Haptics.Play(h.Input, Haptics.Contact, 2f);
                         casualty.Pain.AddSpike(0.12f); // packing an open wound hurts a lot
                         if (h.Held is GauzeItem g) g.Consume(used);
-                        else foreach (var gi in FindObjectsByType<GauzeItem>(FindObjectsSortMode.None)) if (gi.PackingInto == this) { gi.Consume(used); break; }
+                        else
+                        {
+                            GauzeItem into = null;
+                            foreach (var gi in FindObjectsByType<GauzeItem>(FindObjectsSortMode.None)) if (gi.PackingInto == this) { into = gi; break; }
+                            if (into == null && _assistGauze != null && _assistGauze.PackingInto == null && !_assistGauze.Consumed) into = _assistGauze;
+                            if (into != null) into.Consume(used);
+                        }
                         if (Packing.Complete) OnPacked();
                     }
                 }
@@ -146,6 +208,9 @@ namespace FieldMedic.Treatment
             LastFeedback = casualty.Protocol.Perform(MedAction.HemostaticPacking, Wound);
             foreach (var gi in FindObjectsByType<GauzeItem>(FindObjectsSortMode.None))
                 if (gi.PackingInto == this) gi.FinishPacking();
+            // w10d: the roll that started the packing from the forgiving zone (never bound by its own 5 cm check)
+            if (_assistGauze != null && _assistGauze.PackingInto == null && !_assistGauze.Consumed) _assistGauze.FinishPacking();
+            _assistGauze = null;
         }
 
         // ------------------------------------------------------------------ bandage

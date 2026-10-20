@@ -207,6 +207,44 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
+        public IEnumerator OpenKit_IsTheRealModel_ItemsOnTheirSeats_BigGrabZones_NoSolidBody()
+        {
+            // w10d (owner: "no rectangle — the previous one, with the model and everything"): X summons the real IFAK,
+            // unfolded, items on the model's own Slot_* seats; easy to grab; the kit body never blocks the hands
+            yield return MakeKit();
+            yield return _bot.OpenPouch(_pouch, _bot.left);
+            for (float t = 0f; t < 1f && _pouch.Tray.Open01 < 1f; t += Time.deltaTime) yield return null;
+            Assert.IsTrue(_pouch.IsOpen);
+            if (_pouch.Art != null)
+            {
+                Assert.AreEqual(1f, _pouch.Art.Open01, 1e-3f, "the model is unfolded");
+                foreach (var it in _pouch.Items)
+                    Assert.IsTrue(it.homeSlot != null && it.homeSlot.IsChildOf(_pouch.Art.Root), it.name + " sits on a seat of the real kit model");
+            }
+            Assert.IsNull(_pouch.transform.Find("TrayPanel"), "no flat rectangle panel any more");
+            foreach (var c in _pouch.GetComponentsInChildren<Collider>(false))
+                if (c.enabled && c.GetComponentInParent<MedItem>() == null) Assert.IsTrue(c.isTrigger, c.name + ": nothing solid on the kit body");
+            foreach (var it in _pouch.Items)
+            {
+                Assert.AreEqual(it.homeSlot, _pouch.Tray.Cells[it], it.name + ": Cells maps the item to its seat");
+                foreach (var c in it.GetComponents<Collider>())
+                    if (c.enabled) Assert.IsTrue(c.isTrigger, it.name + ": in the kit the item never shoves anything");
+                Vector3 biggest = Vector3.zero;
+                foreach (var c in it.GetComponentsInChildren<Collider>(false))
+                    if (c.enabled) biggest = Vector3.Max(biggest, c.bounds.size);
+                Assert.GreaterOrEqual(Mathf.Min(biggest.x, biggest.y, biggest.z), 0.055f, it.name + ": grab zone at least ~6 cm");
+            }
+            Vector3 face = Quaternion.Inverse(Quaternion.Euler(0f, _head.eulerAngles.y, 0f)) * (_pouch.transform.up);
+            Assert.Less(face.z, -0.3f, "the open face is tilted toward the eyes");
+            Assert.Greater(face.y, 0.3f);
+            // X again: back to the hip, folded
+            _pouch.Tray.Close();
+            for (float t = 0f; t < 1f && _pouch.Tray.Open01 > 0f; t += Time.deltaTime) yield return null;
+            if (_pouch.Art != null) Assert.AreEqual(0f, _pouch.Art.Open01, 1e-3f, "folded on the hip");
+            Assert.Less(Vector3.Distance(_pouch.transform.TransformPoint(Vector3.zero), _pouch.Tray.Hip.position), 0.5f, "parked at the hip");
+        }
+
+        [UnityTest]
         public IEnumerator ReleaseNearOpenKit_ReturnsToItsOwnSlot()
         {
             yield return MakeKit();

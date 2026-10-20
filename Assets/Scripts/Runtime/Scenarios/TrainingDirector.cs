@@ -68,6 +68,8 @@ namespace FieldMedic.Scenarios
         void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            StepSkip.Unregister(SkipStep);
+            if (StepFocus.WantedItem.HasValue) StepFocus.WantedItem = null;
             if (Panel != null) Destroy(Panel.gameObject);
             _guide?.Destroy();
         }
@@ -87,7 +89,7 @@ namespace FieldMedic.Scenarios
                 return;
             }
             Progress = new LessonProgress(l);
-            GameSettings.HoldTimeScale = 6f;
+            GameSettings.HoldTimeScale = HoldTimes.TrainingScale; // w10b: 3 min → 10 s (the step line says "в бою — 3 минуты")
             muted |= director.testMode;
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.25f;
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.enableHits = false; }
@@ -144,6 +146,8 @@ namespace FieldMedic.Scenarios
 
             Panel = HintPanel.Create();
             _guide = new GuideVisuals(GameSettings.LeftHanded);
+            StepSkip.Ensure(director.gameObject);
+            StepSkip.Register(SkipStep, CanSkipStep);
             ShowStep();
             StartedAt = Time.time;
             Say("t_welcome");
@@ -213,7 +217,12 @@ namespace FieldMedic.Scenarios
             if (_pouch != null && _pouch.IsOpen && ai + 1 < step.actions.Count && (step.actions[ai].ru.StartsWith("Нажми X") || step.actions[ai].ru.StartsWith("X ") || step.actions[ai].ru.Contains(": X —"))) ai++;
             var a = step.actions.Count > 0 ? step.actions[ai] : null;
             string head = Progress.StepNumber + "/" + Progress.StepCount + "  ";
-            StepGuide.Set(head + step.ru + (a != null ? ": " + a.ru : ""), head + step.Text(true) + (a != null ? ": " + a.Text(true) : ""), IconsFor(step));
+            // w10b: the shortened hold says the real time; every skippable step says "hold A — skip"
+            bool hold = step.id == "held";
+            bool skip = CanSkipStep();
+            string ru = head + step.ru + (a != null ? ": " + a.ru : "") + (hold ? " " + HoldTimes.LineRu : "") + (skip ? "   · держи A — пропустить шаг" : "");
+            string kz = head + step.Text(true) + (a != null ? ": " + a.Text(true) : "") + (hold ? " " + HoldTimes.LineKz : "") + (skip ? "   · A ұста — қадамды өткізу" : "");
+            StepGuide.Set(ru, kz, IconsFor(step));
         }
 
         /// <summary>The buttons the current step needs: kit item still in the kit → X + grab; held tools with a trigger action
@@ -271,10 +280,50 @@ namespace FieldMedic.Scenarios
             }
         }
 
+        // ------------------------------------------------------------------ w10b skip step (hold A / watch button)
+        readonly HashSet<string> _skipped = new HashSet<string>();
+        /// <summary>Lesson steps the player skipped.</summary>
+        public IReadOnlyCollection<string> SkippedSteps => _skipped;
+
+        bool CanSkipStep()
+        {
+            var step = Progress != null ? Progress.Step : null;
+            return step != null && !LessonComplete && _doneAt < 0f && !StepAutoDo.IsWaitStep(step.id);
+        }
+
+        /// <summary>Do the current lesson step for the player: the item is applied at once, the step is marked skipped.</summary>
+        public bool SkipStep()
+        {
+            if (!CanSkipStep()) return false;
+            var step = Progress.Step;
+            var proto = C.Protocol;
+            proto.BeginSkip(step.id, step.ru);
+            bool ok = false;
+            try
+            {
+                // the first unticked action with its own check, then the step itself (e.g. tq_strap inside tq_lock)
+                Wound w = step.target == "Wound2" ? _wound2 : step.target == "Wound3" ? _wound3 : step.target == "ChestBack" ? _exit : _wound;
+                if (step.id is "seal_back") w = _exit;
+                if (step.id is "packed2" or "bandage2" or "bandage2_on" or "exposed2") w = _wound2 ?? w;
+                if (step.id is "seal3") w = _wound3 ?? w;
+                ok = StepAutoDo.Do(step.id, C, w, director);
+                if (!ok)
+                    for (int i = 0; i < step.actions.Count && !ok; i++)
+                        if (!string.IsNullOrEmpty(step.actions[i].check)) ok = StepAutoDo.Do(step.actions[i].check, C, w, director);
+            }
+            finally { proto.EndSkip(); }
+            // the step counts as done even when only a part could be automated (e.g. a drag the hands never started)
+            _skipped.Add(step.id);
+            foreach (var act in step.actions) if (!string.IsNullOrEmpty(act.check)) _skipped.Add(act.check);
+            Debug.Log("[FMVR] training: step skipped " + step.id + (ok ? "" : " (marked only)"));
+            return true;
+        }
+
         void Complete()
         {
             if (LessonComplete) return;
             LessonComplete = true;
+            StepSkip.Unregister(SkipStep);
             CompletedAt = Time.time;
             Say("t_done");
             C.Protocol.Note("lesson_done", GameSettings.T("Урок выполнен.", "Сабақ орындалды."), Severity.Ok);
@@ -339,6 +388,7 @@ namespace FieldMedic.Scenarios
 
         public bool Satisfied(string id)
         {
+            if (_skipped.Contains(id)) return true;
             var p = C.Patient;
             var cat = Cat;
             var tac = TacevacController.Instance;
@@ -458,9 +508,10 @@ namespace FieldMedic.Scenarios
         {
             var step = Progress.Step;
             var tray = _pouch != null ? _pouch.Tray : null;
-            if (step == null || !GameSettings.Hints || _doneAt >= 0f) { _guide.Hide(); if (tray != null) tray.Wanted = null; return; }
+            if (step == null || !GameSettings.Hints || _doneAt >= 0f) { _guide.Hide(); if (tray != null) tray.Wanted = null; StepFocus.WantedItem = null; return; }
             // w10: the item the step needs glows in the tray (and the hip kit glows while the tray is closed)
             if (tray != null) tray.Wanted = KindOf(step.item);
+            StepFocus.WantedItem = KindOf(step.item);
             // the first unticked action with its own check decides the motion (e.g. strap before windlass)
             string sub = null;
             for (int i = 0; i < step.actions.Count; i++)

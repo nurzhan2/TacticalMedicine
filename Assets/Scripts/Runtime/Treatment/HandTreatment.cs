@@ -33,6 +33,8 @@ namespace FieldMedic.Treatment
         public readonly HashSet<BodyRegion> Swept = new HashSet<BodyRegion>();
         public PulseSite? PalpatingSite { get; private set; }
         public float LastPulseStrength { get; private set; }
+        /// <summary>Beats felt during the current / last palpation (w10d: restarts at each new site contact, so the big
+        /// forgiving zones brushed on the way do not count toward the site actually checked).</summary>
         public int PulseBeats { get; private set; }
 
         BloodOnHands _blood;
@@ -59,10 +61,14 @@ namespace FieldMedic.Treatment
             if (c == null || c.rig == null) { PalpatingSite = null; return; }
             float dt = Time.deltaTime;
             bool emptyHand = Grabber.Held == null;
-            if (!emptyHand) { PalpatingSite = null; _pulseContact = 0f; return; }
-
-            Pressure(c, input);
-            if (input.Grip < 0.5f && input.Trigger < 0.6f) Sweep(c, input, dt);
+            // w10d: outside the exam a grip that closed on his wrist / ankle handle still feels the pulse there
+            bool pulseHand = emptyHand || (Forgiving.On && !(Grabber.Held is MedItem));
+            if (!pulseHand) { PalpatingSite = null; _pulseContact = 0f; return; }
+            if (emptyHand)
+            {
+                Pressure(c, input);
+                if (input.Grip < 0.5f && input.Trigger < 0.6f) Sweep(c, input, dt);
+            }
             Pulse(c, input, dt);
         }
 
@@ -76,12 +82,15 @@ namespace FieldMedic.Treatment
                 var care = s.GetComponent<WoundCare>();
                 if (care == null) continue;
                 float lateral = care.Lateral(palm);
-                if (lateral > Mathf.Max(0.06f, s.size)) continue;
+                // w10d: outside the exam the palm anywhere within ~12 cm of the wound and up to ~6 cm above the skin presses
+                if (lateral > Mathf.Max(Forgiving.Scale(0.06f, WoundCare.ForgivingPressureRadius), s.size)) continue;
                 float h = care.Height(palm);
-                if (h > 0.03f || h < -0.07f) continue; // deeper than flesh gives = the hand is on the other side of the body
+                float above = Forgiving.Scale(0.03f, 0.06f);
+                if (h > above || h < -0.07f) continue; // deeper than flesh gives = the hand is on the other side of the body
                 if (s.Wound != null && s.Wound.posterior && !c.rolledOnSide) continue; // under his back
                 // pushed 0..4 cm into the wound (flesh/clothing give); a fist (grip) counts the same as a palm
-                float pressure = Mathf.Clamp01((0.03f - h) / 0.05f);
+                float pressure = Forgiving.On ? Mathf.Clamp01((above - h) / 0.05f + 0.35f) : Mathf.Clamp01((0.03f - h) / 0.05f);
+                if (Forgiving.On) care.ShowTargetGlow(0.6f + 0.4f * pressure);
                 care.AddPressure(pressure);
                 Haptics.Tension(input, pressure * 0.7f);
             }
@@ -167,24 +176,48 @@ namespace FieldMedic.Treatment
         static readonly PulseSite[] Sites =
             { PulseSite.Carotid, PulseSite.RadialL, PulseSite.RadialR, PulseSite.PedalL, PulseSite.PedalR, PulseSite.FemoralL, PulseSite.FemoralR };
 
+        /// <summary>w10d: contact radius of the carotid / radial / pedal sites outside the exam (any part of the hand).</summary>
+        public const float ForgivingPulseRadius = 0.11f;
+        /// <summary>w10d: seconds of contact that complete a pulse check outside the exam (exam: 4 s).</summary>
+        public const float ForgivingPulseSeconds = 2f;
+        /// <summary>Contact time on the current site (tests / UI).</summary>
+        public float PulseContact => _pulseContact;
+
+        static bool IsFemoral(PulseSite s) => s == PulseSite.FemoralL || s == PulseSite.FemoralR;
+
         void Pulse(CasualtyController c, FieldMedic.Input.IHandInput input, float dt)
         {
+            bool easy = Forgiving.On;
             Vector3 f = Grabber.FingertipPosition;
+            Vector3 palm = Grabber.PalmPosition;
             PulseSite? found = null;
-            float best = pulseRadius;
+            float best = float.MaxValue;
             foreach (var s in Sites)
             {
-                float d = Vector3.Distance(f, PulsePoint(c.rig, s));
-                if (d < best) { best = d; found = s; }
+                Vector3 site = PulsePoint(c.rig, s);
+                // exam / femoral (next to the groin wound): fingertips on the exact site. Elsewhere: any part of the hand nearby
+                bool big = easy && !IsFemoral(s);
+                float d = big ? Mathf.Min(Vector3.Distance(f, site), Vector3.Distance(palm, site), Vector3.Distance((f + palm) * 0.5f, site))
+                              : Vector3.Distance(f, site);
+                float r = big ? Mathf.Max(pulseRadius, ForgivingPulseRadius) : pulseRadius;
+                if (big && d < 0.3f && d >= r && !AnyPalpating(s))
+                    ZoneGlow.Show(GlowKey(c, s), site, 0.08f, ZoneGlow.Gold, 0.4f); // approaching: show where to touch
+                if (d < r && d - r < best) { best = d - r; found = s; }
             }
             if (found == null) { PalpatingSite = null; _pulseContact = 0f; return; }
-            if (PalpatingSite != found) { _pulseContact = 0f; _beatTimer = 0f; }
+            if (PalpatingSite != found) { _pulseContact = 0f; _beatTimer = 0f; PulseBeats = 0; }
             PalpatingSite = found;
             _pulseSite = found.Value;
             _pulseContact += dt;
             float strength = c.Patient.PulseStrength(_pulseSite);
             LastPulseStrength = strength;
-            if (_pulseContact < 0.3f) return; // fingers need a moment to settle
+            float need = easy ? ForgivingPulseSeconds : 4f;
+            if (easy && !IsFemoral(_pulseSite))
+            {
+                float k = Mathf.Clamp01(_pulseContact / need);
+                ZoneGlow.Show(GlowKey(c, _pulseSite), PulsePoint(c.rig, _pulseSite), 0.1f + 0.04f * k, ZoneGlow.Green, 0.6f + 0.4f * k);
+            }
+            if (!easy && _pulseContact < 0.3f) return; // fingers need a moment to settle (exam); otherwise the beat starts at once
             float hr = c.Patient.HeartRate;
             if (strength > 0f && hr > 1f)
             {
@@ -197,11 +230,27 @@ namespace FieldMedic.Treatment
                     PulseBeats++;
                 }
             }
-            if (_pulseContact > 4f && (!_lastLogged.TryGetValue(_pulseSite, out float t) || Time.time - t > 30f))
+            if (_pulseContact > need && (!_lastLogged.TryGetValue(_pulseSite, out float t) || Time.time - t > 30f))
             {
                 _lastLogged[_pulseSite] = Time.time;
                 c.Protocol.Perform(MedAction.PulseCheck, site: SiteRegion(_pulseSite));
+                if (easy) Haptics.Play(input, Haptics.PressClick); // done
             }
+        }
+
+        static bool AnyPalpating(PulseSite s)
+        {
+            foreach (var h in All) if (h != null && h.PalpatingSite.HasValue && h.PalpatingSite.Value == s) return true;
+            return false;
+        }
+
+        static readonly Dictionary<(int, PulseSite), string> _glowKeys = new Dictionary<(int, PulseSite), string>();
+
+        static string GlowKey(CasualtyController c, PulseSite s)
+        {
+            var k = (c.GetInstanceID(), s);
+            if (!_glowKeys.TryGetValue(k, out var key)) _glowKeys[k] = key = "pulse_" + k.Item1 + "_" + s;
+            return key;
         }
 
         static BodyRegion SiteRegion(PulseSite s) => s switch

@@ -56,6 +56,10 @@ namespace FieldMedic.Battle
         {
             Instance = this;
             if (listener == null && Camera.main != null) listener = Camera.main.transform;
+            // w10d owner: no screams/shouts in the background - only bullets and explosions. The freesound battle
+            // ambience loop and the artillery-crew recording contain voices: filtered out by name.
+            artilleryBed = BackgroundAudioPolicy.Filter(artilleryBed);
+            battleBed = BackgroundAudioPolicy.Filter(battleBed);
             for (int i = 0; i < Voices; i++)
             {
                 var go = new GameObject("BattleVoice" + i);
@@ -98,8 +102,9 @@ namespace FieldMedic.Battle
 
         static void StartBed(AudioSource s, AudioClip[] bank, float vol)
         {
-            var c = Pick(bank);
+            var c = Pick(BackgroundAudioPolicy.Filter(bank));
             if (c == null) return;
+            ClipLog.Record(c);
             s.clip = c;
             s.volume = vol;
             s.time = Random.Range(0f, c.length * 0.8f);
@@ -117,6 +122,7 @@ namespace FieldMedic.Battle
         public AudioSource Play(AudioClip clip, Vector3 pos, float volume, float minDist = 3f, float maxDist = 600f, float pitch = 1f, float delay = 0f)
         {
             if (clip == null || volume <= 0.001f) return null;
+            if (!BackgroundAudioPolicy.Allowed(clip)) return null; // w10d: never a voice in the background
             float d = Vector3.Distance(pos, ListenerPos);
             float audibility = volume * minDist / Mathf.Max(minDist, d);
             int slot = -1;
@@ -145,6 +151,7 @@ namespace FieldMedic.Battle
             s.maxDistance = maxDist;
             _priority[slot] = audibility;
             if (delay > 0f) s.PlayDelayed(delay); else s.Play();
+            ClipLog.Record(clip);
             Played++;
             return s;
         }
@@ -178,6 +185,7 @@ namespace FieldMedic.Battle
             {
                 var c = Pick(breathing);
                 if (c == null) return;
+                ClipLog.Record(c);
                 _breath.clip = c;
                 _breath.Play();
             }

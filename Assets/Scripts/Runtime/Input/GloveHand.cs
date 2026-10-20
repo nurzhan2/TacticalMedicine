@@ -10,6 +10,10 @@ namespace FieldMedic.Input
     /// trigger closes the index, the thumb follows both; holding an item keeps the hand wrapped around it.
     /// Same frame as the old box glove (x across the palm, fingers along +z, palm facing −y).
     /// Hidden while OVR hand tracking shows the real tracked hand mesh.
+    /// w10b: the player's hands (those under a <see cref="HandRig"/>) are the owner's soldier's gloved hands + 14 cm of
+    /// camo sleeve (Resources/FPHands/FPHands_L|R.fbx, cut out of Soldier_KZ by tools/blender/fp_hands_extract.py),
+    /// aligned to the same frame and driven by the same curls; the procedural glove stays as the fallback
+    /// (load failure, <see cref="UseSoldierHands"/> off, the training ghost hand, the old tests).
     /// </summary>
     [DefaultExecutionOrder(-200)]
     public sealed class GloveHand : MonoBehaviour
@@ -23,6 +27,27 @@ namespace FieldMedic.Input
 
         public SkinnedMeshRenderer Renderer { get; private set; }
         public int BoneCount => _bones.Count;
+
+        /// <summary>Use the soldier's FP hands for the player's hands (false = always the procedural glove).</summary>
+        public static bool UseSoldierHands = true;
+        /// <summary>Tests: build the soldier hand even without a HandRig parent.</summary>
+        [System.NonSerialized] public bool soldierWithoutRig;
+        /// <summary>True when this hand shows the soldier mesh (false = procedural glove).</summary>
+        public bool IsSoldierHand { get; private set; }
+
+        public const string SoldierResDir = "FPHands/";
+        /// <summary>Where the soldier's wrist (Bip01 Hand bone origin) sits in this (glove) frame: the old glove's cuff,
+        /// so the palm centre lands on the old palm centre (0, 0, 0.036) and the middle knuckle at z = 0.08.</summary>
+        public static Vector3 SoldierWristOffset = new Vector3(0f, 0f, -0.016f);
+        /// <summary>Extra rotation of the soldier hand in the glove frame (euler, degrees) if the device shows a tilt.</summary>
+        public static Vector3 SoldierRotationOffset = Vector3.zero;
+        // glove finger order (index, middle, ring, little, thumb) → Biped finger number
+        static readonly string[] BipedFinger = { "Finger1", "Finger2", "Finger3", "Finger4", "Finger0" };
+        // soldier: curl angles per phalanx (the rest pose is already slightly bent)
+        static readonly float[] SoldierCurl = { 62f, 80f, 52f };
+        static readonly float[] SoldierThumb = { 22f, 30f, 38f };
+        readonly Vector3[][] _axis = new Vector3[5][]; // soldier: bone-local curl axis (sign included)
+        float[] _tipLen;
 
         HandRig _rig;
         HandGrabber _grabber;
@@ -48,6 +73,18 @@ namespace FieldMedic.Input
         public void Build()
         {
             if (Renderer != null) return;
+            if (_rig == null) _rig = GetComponentInParent<HandRig>(); // Build() may run before Awake (BloodOnHands)
+            if (_grabber == null) _grabber = GetComponentInParent<HandGrabber>();
+            if (UseSoldierHands && (_rig != null || soldierWithoutRig) && TryBuildSoldier())
+            {
+                if (_rig != null) AddPatch(0.046f, -0.095f);
+                return;
+            }
+            BuildProcedural();
+        }
+
+        void BuildProcedural()
+        {
             var parts = new List<(Mesh mesh, Transform bone, Matrix4x4 m)>();
             // palm: rounded slab (sphere + box core kept inside it), knuckle ridge, thumb-base (thenar) pad
             parts.Add((Prim(PrimitiveType.Sphere), transform, Matrix4x4.TRS(new Vector3(0f, 0f, 0.036f), Quaternion.identity, new Vector3(0.094f, 0.034f, 0.112f))));
@@ -148,15 +185,122 @@ namespace FieldMedic.Input
             Renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             Renderer.sharedMaterial = material != null ? material : FieldMedic.UI.WorldUI.Lit(new Color(0.12f, 0.12f, 0.1f), 0.2f);
 
-            // GDD_V2 §4: Kazakhstan flag on the left sleeve, Satbayev military department patch on the right one
-            // (on top of the sleeve = back of the hand side, texture top toward the fingers)
             if (_rig == null) return; // the training ghost glove has no sleeve patch
+            AddPatch(0.0352f, -0.1f);
+        }
+
+        /// <summary>GDD_V2 §4: Kazakhstan flag on the left sleeve, Satbayev military department patch on the right one
+        /// (on top of the sleeve = back of the hand side, texture top toward the fingers).</summary>
+        void AddPatch(float y, float z)
+        {
             bool left = side < 0f;
             var patch = FieldMedic.UI.Insignia.Patch(transform, left ? FieldMedic.UI.Insignia.KzFlag : FieldMedic.UI.Insignia.Satbayev,
-                transform.TransformPoint(new Vector3(0f, 0.0352f, -0.1f)), transform.up, transform.forward,
+                transform.TransformPoint(new Vector3(0f, y, z)), transform.up, transform.forward,
                 left ? new Vector2(0.044f, 0.022f) : new Vector2(0.028f, 0.035f));
             _patch = patch.GetComponent<Renderer>();
         }
+
+        // ------------------------------------------------------------------ soldier hands (w10b)
+        static Transform FindDeep(Transform t, string name)
+        {
+            if (t.name == name) return t;
+            for (int i = 0; i < t.childCount; i++) { var r = FindDeep(t.GetChild(i), name); if (r != null) return r; }
+            return null;
+        }
+
+        bool TryBuildSoldier()
+        {
+            string s = side < 0f ? "L" : "R";
+            GameObject src = null;
+            try { src = Resources.Load<GameObject>(SoldierResDir + "FPHands_" + s); }
+            catch (System.Exception e) { Debug.LogWarning("[FMVR] FP hands load failed: " + e.Message); }
+            if (src == null) { Debug.LogWarning("[FMVR] FP hands: Resources/" + SoldierResDir + "FPHands_" + s + " missing, procedural glove"); return false; }
+            var inst = Instantiate(src, transform, false);
+            inst.name = "SoldierHand_" + s;
+            var smr = inst.GetComponentInChildren<SkinnedMeshRenderer>();
+            string pre = "Bip01 " + s + " ";
+            var hand = FindDeep(inst.transform, pre + "Hand");
+            var chains = new Transform[5][];
+            bool ok = smr != null && hand != null;
+            for (int f = 0; ok && f < 5; f++)
+            {
+                chains[f] = new Transform[3];
+                for (int k = 0; k < 3; k++)
+                {
+                    // Bip01 R Finger1, Finger11, Finger12 (thumb: Finger0, Finger01, Finger02)
+                    chains[f][k] = FindDeep(inst.transform, pre + BipedFinger[f] + (k == 0 ? "" : k.ToString()));
+                    if (chains[f][k] == null) ok = false;
+                }
+            }
+            if (!ok)
+            {
+                Debug.LogWarning("[FMVR] FP hands: renderer/bones not found in FPHands_" + s + ", procedural glove");
+                DestroyNow(inst);
+                return false;
+            }
+
+            // measure the hand frame on the rest pose: forward = wrist → middle knuckle, x = across the knuckles
+            // (index → little for the right hand, mirrored for the left), up = back of the hand
+            float d = Vector3.Distance(chains[1][0].position, hand.position);
+            if (d < 1e-5f) { DestroyNow(inst); return false; }
+            if (d < 0.05f || d > 0.2f) inst.transform.localScale *= 0.0956f / d; // wrong unit scale on import
+            Vector3 fwd = (chains[1][0].position - hand.position).normalized;
+            Vector3 x = Vector3.ProjectOnPlane((chains[3][0].position - chains[0][0].position) * side, fwd).normalized;
+            Vector3 up = Vector3.Cross(fwd, x);
+            Quaternion want = transform.rotation * Quaternion.Euler(SoldierRotationOffset);
+            inst.transform.rotation = want * Quaternion.Inverse(Quaternion.LookRotation(fwd, up)) * inst.transform.rotation;
+            inst.transform.position += transform.TransformPoint(SoldierWristOffset) - hand.position;
+
+            // curl axes (bone-local) with the sign that folds the fingers toward the palm (−up)
+            Vector3 X = want * Vector3.right, U = want * Vector3.up;
+            Vector3 palmTarget = (chains[3][0].position + chains[1][0].position) * 0.5f - U * 0.025f;
+            _tipLen = new float[5];
+            for (int f = 0; f < 5; f++)
+            {
+                _axis[f] = new Vector3[3];
+                _rest[f] = new Quaternion[3];
+                for (int k = 0; k < 3; k++)
+                {
+                    var b = chains[f][k];
+                    _rest[f][k] = b.localRotation;
+                    Vector3 seg = k < 2 ? chains[f][k + 1].position - b.position : b.position - chains[f][1].position;
+                    Vector3 axisW, toward;
+                    if (f < 4) { axisW = X; toward = -U; }
+                    else
+                    {
+                        // thumb: swing across the palm toward the middle/little knuckles
+                        toward = (palmTarget - b.position).normalized;
+                        axisW = Vector3.Cross(seg, toward);
+                        axisW = axisW.sqrMagnitude < 1e-10f ? X : axisW.normalized;
+                    }
+                    // sign found empirically on the transform itself (robust to the importer's axis/mirror conventions)
+                    Vector3 la = b.InverseTransformDirection(axisW).normalized;
+                    Vector3 probeL = b.InverseTransformPoint(b.position + seg);
+                    b.localRotation = _rest[f][k] * Quaternion.AngleAxis(20f, la);
+                    Vector3 moved = b.TransformPoint(probeL) - b.position;
+                    b.localRotation = _rest[f][k];
+                    float sign = Vector3.Dot(moved.normalized, toward) >= Vector3.Dot(seg.normalized, toward) ? 1f : -1f;
+                    _axis[f][k] = la * sign;
+                }
+                _tipLen[f] = Vector3.Distance(chains[f][2].position, chains[f][1].position) * 0.85f;
+            }
+
+            for (int f = 0; f < 5; f++) _fingers[f] = chains[f];
+            _bones.Clear();
+            _bones.Add(hand);
+            for (int f = 0; f < 5; f++) _bones.AddRange(chains[f]);
+            var mat = Resources.Load<Material>(SoldierResDir + "FPHands_Body");
+            if (mat != null) smr.sharedMaterial = mat;
+            else if (material != null) smr.sharedMaterial = material;
+            smr.updateWhenOffscreen = true;
+            smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            smr.skinnedMotionVectors = false;
+            Renderer = smr;
+            IsSoldierHand = true;
+            return true;
+        }
+
+        static void DestroyNow(Object o) { if (Application.isPlaying) Destroy(o); else DestroyImmediate(o); }
 
         Renderer _patch;
 
@@ -193,6 +337,18 @@ namespace FieldMedic.Input
         /// <summary>Apply the curls to the bones (also callable from tests).</summary>
         public void Pose()
         {
+            if (IsSoldierHand)
+            {
+                for (int f = 0; f < 5; f++)
+                {
+                    float c = f == 4 ? thumbCurl : f == 0 ? indexCurl : gripCurl;
+                    if (f == 3) c = Mathf.Min(1f, c * 1.08f);
+                    var max = f == 4 ? SoldierThumb : SoldierCurl;
+                    for (int k = 0; k < 3; k++)
+                        _fingers[f][k].localRotation = _rest[f][k] * Quaternion.AngleAxis(c * max[k], _axis[f][k]);
+                }
+                return;
+            }
             for (int f = 0; f < 4; f++)
             {
                 float c = f == 0 ? indexCurl : gripCurl;
@@ -211,6 +367,8 @@ namespace FieldMedic.Input
         public Vector3 Tip(int finger)
         {
             var d = _fingers[finger][2];
+            if (IsSoldierHand)
+                return d.position + (d.position - _fingers[finger][1].position).normalized * _tipLen[finger];
             float l = finger == 4 ? 0.026f : FingerLen[finger] * Seg[2];
             return d.TransformPoint(new Vector3(0f, 0f, l));
         }

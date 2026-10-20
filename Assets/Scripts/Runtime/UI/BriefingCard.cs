@@ -10,7 +10,7 @@ namespace FieldMedic.UI
     /// </summary>
     public sealed class BriefingCard : MonoBehaviour
     {
-        public float life = 11f;
+        public float life = 16f; // w10b: the briefing now also names the helicopter end (longer to read)
         float _t;
         TextMesh[] _texts;
         Renderer _bg;
@@ -35,13 +35,13 @@ namespace FieldMedic.UI
         {
             bool kz = GameSettings.KZ;
             _bgMat = WorldUI.Unlit(new Color(0.02f, 0.025f, 0.02f));
-            _bg = WorldUI.Quad(transform, "Bg", new Vector3(0f, 0f, 0.01f), new Vector2(0.62f, 0.36f), _bgMat).GetComponent<Renderer>();
+            _bg = WorldUI.Quad(transform, "Bg", new Vector3(0f, -0.03f, 0.01f), new Vector2(0.62f, 0.44f), _bgMat).GetComponent<Renderer>();
             var title = WorldUI.Text(transform, "Title", $"S{def.number}  {def.Title(kz)}", new Vector3(-0.29f, 0.16f, 0f), 0.026f, new Color(1f, 0.8f, 0.4f));
             var body = WorldUI.Text(transform, "Body", WorldUI.Wrap(def.Briefing(kz), 52), new Vector3(-0.29f, 0.11f, 0f), 0.0125f, new Color(0.9f, 0.9f, 0.85f));
             string skills = "";
             var list = kz ? def.skillsKz : def.skillsRu;
             foreach (var s in list) skills += "•  " + s + "\n";
-            var sk = WorldUI.Text(transform, "Skills", skills, new Vector3(-0.29f, -0.04f, 0f), 0.0115f, new Color(0.65f, 0.85f, 0.6f));
+            var sk = WorldUI.Text(transform, "Skills", skills, new Vector3(-0.29f, -0.075f, 0f), 0.0115f, new Color(0.65f, 0.85f, 0.6f));
             _texts = new[] { title, body, sk };
         }
 

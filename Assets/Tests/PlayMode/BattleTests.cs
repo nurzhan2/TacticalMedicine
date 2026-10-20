@@ -93,6 +93,7 @@ namespace FieldMedic.Tests
         [UnityTest]
         public IEnumerator EnemyFire_OpenGround_PlayerHitAfterAboutFourSeconds()
         {
+            BattleDirector.Mode = BattleMode.Exam; // w10b: the strict 4 s limit is the exam's (Combat allows 2.2x longer)
             var fall = BattlefieldLayout.ErlanFallPoint;
             var head = TestHead(G(fall.x, fall.z, 1.65f));
             var ef = Isolate(head, G(fall.x, fall.z + 60f, 1.1f));

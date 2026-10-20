@@ -34,7 +34,9 @@ namespace FieldMedic.UI
         public bool BannerVisible => _banner != null && _banner.gameObject.activeSelf && _bannerAlpha > 0.05f;
         public int Version { get; private set; }
 
-        Transform _wristCard, _banner, _wristIcons, _bannerIcons;
+        Transform _wristCard, _banner, _wristIcons, _bannerIcons, _bannerFill, _wristFill;
+        /// <summary>w10b: the skip-step fill (hold A) shown on the panel, 0..1.</summary>
+        public float SkipFill { get; private set; }
         TextMeshPro _wristText, _bannerText;
         Material _wristBg, _bannerBg;
         readonly List<Material> _bannerMats = new List<Material>();
@@ -123,7 +125,26 @@ namespace FieldMedic.UI
             _bannerIcons = new GameObject("Icons").transform;
             _bannerIcons.SetParent(_banner, false);
             _bannerIcons.localPosition = new Vector3(-0.262f, 0f, -0.001f);
+            // w10b: skip-step fill bars (hold A 1.5 s) along the bottom edge of the banner and the wrist card
+            var fillCol = new Color(0.2f, 0.62f, 0.32f, 0.97f);
+            var fillMat = UiMesh.Mat(Color.white, QCard + 1);
+            fillMat.SetFloat("_ZTest", 8f);
+            _bannerFill = UiMesh.Add(_banner, "SkipFill", UiMesh.RoundedRect(0.54f, 0.009f, 0.0045f, fillCol, fillCol), fillMat, new Vector3(0f, -0.036f, -0.001f)).transform;
+            _wristFill = UiMesh.Add(_wristCard, "SkipFill", UiMesh.RoundedRect(0.12f, 0.004f, 0.002f, fillCol, fillCol), UiMesh.Mat(Color.white, QCard + 1), new Vector3(0f, -0.025f, -0.0006f)).transform;
+            _bannerFill.gameObject.SetActive(false);
+            _wristFill.gameObject.SetActive(false);
             _banner.gameObject.SetActive(false);
+        }
+
+        static void Fill(Transform bar, float full, float p)
+        {
+            if (bar == null) return;
+            bool on = p > 0.01f;
+            if (bar.gameObject.activeSelf != on) bar.gameObject.SetActive(on);
+            if (!on) return;
+            var lp = bar.localPosition;
+            bar.localPosition = new Vector3(-full * 0.5f * (1f - p), lp.y, lp.z);
+            bar.localScale = new Vector3(p, 1f, 1f);
         }
 
         void Rebuild()
@@ -224,8 +245,11 @@ namespace FieldMedic.UI
             else if (_wristCard.gameObject.activeSelf) _wristCard.gameObject.SetActive(false);
 
             // banner: fades in on a new step, out after `bannerSeconds`; lazily follows the view
+            SkipFill = FieldMedic.Scenarios.StepSkip.Progress01;
+            Fill(_bannerFill, 0.54f, SkipFill);
+            Fill(_wristFill, 0.12f, SkipFill);
             float age = Time.time - ShownAt;
-            float target = has && age < bannerSeconds ? 1f : 0f;
+            float target = has && (age < bannerSeconds || SkipFill > 0.01f) ? 1f : 0f;
             _bannerAlpha = Mathf.MoveTowards(_bannerAlpha, target, Time.deltaTime * 3f);
             bool on = _bannerAlpha > 0.01f && head != null;
             if (_banner.gameObject.activeSelf != on) _banner.gameObject.SetActive(on);

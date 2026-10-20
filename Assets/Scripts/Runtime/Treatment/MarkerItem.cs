@@ -84,9 +84,14 @@ namespace FieldMedic.Treatment
                     _artCap.localRotation = Quaternion.Slerp(_capRestRot, _capPostedRot, k);
                 }
             }
-            if (!IsHeld || Trigger < 0.5f) { _hasLast = false; return; }
+            if (!IsHeld) { _hasLast = false; ResetDwell(null); return; }
             Vector3 t = TipPosition;
+            if (Forgiving.On) GlowTargets(t);
             object target = FindTarget(t);
+            // w10d (owner: the zones are too small): outside the exam simply holding the tip at the TIME tab / card
+            // (within ~7 cm) for DwellNeeded seconds writes; the forehead still needs the trigger squeeze
+            if (Forgiving.On) ForgivingDwell(target);
+            if (Trigger < 0.5f) { _hasLast = false; return; }
             if (target == null || target != _target) { _target = target; _stroke = 0f; _hasLast = false; }
             if (target == null) return;
             if (_hasLast)
@@ -98,21 +103,76 @@ namespace FieldMedic.Treatment
             _last = t; _hasLast = true;
             if (_stroke < StrokeNeeded) return;
             _stroke = 0f;
+            ResetDwell(null);
             Write(target);
+        }
+
+        // ------------------------------------------------------------------ w10d forgiving write
+        /// <summary>Seconds the tip has to stay at the target outside the exam.</summary>
+        public const float DwellNeeded = 0.5f;
+        /// <summary>Writing reach outside the exam (exam: the strict 4-6 cm stroke radii).</summary>
+        public const float ForgivingReach = 0.07f;
+        float _dwell;
+        object _dwellTarget;
+        /// <summary>0..1 progress of the current dwell write (tests / UI).</summary>
+        public float DwellProgress => Mathf.Clamp01(_dwell / DwellNeeded);
+
+        static float Reach(float strict) => Forgiving.Scale(strict, Mathf.Max(strict, ForgivingReach));
+
+        void ResetDwell(object target) { _dwell = 0f; _dwellTarget = target; }
+
+        void ForgivingDwell(object target)
+        {
+            bool needsSqueeze = target is CasualtyController;
+            if (target == null || (needsSqueeze && Trigger < 0.5f)) { ResetDwell(null); return; }
+            if (target != _dwellTarget)
+            {
+                ResetDwell(target);
+                Haptics.Play(HolderInput, Haptics.PressStart); // tick: started writing
+            }
+            _dwell += Time.deltaTime;
+            Haptics.Tension(HolderInput, 0.12f + 0.25f * DwellProgress);
+            if (_dwell < DwellNeeded) return;
+            ResetDwell(null);
+            _stroke = 0f; _hasLast = false;
+            Write(target); // stronger click inside
+        }
+
+        /// <summary>Writable targets glow while the marker is near (~2x the writing reach), brighter when in reach.</summary>
+        void GlowTargets(Vector3 t)
+        {
+            float near = ForgivingReach * 2.2f;
+            foreach (var cat in FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None))
+                if (cat.State.Secured && !cat.State.TimeMarked) Glow(cat, cat.TimeLabelPoint, t, near);
+            foreach (var el in FindObjectsByType<ElasticTourniquetItem>(FindObjectsSortMode.None))
+                if (el.CanWriteTime) Glow(el, el.TimeLabelPoint, t, near);
+            foreach (var st in FieldMedic.Scenarios.SelfAid.SelfTourniquet.All)
+                if (st != null && st.CanWrite) Glow(st, st.TimeLabelPoint, t, near);
+            foreach (var card in FindObjectsByType<CardItem>(FindObjectsSortMode.None))
+                if (!card.Filled) Glow(card, card.WritePoint, t, near);
+        }
+
+        void Glow(object key, Vector3 at, Vector3 tip, float near)
+        {
+            float d = Vector3.Distance(at, tip);
+            if (d > near) return;
+            bool inReach = d < ForgivingReach;
+            float k = inReach && _dwellTarget == key ? DwellProgress : 0f;
+            ZoneGlow.Show(key, at, inReach ? 0.09f + 0.04f * k : 0.07f, inReach ? ZoneGlow.Green : ZoneGlow.Gold, inReach ? 0.7f + 0.3f * k : 0.45f);
         }
 
         object FindTarget(Vector3 t)
         {
             foreach (var cat in FindObjectsByType<TourniquetCAT>(FindObjectsSortMode.None))
-                if (cat.State.Secured && !cat.State.TimeMarked && Vector3.Distance(cat.TimeLabelPoint, t) < 0.04f) return cat;
+                if (cat.State.Secured && !cat.State.TimeMarked && Vector3.Distance(cat.TimeLabelPoint, t) < Reach(0.04f)) return cat;
             foreach (var el in FindObjectsByType<ElasticTourniquetItem>(FindObjectsSortMode.None)) // w9d: Alpha / Esmarch band
-                if (el.CanWriteTime && Vector3.Distance(el.TimeLabelPoint, t) < 0.045f) return el;
+                if (el.CanWriteTime && Vector3.Distance(el.TimeLabelPoint, t) < Reach(0.045f)) return el;
             foreach (var st in FieldMedic.Scenarios.SelfAid.SelfTourniquet.All) // w9b: the band on your own arm
-                if (st != null && st.CanWrite && Vector3.Distance(st.TimeLabelPoint, t) < 0.045f) return st;
+                if (st != null && st.CanWrite && Vector3.Distance(st.TimeLabelPoint, t) < Reach(0.045f)) return st;
             foreach (var card in FindObjectsByType<CardItem>(FindObjectsSortMode.None))
-                if (!card.Filled && Vector3.Distance(card.WritePoint, t) < 0.06f) return card;
+                if (!card.Filled && Vector3.Distance(card.WritePoint, t) < Reach(0.06f)) return card;
             var c = NearestCasualty(t, 1.2f);
-            if (c != null && c.rig != null && !WroteForehead && Vector3.Distance(Forehead(c.rig), t) < 0.05f) return c;
+            if (c != null && c.rig != null && !WroteForehead && Vector3.Distance(Forehead(c.rig), t) < Reach(0.05f)) return c;
             return null;
         }
 

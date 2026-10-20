@@ -99,7 +99,9 @@ namespace FieldMedic.Medical
 
         public string Title(bool kz) => kz ? titleKz : titleRu;
         public string Tagline(bool kz) => kz ? taglineKz : taglineRu;
-        public string Briefing(bool kz) => kz ? briefingKz : briefingRu;
+        /// <summary>w10b: every Erlan scenario ends with the helicopter — the briefing says so (owner item 11).</summary>
+        public bool EndsWithTacevac => !selfAid;
+        public string Briefing(bool kz) => (kz ? briefingKz : briefingRu) + (EndsWithTacevac ? " " + TacevacBrief.Line(kz) : "");
     }
 
     /// Random-but-reproducible variation so Exam runs are not memorisable.

@@ -71,14 +71,21 @@ namespace FieldMedic.UI
 
         public Vector3 Normal => -transform.forward; // towards the viewer
         public float Radius => diameter * 0.53f * transform.lossyScale.x;
+        /// <summary>w10d: touch / pointer radius — 1.5x the face outside the exam (owner: "маленькая зона взаимодействия").
+        /// Overlaps with neighbours are resolved in favour of the button whose centre is nearer.</summary>
+        public float HitRadius => Radius * Forgiving.Scale(1.08f, 1.5f);
 
-        /// <summary>Ray test against the button face. Returns distance or -1.</summary>
+        /// <summary>Ray test against the button face. Returns distance or -1. Outside the face (forgiving band) the
+        /// distance gets a small penalty so a neighbour hit on its face wins over this one.</summary>
         public float Raycast(Ray ray)
         {
             if (!interactable || !isActiveAndEnabled) return -1f;
             var plane = new Plane(Normal, transform.position);
             if (!plane.Raycast(ray, out float d) || d < 0f) return -1f;
-            return Vector3.Distance(ray.GetPoint(d), transform.position) <= Radius * 1.08f ? d : -1f;
+            float r = Vector3.Distance(ray.GetPoint(d), transform.position);
+            if (r > HitRadius) return -1f;
+            float face = Radius * 1.08f;
+            return r <= face ? d : d + 0.002f + 0.05f * (r - face) / Mathf.Max(1e-4f, face);
         }
 
         public void Hover() => _hoverAt = Time.unscaledTime;
@@ -129,18 +136,47 @@ namespace FieldMedic.UI
         void Poke()
         {
             float best = 0f;
+            float reach = Forgiving.Scale(Radius, HitRadius);
             foreach (var h in HandGrabber.All)
             {
                 if (h == null || h.Held != null) continue;
-                Vector3 local = transform.InverseTransformPoint(h.FingertipPosition);
-                float r = new Vector2(local.x, local.y).magnitude * transform.lossyScale.x;
-                if (r > Radius) continue;
-                float depth = (local.z * transform.lossyScale.z) + 0.016f + 0.0095f; // 0 at the cap surface
+                float depth = PokeDepth(h.FingertipPosition, out float r);
+                if (r > reach) continue;
+                // w10d: in the enlarged band only the button whose centre is nearest (relative to its size) takes the poke
+                if (r > Radius && NearestPoked(h) != this) continue;
                 if (depth > 0f && depth < 0.05f) best = Mathf.Max(best, depth);
             }
             _pokeDepth = Mathf.Min(best, pokeTravel);
             if (_pokeDepth >= pokeTravel * 0.6f) { if (_pokeArmed) { _pokeArmed = false; Click(); } }
             else if (_pokeDepth <= pokeTravel * 0.2f) _pokeArmed = true;
+        }
+
+        /// <summary>Depth of a fingertip past the cap surface (0 at the surface) and its radial distance (m).</summary>
+        float PokeDepth(Vector3 fingertip, out float r)
+        {
+            Vector3 local = transform.InverseTransformPoint(fingertip);
+            r = new Vector2(local.x, local.y).magnitude * transform.lossyScale.x;
+            return (local.z * transform.lossyScale.z) + 0.016f + 0.0095f;
+        }
+
+        static readonly Dictionary<HandGrabber, (int frame, RoundButton button)> _nearest = new Dictionary<HandGrabber, (int, RoundButton)>();
+
+        /// <summary>Button nearest to this fingertip (radial distance / own radius) among those it is pressing into.</summary>
+        static RoundButton NearestPoked(HandGrabber h)
+        {
+            if (_nearest.TryGetValue(h, out var c) && c.frame == Time.frameCount) return c.button;
+            RoundButton best = null; float bestK = float.MaxValue;
+            Vector3 f = h.FingertipPosition;
+            foreach (var b in All)
+            {
+                if (b == null || !b.interactable || !b.isActiveAndEnabled) continue;
+                float depth = b.PokeDepth(f, out float r);
+                if (depth <= 0f || depth >= 0.05f || r > b.HitRadius) continue;
+                float k = r / Mathf.Max(1e-4f, b.Radius);
+                if (k < bestK) { bestK = k; best = b; }
+            }
+            _nearest[h] = (Time.frameCount, best);
+            return best;
         }
     }
 

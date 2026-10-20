@@ -107,7 +107,7 @@ namespace FieldMedic.Scenarios.SelfAid
             if (hand == null || hand == woundedHand) return;
             Vector3 p = kitCat.transform.position;
             float d = Mathf.Min(Vector3.Distance(p, limb.PointAt(2.2f)), Vector3.Distance(p, limb.Tip), Vector3.Distance(p, limb.Distal));
-            if (d > wrapDistance) return;
+            if (d > Forgiving.Scale(wrapDistance, Mathf.Max(wrapDistance, 0.16f))) return; // w10d: forgiving loop-over-the-hand zone
             WrapNow(hand);
         }
 

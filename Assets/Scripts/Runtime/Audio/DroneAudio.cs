@@ -51,6 +51,7 @@ namespace FieldMedic.Audio
             if (_visual == null && k != DroneKind.Shahed) _visual = DroneVisual.Build(transform, k);
             if (_visual != null) _visual.gameObject.SetActive(true);
             _src.clip = clip;
+            ClipLog.Record(clip);
             _src.loop = true;
             _src.spatialBlend = 1f;
             _src.dopplerLevel = k == DroneKind.Fpv ? 1.2f : 0.6f;

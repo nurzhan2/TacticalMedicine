@@ -87,6 +87,23 @@ namespace FieldMedic.Treatment
             if (buildVisual && closedLid && !TrayWanted) Flap = PouchFlap.Add(this);
             if (bodyLocked) Follow(1f, true);
             if (TrayWanted) Tray = KitTray.Attach(this);
+            if (!buildVisual && revealOnReach) HideHostPouchMesh();
+        }
+
+        /// <summary>
+        /// w10d (owner: "remove the kit from Erlan, that ugly home-made thing"): the casualty's kit has no pouch of its own
+        /// any more — only the logic anchor ("IFAK" on his belt: his CAT, his dressings, revealed when a hand reaches in).
+        /// A prefab built before w10d still carries the IFAK_Pouch mesh on that anchor: hide it (everything under the
+        /// anchor that is not this kit's items). CasualtyAssetBuilder no longer spawns the mesh at all.
+        /// </summary>
+        void HideHostPouchMesh()
+        {
+            var host = transform.parent;
+            if (host == null) return;
+            int n = 0;
+            foreach (var r in host.GetComponentsInChildren<Renderer>(true))
+                if (r != null && !r.transform.IsChildOf(transform) && r.enabled) { r.enabled = false; n++; }
+            if (n > 0) Debug.Log($"[FMVR] casualty kit: hid {n} old pouch renderer(s) on {host.name}");
         }
 
         void AddItem(MedItemKind kind, Transform slot)
@@ -159,7 +176,8 @@ namespace FieldMedic.Treatment
         }
 
         /// <summary>Can an item in this slot be taken / put back? Quick pouch: always; main pouch: once the lid is open.</summary>
-        public bool IsSlotOpen(Transform slot) => IsOpen || (slot != null && QuickPouch != null && slot.IsChildOf(QuickPouch));
+        public bool IsSlotOpen(Transform slot) => Tray != null ? Tray.IsOpen // w10d: the summoned kit — nothing comes out of it on the hip
+            : IsOpen || (slot != null && QuickPouch != null && slot.IsChildOf(QuickPouch));
 
         /// <summary>Released at `item`'s position: does it go back into its slot? Tray: within 25 cm of the open tray or at
         /// the hip kit. Worn/ground kit (w9a): its own slot open and within the item's return distance.</summary>
@@ -215,7 +233,7 @@ namespace FieldMedic.Treatment
             bool shut = Art != null && Art.Open01 < 0.6f;
             if (Tray != null)
             {
-                bool stowed = Tray.Open01 < 0.05f;
+                bool stowed = !Tray.ItemsShown;
                 foreach (var it in Items)
                 {
                     if (it == null) continue;
