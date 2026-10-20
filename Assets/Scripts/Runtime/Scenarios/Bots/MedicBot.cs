@@ -375,6 +375,9 @@ namespace FieldMedic.Scenarios.Bots
             Vector3 w = care.transform.position, n = care.Normal;
             yield return MoveHeld(holdHand, gauze.transform, gauze.TipPosition, w + n * 0.01f);
             for (int k = 0; k < 20 && gauze.PackingInto == null; k++) yield return Frame();
+            if (gauze.PackingInto == null)
+                Debug.Log($"[FMVR] bot pack not started: held={gauze.IsHeld} by {(holdHand.Held != null ? holdHand.Held.name : "nothing")}, tip lateral {care.Lateral(gauze.TipPosition):F3} height {care.Height(gauze.TipPosition):F3}, " +
+                          $"canPack={care.CanPack} skin={care.SkinAccessible} complete={care.Packing.Complete} hint '{gauze.LastHint}'");
             // keep the roll just beside the wound
             yield return Move(holdHand, holdHand.PalmPosition + n * 0.08f + Vector3.up * 0.04f);
             for (int s = 0; s < maxStrokes && !care.Packing.Complete; s++)
