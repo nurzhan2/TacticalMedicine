@@ -55,6 +55,8 @@ namespace FieldMedic.Medical
     public sealed class DebriefReport
     {
         public string scenarioId;
+        /// <summary>w10: a lesson run with a debrief (DEMO) — «ЕЩЁ» restarts this lesson, not scenario 1.</summary>
+        public string lessonId;
         public string title;
         public bool survived;
         public string outcomeText;     // "Ерлан доставлен на этап эвакуации" / cause of death / "Вы ранены"

@@ -57,7 +57,7 @@ namespace FieldMedic.UI
             _skip.gameObject.SetActive(false);
             // w10: «АПТЕЧКА» — summons / folds the kit tray (same as X); the radio icon lights when a report is expected
             _kit = RoundButton.Create(transform, "KitButton", new Vector3(-0.036f, -0.047f, -0.002f), 0.026f, new Color(0.55f, 0.1f, 0.08f), "+", 0.012f,
-                GameSettings.T("АПТЕЧКА", "ДӘРІ"), 0.0035f);
+                GameSettings.T("АПТЕЧКА", "ҚОБДИША"), 0.0035f);
             _kit.Clicked += () => { var t = FieldMedic.Treatment.KitTray.Player; if (t != null) t.Toggle(); };
             _radioIcon = WorldUI.Text(transform, "RadioIcon", "", new Vector3(0f, 0.031f, -0.004f), 0.0042f, new Color(1f, 0.72f, 0.25f), TextAnchor.MiddleCenter, TextAlignment.Center);
             _radioIcon.gameObject.SetActive(false);

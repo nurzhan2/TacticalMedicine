@@ -48,7 +48,7 @@ namespace FieldMedic.Scenarios
             ["air"] = ("Воздух! Дрон над позицией, всем вниз!", "Әуе! Позиция үстінде дрон, бәрі төмен!"),
             ["sniper"] = ("Снайпер работает! Не высовываться!", "Мерген атып жатыр! Бас көтерме!"),
             ["mine"] = ("Стой! Мина! Иди только по своим следам!", "Тоқта! Мина! Тек өз ізіңмен жүр!"),
-            ["barrage"] = ("Обстрел! Тащи его в блиндаж, голову не поднимай!", "Атқылау! Оны блиндажға сүйре, басыңды көтерме!"),
+            ["barrage"] = ("Обстрел! Тащи его в руины, голову не поднимай!", "Атқылау! Оны қирандыға сүйре, басыңды көтерме!"),
             ["fpv"] = ("FPV в небе! Укрыться!", "Аспанда FPV! Жасырыныңдар!"),
             ["kab"] = ("КАБ! Всем вниз! Медик, проверь Ерлана!", "КАБ! Бәрі төмен! Медик, Ерланды тексер!"),
             ["mortar"] = ("Миномёт пристреливается! Не высовываться!", "Миномёт атып жатыр! Бас көтерме!"),
@@ -165,17 +165,17 @@ namespace FieldMedic.Scenarios
 
         static readonly string[] MedevacRu =
         {
-            "1/4 Место: окоп, блиндаж, сектор 3",
+            "1/4 Место: руины, дом А, квадрат 3",
             "2/4 Раненых: 1, срочный",
             "3/4 Ранения: {0}",
-            "4/4 Нужны носилки. Подход по ходу сообщения",
+            "4/4 Вертолёт. Площадка — поле за руинами, дым обозначу",
         };
         static readonly string[] MedevacKz =
         {
-            "1/4 Орын: окоп, блиндаж, 3-сектор",
+            "1/4 Орын: қирандылар, А үйі, 3-шаршы",
             "2/4 Жаралы: 1, шұғыл",
             "3/4 Жарақат: {0}",
-            "4/4 Зембіл керек. Қатынас жолымен",
+            "4/4 Тікұшақ. Алаң — қирандылар артындағы дала, түтінмен белгілеймін",
         };
 
         /// <summary>One press of the PTT = one line of the MEDEVAC request.</summary>
@@ -252,10 +252,12 @@ namespace FieldMedic.Scenarios
         {
             if (c == null || c.Patient == null) return "—";
             var parts = new List<string>();
-            foreach (var w in c.Patient.wounds) if (w.discovered) parts.Add(w.region.ToString());
-            string s = parts.Count == 0 ? "осмотр" : string.Join(", ", parts);
+            bool kz = GameSettings.KZ;
+            foreach (var w in c.Patient.wounds)
+                if (w.discovered) parts.Add(kz ? FieldMedic.Treatment.CardItem.RegionKz(w.region) : FieldMedic.Treatment.CardItem.RegionRu(w.region));
+            string s = parts.Count == 0 ? (kz ? "тексерілуде" : "осмотр") : string.Join(", ", parts);
             foreach (var tq in c.Patient.tourniquets)
-                if (tq.Locked) s += ", жгут " + ScenarioClock.Format(Mathf.Max(0f, tq.appliedAtSeconds));
+                if (tq.Locked) s += (kz ? ", жгут " : ", жгут ") + ScenarioClock.Format(Mathf.Max(0f, tq.appliedAtSeconds));
             return s;
         }
 

@@ -679,6 +679,9 @@ namespace FieldMedic.Scenarios.SelfAid
             }
             BuildReport();
             Cleanup();
+            if (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) FieldMedic.Treatment.KitTray.Player.Close();
+            // w10 audit: the last run line ("Жди своих…") used to stay up during the debrief
+            StepGuide.Set("Итог на доске: наведи луч, КУРОК — кнопка", "Қорытынды тақтада: сәулені бағытта, ШҮРІППЕ — түйме", ControlIcon.Trigger);
             if (board != null && !testMode)
             {
                 board.gameObject.SetActive(true);

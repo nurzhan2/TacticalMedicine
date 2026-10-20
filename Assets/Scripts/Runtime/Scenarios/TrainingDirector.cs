@@ -210,7 +210,7 @@ namespace FieldMedic.Scenarios
             for (int i = 0; i < step.actions.Count; i++)
                 if (!(_sticky != null && i < _sticky.Length && _sticky[i])) { ai = i; break; }
             // "X — kit…" while the tray is already open: show the next action instead
-            if (_pouch != null && _pouch.IsOpen && ai + 1 < step.actions.Count && step.actions[ai].ru.StartsWith("Нажми X")) ai++;
+            if (_pouch != null && _pouch.IsOpen && ai + 1 < step.actions.Count && (step.actions[ai].ru.StartsWith("Нажми X") || step.actions[ai].ru.StartsWith("X ") || step.actions[ai].ru.Contains(": X —"))) ai++;
             var a = step.actions.Count > 0 ? step.actions[ai] : null;
             string head = Progress.StepNumber + "/" + Progress.StepCount + "  ";
             StepGuide.Set(head + step.ru + (a != null ? ": " + a.ru : ""), head + step.Text(true) + (a != null ? ": " + a.Text(true) : ""), IconsFor(step));
@@ -229,7 +229,8 @@ namespace FieldMedic.Scenarios
                 if (kind is MedItemKind.Marker or MedItemKind.TraumaShears or MedItemKind.ChestSeal) return new[] { ControlIcon.Grip, ControlIcon.Trigger };
                 return new[] { ControlIcon.Grip };
             }
-            if (step.id is "drag_grab" or "drag_cover" or "loaded" || step.item == "Smoke") return new[] { ControlIcon.Grip, ControlIcon.Trigger };
+            if (step.id is "drag_cover" or "loaded") return new[] { ControlIcon.Grip, ControlIcon.Stick };
+            if (step.id is "drag_grab" or "rolled" || step.item == "Smoke") return new[] { ControlIcon.Grip, ControlIcon.Trigger };
             return new[] { ControlIcon.Hand };
         }
 
@@ -289,9 +290,11 @@ namespace FieldMedic.Scenarios
             if (Lesson.debrief)
             {
                 Report = DebriefBuilder.Build(null, C.Protocol, "evacuated", ScenarioClock.Format, director.IncidentPatientTime, null, kz);
+                Report.lessonId = Lesson.id;
                 Report.title = kz ? "ДЕМО" : "ДЕМО"; // short: the board header also carries the flag + patch
                 Debug.Log($"[FMVR] training: demo debrief score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
             }
+            if (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) FieldMedic.Treatment.KitTray.Player.Close(); // the board comes in front of the eyes
             if (director.board != null && !director.testMode)
             {
                 director.board.gameObject.SetActive(true);

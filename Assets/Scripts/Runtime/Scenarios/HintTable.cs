@@ -13,7 +13,7 @@ namespace FieldMedic.Scenarios
     [CreateAssetMenu(menuName = "FieldMedic/Hint table")]
     public sealed class HintTable : ScriptableObject
     {
-        public const int CurrentVersion = 6; // w10: hints name the real buttons (X kit, Y radio, GRIP/КУРОК)
+        public const int CurrentVersion = 7; // w10: hints name the real buttons (X kit, Y radio, GRIP/КУРОК); v7 audit: drag stick, door ring, tools GRIP+КУРОК
         public int version = CurrentVersion;
         public List<TrainingLesson> lessons = new();
         public List<HintWrong> wrongs = new();

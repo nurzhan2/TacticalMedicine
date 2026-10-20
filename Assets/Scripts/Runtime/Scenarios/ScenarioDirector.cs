@@ -7,6 +7,7 @@ using FieldMedic.Casualty;
 using FieldMedic.Casualty.Blood;
 using FieldMedic.Environment;
 using FieldMedic.Input;
+using FieldMedic.Interaction;
 using FieldMedic.Medical;
 using FieldMedic.Treatment;
 using FieldMedic.UI;
@@ -71,6 +72,51 @@ namespace FieldMedic.Scenarios
         int _milestone;
 
         void Awake() => Instance = this;
+
+        // ------------------------------------------------------------------ w10 controls line (no medical answers)
+        float _dragScanAt;
+        CasualtyDrag _drag;
+        bool _dragLine;
+
+        // w10 audit: there was no way out of a run (the board is hidden while playing) — hold B for 2 s → menu
+        float _bHeld;
+        public const float ExitHoldSeconds = 2f;
+
+        void ExitHold()
+        {
+            if (InMenu || testMode) { _bHeld = 0f; return; }
+            var right = HandRig.Find(Handedness.Right);
+            if (right == null || !right.SecondaryButton) { _bHeld = 0f; return; }
+            float before = _bHeld;
+            _bHeld += Time.unscaledDeltaTime;
+            if (before < 0.5f && _bHeld >= 0.5f)
+                FieldMedic.UI.StepGuide.Set("Держи B — выход в меню", "B ұста — мәзірге шығу", FieldMedic.UI.ControlIcon.B);
+            if (before < ExitHoldSeconds && _bHeld >= ExitHoldSeconds)
+            {
+                Log("exit to menu (B held)");
+                Haptics.Play(right, Haptics.PressStart);
+                Launch(() => ScenarioLaunch.Menu());
+            }
+        }
+
+        void LateUpdate()
+        {
+            ExitHold();
+            if (InMenu || Timeline == null || casualty == null) return;
+            if (_drag == null && Time.time > _dragScanAt) { _dragScanAt = Time.time + 2f; _drag = casualty.GetComponentInChildren<CasualtyDrag>(true); }
+            bool dragging = _drag != null && _drag.AnyHeld;
+            if (dragging == _dragLine) return;
+            _dragLine = dragging;
+            if (dragging)
+                FieldMedic.UI.StepGuide.Set("Тащи: держи хват, стик назад — ползти с раненым", "Сүйре: ұстап тұр, стикті артқа — жаралымен жорғалау",
+                    FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Stick);
+            else
+                FieldMedic.UI.StepGuide.Set(ControlsLineRu, ControlsLineKz,
+                    FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Y, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger);
+        }
+
+        const string ControlsLineRu = "X — аптечка · Y (держать) — рация · GRIP / КУРОК — взять · B (держать) — меню";
+        const string ControlsLineKz = "X — қобдиша · Y (ұста) — рация · GRIP / ШҮРІППЕ — алу · B (ұста) — мәзір";
         void OnDestroy() { if (Instance == this) Instance = null; }
 
         IEnumerator Start()
@@ -82,6 +128,7 @@ namespace FieldMedic.Scenarios
                 ThreatSystem.Instance.showRunEndOverlay = false;
                 ThreatSystem.Instance.PlayerHit += OnPlayerHit;
             }
+            FieldMedic.UI.GameSettings.OverrideHintsForRun(null); // every scene load starts with the player's own hint setting
             if (!autoStart) yield break;
             var req = ScenarioLaunch.Consume();
             if (req == null || req.mode == LaunchMode.Menu) { EnterMenu(req?.lastReport); yield break; }
@@ -97,6 +144,8 @@ namespace FieldMedic.Scenarios
         public void EnterMenu(DebriefReport last = null)
         {
             InMenu = true;
+            GameSettings.OverrideHintsForRun(null);
+            if (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) FieldMedic.Treatment.KitTray.Player.Close();
             FieldMedic.Battle.BattleDirector.PlayerArmed = false; // nobody shoots at the player in the menu
             SetQuiet(0.35f);
             if (menuPlayerSpot != null) PlacePlayer(menuPlayerSpot);
@@ -150,7 +199,7 @@ namespace FieldMedic.Scenarios
             ScenarioClock.StartHour = startMin / 60;
             ScenarioClock.StartMinute = startMin % 60;
             GameSettings.HoldTimeScale = testMode ? GameSettings.HoldTimeScale : 1f;
-            if (Exam) GameSettings.Hints = false;
+            if (Exam) GameSettings.OverrideHintsForRun(false);
 
             var anchor = spots.FirstOrDefault(s => s.spot == def.spot);
             if (anchor != null)
@@ -161,7 +210,7 @@ namespace FieldMedic.Scenarios
             }
             if (board != null) board.ShowBriefing(def, variant, false);
             // w10: controls on the wrist / bottom of the view (no medical answers in Combat/Exam)
-            FieldMedic.UI.StepGuide.Set("X — аптечка · Y (держать) — рация · GRIP / КУРОК — взять", "X — қобдиша · Y (ұста) — рация · GRIP / ШҮРІППЕ — алу",
+            FieldMedic.UI.StepGuide.Set(ControlsLineRu, ControlsLineKz,
                 FieldMedic.UI.ControlIcon.X, FieldMedic.UI.ControlIcon.Y, FieldMedic.UI.ControlIcon.Grip, FieldMedic.UI.ControlIcon.Trigger);
             if (minePath != null) minePath.gameObject.SetActive(def.incident == IncidentKind.Mine);
             Log("begin " + def.id + " " + variant);
@@ -583,7 +632,9 @@ namespace FieldMedic.Scenarios
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.forceDroneOverhead = false; }
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.3f;
             Log($"debrief {Run.def.id}: {Timeline.EndReason}, score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");
+            if (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) FieldMedic.Treatment.KitTray.Player.Close();
             if (board != null) { board.gameObject.SetActive(true); board.ShowDebrief(Report, head); }
+            FieldMedic.UI.StepGuide.Set("Итог на доске: наведи луч, КУРОК — кнопка", "Қорытынды тақтада: сәулені бағытта, ШҮРІППЕ — түйме", FieldMedic.UI.ControlIcon.Trigger);
             Finished?.Invoke(Report);
         }
 

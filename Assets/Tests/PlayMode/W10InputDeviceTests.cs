@@ -268,6 +268,7 @@ namespace FieldMedic.Tests
             Set(_rdev, "trigger", 0f);
             yield return Frames(2);
             Assert.AreEqual(shears, _right.Held, "still held by the grip");
+            Assert.AreEqual(GrabButton.Grip, _right.HeldWith, "w10 audit: the hold moved to GRIP, so КУРОК is now the tool's action");
             Set(_rdev, "trigger", 1f);
             yield return Frames(2);
             Assert.AreEqual(1f, shears.Trigger, 0.01f, "trigger re-pressed = action");

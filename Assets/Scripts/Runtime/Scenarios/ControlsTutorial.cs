@@ -93,7 +93,7 @@ namespace FieldMedic.Scenarios
                 "Қолыңды фляжкаға жақында — жарқырайды. GRIP (бүйір түйме) бас та ұста", () => HeldWith(GrabButton.Grip), -1f, ControlIcon.Grip);
             Add("drop", "Отпусти GRIP — фляга упадёт", "GRIP-ті жібер — фляжка түседі", () => _canteenReleased, -1f, ControlIcon.Grip);
             Add("trigger", "Теперь возьми её КУРКОМ (указательный палец)", "Енді оны ШҮРІППЕМЕН ал (сұқ саусақ)", () => HeldWith(GrabButton.Trigger), -1f, ControlIcon.Trigger);
-            Add("kit", "Нажми X на левом контроллере — аптечка перед глазами", "Сол контроллердегі X бас — дәрі қобдишасы алдыңда",
+            Add("kit", "Нажми X на левом контроллере — аптечка перед глазами", "Сол контроллердегі X бас — қобдиша алдыңда",
                 () => KitTray.Player == null || KitTray.Player.IsOpen, -1f, ControlIcon.X);
             Add("kit_item", "Возьми жгут CAT. Отпусти над аптечкой — он вернётся на место",
                 "CAT жгутын ал. Қобдишаның үстінде жібер — орнына қайтады", () => KitTray.Player == null || (_catTaken && Cat != null && Cat.InPouch), -1f, ControlIcon.Grip, ControlIcon.Trigger);
@@ -101,10 +101,11 @@ namespace FieldMedic.Scenarios
                 () => KitTray.Player == null || !KitTray.Player.IsOpen, -1f, ControlIcon.X);
             Add("radio", "Рация: зажми Y, выбери строку, отпусти Y — отправлено", "Рация: Y-ты басып тұр, жолды таңда, Y жібер — жіберілді",
                 () => _radio == null || _radioSends > 0, -1f, ControlIcon.Y);
-            Add("watch", "Посмотри на левое запястье: часы, текущий шаг, кнопка АПТЕЧКА", "Сол білекке қара: сағат, қазіргі қадам, ДӘРІ түймесі",
+            Add("watch", "Посмотри на левое запястье: часы, текущий шаг, кнопка АПТЕЧКА", "Сол білекке қара: сағат, қазіргі қадам, ҚОБДИША түймесі",
                 () => _watchSeen > 0.6f, 12f, ControlIcon.Hand);
-            Add("done", "Готово! Повторить — кнопка «УПРАВЛЕНИЕ» в меню", "Дайын! Қайталау — мәзірдегі «БАСҚАРУ» түймесі", () => true, -1f, ControlIcon.Trigger);
-            Steps[Steps.Count - 1].minSeconds = 3f;
+            Add("done", "Готово! Тащить раненого: держи стропу + стик назад. Фонарь — нажми левый стик. Держи B — меню. Повтор — «УПРАВЛЕНИЕ»",
+                "Дайын! Жаралыны сүйреу: бауды ұста + стик артқа. Шам — сол стикті бас. B ұста — мәзір. Қайталау — «БАСҚАРУ»", () => true, -1f, ControlIcon.Grip, ControlIcon.Stick, ControlIcon.B);
+            Steps[Steps.Count - 1].minSeconds = 4f;
             if (RadioPanel.Instance != null) RadioPanel.Instance.Sent += OnRadioSent;
             Index = 0;
             ShowStep();

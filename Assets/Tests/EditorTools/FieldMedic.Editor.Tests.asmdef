@@ -4,6 +4,7 @@
     "references": [
         "FieldMedic.Editor",
         "FieldMedic.Runtime",
+        "FieldMedic.Medical",
         "Oculus.VR",
         "Unity.TextMeshPro",
         "UnityEngine.TestRunner",

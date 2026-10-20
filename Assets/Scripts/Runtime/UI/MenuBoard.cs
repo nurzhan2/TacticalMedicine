@@ -333,7 +333,7 @@ namespace FieldMedic.UI
             TimelineStrip(r, -0.2f, 0.71f, -0.255f);
 
             // actions
-            Btn(GameSettings.T("ЕЩЁ", "ТАҒЫ"), lx + 0.09f, -H / 2 + 0.13f, 0.13f, Rust, () => Go("retry:" + r.scenarioId, () => ScenarioLaunch.Scenario(r.scenarioId, ScenarioVariant.Random(System.Environment.TickCount))), 0.022f, GameSettings.T("повторить", "қайталау"), 0.014f);
+            Btn(GameSettings.T("ЕЩЁ", "ТАҒЫ"), lx + 0.09f, -H / 2 + 0.13f, 0.13f, Rust, () => Go("retry:" + (r.lessonId ?? r.scenarioId), () => { if (r.lessonId != null) ScenarioLaunch.Training(r.lessonId); else ScenarioLaunch.Scenario(r.scenarioId, ScenarioVariant.Random(System.Environment.TickCount)); }), 0.022f, GameSettings.T("повторить", "қайталау"), 0.014f);
             Btn(GameSettings.T("МЕНЮ", "МӘЗІР"), lx + 0.29f, -H / 2 + 0.13f, 0.13f, Steel, () => Go("menu", () => ScenarioLaunch.Menu()), 0.022f, GameSettings.T("в руины", "қирандыға"), 0.014f);
             var next = ScenarioCatalog.All.SkipWhile(d => d.id != r.scenarioId).Skip(1).FirstOrDefault();
             if (next != null)

@@ -22,7 +22,8 @@ namespace FieldMedic.Casualty
         [Tooltip("Strap stretch needed to break static friction (m).")]
         public float staticBreak = 0.07f;
         public float dragMaxSpeed = 1.5f;
-        public float crawlSpeed = 0.55f;
+        [Tooltip("Pull-to-crawl speed (thumbstick back while holding). w10: 1.0 m/s — at 0.55 the 45–65 m drag to the helicopter took ~2 min.")]
+        public float crawlSpeed = 1.0f;
         [Tooltip("Acceleration (m/s²) above which a jerk loosens tourniquets.")]
         public float joltThreshold = 5f;
         public float maxStepUp = 0.3f;
@@ -272,7 +273,9 @@ namespace FieldMedic.Casualty
             away.y = 0f;
             if (away.sqrMagnitude < 1e-4f && Camera.main != null) away = Camera.main.transform.position - transform.position;
             away.y = 0f;
-            _playerRig.position += away.normalized * (crawlSpeed * -input.Thumbstick.y * dt);
+            // prefabs saved before w10 carry the old 0.55 m/s
+            float speed = Mathf.Max(crawlSpeed, 1.0f);
+            _playerRig.position += away.normalized * (speed * -input.Thumbstick.y * dt);
         }
     }
 }

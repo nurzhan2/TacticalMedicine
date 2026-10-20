@@ -37,9 +37,14 @@ namespace FieldMedic.UI
         /// <summary>Show training hints (hold timer near the wound, feedback lines in the desktop HUD).</summary>
         public static bool Hints
         {
-            get => _hints ??= PlayerPrefs.GetInt("fm_hints", 1) == 1;
+            get => _hintsRun ?? (_hints ??= PlayerPrefs.GetInt("fm_hints", 1) == 1);
             set { _hints = value; PlayerPrefs.SetInt("fm_hints", value ? 1 : 0); }
         }
+
+        static bool? _hintsRun;
+        /// <summary>w10 audit: the exam turns hints off for its run only (it used to save Hints=false for good, so later
+        /// Training runs lost the ghost glove and the tray glow). null = back to the player's setting.</summary>
+        public static void OverrideHintsForRun(bool? on) => _hintsRun = on;
 
         static int? _gore;
         /// <summary>Owner default: maximum naturalistic.</summary>

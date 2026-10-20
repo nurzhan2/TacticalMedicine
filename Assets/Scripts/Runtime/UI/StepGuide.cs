@@ -39,6 +39,7 @@ namespace FieldMedic.UI
         Material _wristBg, _bannerBg;
         readonly List<Material> _bannerMats = new List<Material>();
         readonly List<Transform> _badges = new List<Transform>();
+        readonly List<ControlIcon> _badgeIcons = new();
         float _bannerAlpha, _yaw, _drop = 0.2f;
         bool _kz;
 
@@ -147,6 +148,7 @@ namespace FieldMedic.UI
             // badges at the hands
             foreach (var b in _badges) if (b != null) Destroy(b.gameObject);
             _badges.Clear();
+            _badgeIcons.Clear();
             foreach (var ic in Icons)
             {
                 if (ic == ControlIcon.Hand || ic == ControlIcon.Stick) continue;
@@ -154,6 +156,7 @@ namespace FieldMedic.UI
                 Icon(badge, ic, 0.022f, true);
                 badge.name = "Badge_" + ic;
                 _badges.Add(badge);
+                _badgeIcons.Add(ic);
             }
         }
 
@@ -251,7 +254,8 @@ namespace FieldMedic.UI
             {
                 var b = _badges[i];
                 if (b == null) continue;
-                var ic = Icons[Mathf.Min(i, Icons.Length - 1)];
+                // w10 audit: badges skip Hand/Stick, so index the badge's own icon (not Icons[i])
+                var ic = i < _badgeIcons.Count ? _badgeIcons[i] : ControlIcon.Grip;
                 var hand = HandOf(ic);
                 Transform at = null;
                 foreach (var r in HandRig.All)

@@ -90,6 +90,7 @@ namespace FieldMedic.Scenarios
         {
             if (Instance == this) Instance = null;
             RestorePlayer();
+            if (_doorMark != null) Destroy(_doorMark.gameObject);
         }
 
         public void ResetForRun()
@@ -131,7 +132,33 @@ namespace FieldMedic.Scenarios
             if (heli != null) heli.SetPositionAndRotation(GroundAt(LandingPoint), _landRot);
             MeasureCabin();
             BuildCrewAndDoor();
+            BuildDoorMark();
             Debug.Log($"[FMVR] tacevac: landed at the LZ, side door at {DoorPoint:F1}");
+        }
+
+        // w10 audit: "is the door zone obvious?" — the crew chief lays an orange marker panel ring at the side door
+        Transform _doorMark;
+        Material _doorMarkMat;
+        public bool DoorMarkShown => _doorMark != null && _doorMark.gameObject.activeSelf;
+
+        void BuildDoorMark()
+        {
+            if (_doorMark != null) return;
+            _doorMarkMat = FieldMedic.UI.UiMesh.Mat(new Color(1f, 0.45f, 0.08f, 0.85f), 2990);
+            var r = FieldMedic.UI.UiMesh.Add(null, "HeliDoorMark", FieldMedic.UI.UiMesh.Ring(doorRadius * 2f, doorRadius * 2f, doorRadius, 0.09f, Color.white, 10), _doorMarkMat, Vector3.zero);
+            _doorMark = r.transform;
+            _doorMark.gameObject.SetActive(false);
+        }
+
+        void UpdateDoorMark()
+        {
+            if (_doorMark == null) return;
+            bool on = State == Stage.Landed || State == Stage.WaitingForPlayer;
+            if (_doorMark.gameObject.activeSelf != on) _doorMark.gameObject.SetActive(on);
+            if (!on) return;
+            Vector3 p = GroundAt(DoorPoint);
+            _doorMark.SetPositionAndRotation(p + Vector3.up * 0.04f, Quaternion.Euler(90f, 0f, 0f));
+            _doorMarkMat.SetFloat("_Alpha", 0.55f + 0.35f * Mathf.Sin(Time.time * 4f));
         }
 
         /// <summary>The steppe is not flat out at the LZ: put the skids on the real ground (the helicopter has no colliders).</summary>
@@ -442,6 +469,7 @@ namespace FieldMedic.Scenarios
         void Update()
         {
             float dt = Time.deltaTime;
+            UpdateDoorMark();
             if (rotor != null && heli != null && heli.gameObject.activeSelf) rotor.Rotate(0f, rotorRpm * 6f * dt, 0f, Space.Self);
             switch (State)
             {

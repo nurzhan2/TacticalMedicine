@@ -106,6 +106,17 @@ namespace FieldMedic.Treatment
             BodyRegion.ShinR => "голень прав.", BodyRegion.FootL => "стопа лев.", _ => "стопа прав.",
         };
 
+        public static string RegionKz(BodyRegion r) => r switch
+        {
+            BodyRegion.Head => "бас", BodyRegion.Neck => "мойын", BodyRegion.ChestL => "кеуде сол", BodyRegion.ChestR => "кеуде оң",
+            BodyRegion.Abdomen => "іш", BodyRegion.Pelvis => "жамбас", BodyRegion.GroinL => "шап сол", BodyRegion.GroinR => "шап оң",
+            BodyRegion.AxillaL => "қолтық сол", BodyRegion.AxillaR => "қолтық оң",
+            BodyRegion.UpperArmL => "қар сол", BodyRegion.UpperArmR => "қар оң", BodyRegion.ForearmL => "білек сол",
+            BodyRegion.ForearmR => "білек оң", BodyRegion.HandL => "қол сол", BodyRegion.HandR => "қол оң",
+            BodyRegion.ThighL => "сан сол", BodyRegion.ThighR => "сан оң", BodyRegion.ShinL => "сирақ сол",
+            BodyRegion.ShinR => "сирақ оң", BodyRegion.FootL => "табан сол", _ => "табан оң",
+        };
+
         public static string TypeRu(WoundType t) => t switch
         {
             WoundType.ArterialLimb => "артериальное кровотечение",

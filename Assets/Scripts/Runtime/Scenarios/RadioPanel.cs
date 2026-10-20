@@ -75,7 +75,10 @@ namespace FieldMedic.Scenarios
             if (head == null && Camera.main != null) head = Camera.main.transform;
             var left = HandRig.Find(Handedness.Left);
             bool y = left != null && left.SecondaryButton;
-            if (y && !_lastY) Begin();
+            // w10 audit: no MEDEVAC reports from the menu/briefing board (the controls tutorial teaches Y in the menu)
+            var dir = ScenarioDirector.Instance;
+            bool blocked = dir != null && dir.InMenu && ControlsTutorial.Instance == null && !IsOpen;
+            if (y && !_lastY && !blocked) Begin();
             else if (!y && _lastY) End();
             _lastY = y;
             if (!IsOpen) return;

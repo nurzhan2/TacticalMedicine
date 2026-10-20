@@ -130,3 +130,8 @@ InitTestScene*.unity*
 /SourceAssets/Voice/eleven_raw/
 # w9: incoming art drops (models are imported into Assets/Art/Items)
 /SourceAssets/Incoming/*/
+
+# w10: written by the Meta OVRPlugin at editor/batch start (empty, regenerated each run)
+/RuntimeActionBindings.json
+/Assets/StreamingAssets/RuntimeActionBindings.json*
+/run_w*.ps1

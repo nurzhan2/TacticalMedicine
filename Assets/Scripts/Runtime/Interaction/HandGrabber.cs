@@ -118,6 +118,9 @@ namespace FieldMedic.Interaction
 
             if (Held != null)
             {
+                // w10 audit: a tool taken with КУРОК is moved to GRIP as soon as grip closes, so the trigger becomes its action
+                // (marker/shears/seal) instead of dropping the item when the trigger is released
+                if (HeldWith == GrabButton.Trigger && GripDown) HeldWith = GrabButton.Grip;
                 if (!_triggerArmed && input.Trigger < 0.3f) _triggerArmed = true;
                 bool holding = GripDown || (triggerGrabs && TriggerDown);
                 if (!holding || !input.IsTracked) Release();
