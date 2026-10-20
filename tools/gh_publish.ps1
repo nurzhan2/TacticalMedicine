@@ -1,6 +1,6 @@
 # Creates private repo nurzhan2/TacticalMedicine (if missing), pushes all branches (main = w9), uploads the APK as a release.
 # Uses the git credential already stored on this PC; never prints it. ASCII only.
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'  # PS 5.1: git progress on stderr must not abort the script
 Set-Location C:\TacticalMedicine
 $o = "protocol=https`nhost=github.com`n`n" | git credential fill
 $tok = (($o | Select-String '^password=') -replace 'password=','')
