@@ -64,6 +64,7 @@ namespace FieldMedic.Tests
         [TearDown]
         public void TearDown()
         {
+            IfakPouch.UseTray = true;
             QualitySettings.SetQualityLevel(_quality, true);
             foreach (var o in _spawned) if (o != null) Object.Destroy(o);
             _spawned.Clear();
@@ -179,6 +180,7 @@ namespace FieldMedic.Tests
             MakeBot(head.position + new Vector3(0f, -0.4f, 0.3f));
             var pgo = new GameObject("~PlayerIFAK");
             _spawned.Add(pgo);
+            IfakPouch.UseTray = false; // the worn art kit (folding panels) — w10 players get the tray (W10Screens)
             _pouch = pgo.AddComponent<IfakPouch>();
             _pouch.bodyLocked = true;
             _pouch.head = head;

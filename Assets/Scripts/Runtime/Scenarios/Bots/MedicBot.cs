@@ -114,7 +114,7 @@ namespace FieldMedic.Scenarios.Bots
                 yield return Frame();
                 x.PrimaryButton = false;
                 yield return Frame();
-                for (int k = 0; k < 60 && pouch.Tray.Open01 < 1f; k++) yield return null;
+                for (float t = 0f; t < 1f && pouch.Tray.Open01 < 1f; t += Time.deltaTime) yield return null;
                 yield break;
             }
             if (pouch == null || pouch.IsOpen || pouch.Flap == null || pouch.Flap.Tab == null) yield break;

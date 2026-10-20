@@ -46,13 +46,13 @@ namespace FieldMedic.Scenarios
         Vector3 _canteenHome;
         RadioSet _radio;
 
-        public static ControlsTutorial Begin(ScenarioDirector d)
+        public static ControlsTutorial Begin(ScenarioDirector d, Transform headOverride = null)
         {
             if (Instance != null) return Instance;
             var go = new GameObject("ControlsTutorial");
             var t = go.AddComponent<ControlsTutorial>();
             t.director = d;
-            t.head = d != null && d.head != null ? d.head : Camera.main != null ? Camera.main.transform : null;
+            t.head = headOverride != null ? headOverride : d != null && d.head != null ? d.head : Camera.main != null ? Camera.main.transform : null;
             t.Setup();
             return t;
         }

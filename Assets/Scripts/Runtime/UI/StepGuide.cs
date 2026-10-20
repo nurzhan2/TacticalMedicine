@@ -39,7 +39,7 @@ namespace FieldMedic.UI
         Material _wristBg, _bannerBg;
         readonly List<Material> _bannerMats = new List<Material>();
         readonly List<Transform> _badges = new List<Transform>();
-        float _bannerAlpha, _yaw;
+        float _bannerAlpha, _yaw, _drop = 0.2f;
         bool _kz;
 
         const int QCard = 3110, QText = 3112;
@@ -117,11 +117,11 @@ namespace FieldMedic.UI
             _banner = new GameObject("StepBanner").transform;
             _bannerBg = UiMesh.Mat(Color.white, QCard);
             _bannerBg.SetFloat("_ZTest", 8f); // always readable (never buried in a wall or in Erlan)
-            UiMesh.Add(_banner, "Bg", UiMesh.RoundedRect(0.5f, 0.07f, 0.03f, new Color(0.97f, 0.97f, 0.95f, 0.94f), new Color(0.9f, 0.91f, 0.92f, 0.94f)), _bannerBg, new Vector3(0f, 0f, 0.002f));
-            _bannerText = UiMesh.Text(_banner, "Text", "", new Vector3(-0.235f, 0.024f, 0f), 0.0125f, new Color(0.1f, 0.12f, 0.14f), 0.47f, QText, TextAlignmentOptions.TopLeft, true);
+            UiMesh.Add(_banner, "Bg", UiMesh.RoundedRect(0.56f, 0.085f, 0.03f, new Color(0.97f, 0.97f, 0.95f, 0.94f), new Color(0.9f, 0.91f, 0.92f, 0.94f)), _bannerBg, new Vector3(0f, 0f, 0.002f));
+            _bannerText = UiMesh.Text(_banner, "Text", "", new Vector3(-0.12f, 0.03f, 0f), 0.0118f, new Color(0.1f, 0.12f, 0.14f), 0.38f, QText, TextAlignmentOptions.TopLeft, true);
             _bannerIcons = new GameObject("Icons").transform;
             _bannerIcons.SetParent(_banner, false);
-            _bannerIcons.localPosition = new Vector3(-0.235f, -0.024f, -0.001f);
+            _bannerIcons.localPosition = new Vector3(-0.262f, 0f, -0.001f);
             _banner.gameObject.SetActive(false);
         }
 
@@ -133,13 +133,17 @@ namespace FieldMedic.UI
             _wristText.text = t;
             _bannerText.text = t;
             Icons ??= new ControlIcon[0];
-            BuildIcons(_wristIcons, 0.0105f, -0.0055f, false);
-            BuildIcons(_bannerIcons, 0.024f, 0f, true);
+            BuildIcons(_wristIcons, 0.0105f, -0.0055f, false, 9);
+            BuildIcons(_bannerIcons, 0.022f, 0f, true, 2);
             // the text sits right of / above the icon row
             _wristText.transform.localPosition = new Vector3(-0.058f, Icons.Length > 0 ? 0.008f : 0.022f, 0f);
             _wristIcons.localPosition = new Vector3(-0.056f, 0.02f, -0.0005f);
             _bannerText.text = t;
-            _bannerText.transform.localPosition = new Vector3(-0.235f, 0.031f, 0f);
+            // icons in a compact block left of the text (two per row)
+            float iconsW = 0f;
+            foreach (Transform c in _bannerIcons) iconsW = Mathf.Max(iconsW, c.localPosition.x + 0.04f);
+            _bannerText.transform.localPosition = new Vector3(-0.262f + Mathf.Max(0.05f, iconsW) + 0.012f, 0.03f, 0f);
+            _bannerText.rectTransform.sizeDelta = new Vector2(0.52f - Mathf.Max(0.05f, iconsW) - 0.012f, 0.5f);
             // badges at the hands
             foreach (var b in _badges) if (b != null) Destroy(b.gameObject);
             _badges.Clear();
@@ -153,18 +157,23 @@ namespace FieldMedic.UI
             }
         }
 
-        void BuildIcons(Transform row, float h, float y, bool banner)
+        void BuildIcons(Transform row, float h, float y, bool banner, int perRow)
         {
-            foreach (Transform c in row) Destroy(c.gameObject);
+            var old = new List<Transform>();
+            foreach (Transform c in row) old.Add(c);
+            foreach (var c in old) { c.SetParent(null); Destroy(c.gameObject); }
             float x = 0f;
-            bool kz = GameSettings.KZ;
+            int n = 0, rows = Mathf.CeilToInt(Icons.Length / (float)Mathf.Max(1, perRow));
+            float y0 = y + (rows - 1) * h * 0.65f;
             foreach (var ic in Icons)
             {
+                if (n > 0 && n % perRow == 0) x = 0f;
                 var t = new GameObject("Icon_" + ic).transform;
                 t.SetParent(row, false);
                 float w = Icon(t, ic, h, banner);
-                t.localPosition = new Vector3(x + w / 2f, y, 0f);
-                x += w + h * 0.35f;
+                t.localPosition = new Vector3(x + w / 2f, y0 - (n / perRow) * h * 1.3f, 0f);
+                x += w + h * 0.3f;
+                n++;
             }
         }
 
@@ -174,7 +183,7 @@ namespace FieldMedic.UI
             bool kz = GameSettings.KZ;
             string cap = Caption(ic, kz);
             bool round = ic is ControlIcon.X or ControlIcon.Y or ControlIcon.A or ControlIcon.B;
-            float w = round ? h : h * (0.45f + 0.55f * cap.Length * 0.62f);
+            float w = round ? h : h * (0.7f + 0.48f * cap.Length);
             Color fill = ic switch
             {
                 ControlIcon.X or ControlIcon.Y => new Color(0.12f, 0.13f, 0.15f),
@@ -186,7 +195,7 @@ namespace FieldMedic.UI
             var m = UiMesh.Mat(Color.white, QCard + 1);
             if (always) m.SetFloat("_ZTest", 8f);
             UiMesh.Add(t, "Pill", UiMesh.RoundedRect(w, h, h * 0.5f, fill, fill * 0.85f), m, Vector3.zero);
-            var txt = UiMesh.Text(t, "Cap", cap, new Vector3(-w / 2f, h * 0.36f, -0.0005f), h * 0.42f, Color.white, w, QText + 1, TextAlignmentOptions.Top, true);
+            var txt = UiMesh.Text(t, "Cap", cap, new Vector3(-w / 2f, h * 0.3f, -0.0005f), h * 0.34f, Color.white, w, QText + 1, TextAlignmentOptions.Top, true);
             txt.rectTransform.pivot = new Vector2(0f, 1f);
             return w;
         }
@@ -224,7 +233,11 @@ namespace FieldMedic.UI
                 float diff = Mathf.DeltaAngle(_yaw, hy);
                 if (Mathf.Abs(diff) > 12f) _yaw = Mathf.MoveTowardsAngle(_yaw, hy, (Mathf.Abs(diff) - 12f) * 6f * Time.deltaTime + 20f * Time.deltaTime);
                 var rot = Quaternion.Euler(0f, _yaw, 0f);
-                Vector3 p = head.position + rot * new Vector3(0f, 0f, bannerDistance) + Vector3.down * bannerDrop;
+                // the kit tray / radio panel take the lower view: the line moves above the view centre meanwhile
+                bool lowBusy = (FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen) ||
+                               (FieldMedic.Scenarios.RadioPanel.Instance != null && FieldMedic.Scenarios.RadioPanel.Instance.IsOpen);
+                _drop = Mathf.MoveTowards(_drop, lowBusy ? -0.17f : bannerDrop, Time.deltaTime * 1.5f);
+                Vector3 p = head.position + rot * new Vector3(0f, 0f, bannerDistance) + Vector3.down * _drop;
                 _banner.SetPositionAndRotation(p, Quaternion.LookRotation(p - head.position));
                 _banner.localScale = Vector3.one * (0.92f + 0.08f * _bannerAlpha);
                 _bannerBg.SetFloat("_Alpha", _bannerAlpha);
@@ -233,6 +246,7 @@ namespace FieldMedic.UI
 
             // badges pulse at the hand with that button (shown with the banner, and while the wrist is raised)
             float pulse = 0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * 6f);
+            int nLeft = 0, nRight = 0;
             for (int i = 0; i < _badges.Count; i++)
             {
                 var b = _badges[i];
@@ -245,7 +259,10 @@ namespace FieldMedic.UI
                 bool show = at != null && head != null && has && (on || age < bannerSeconds * 2f);
                 if (b.gameObject.activeSelf != show) b.gameObject.SetActive(show);
                 if (!show) continue;
-                Vector3 p = at.TransformPoint(new Vector3(0f, 0.06f, 0.02f));
+                // several badges at one hand sit side by side (GRIP + КУРОК)
+                var atRig = at.GetComponent<HandRig>();
+                int slot = atRig != null && atRig.handedness == Handedness.Left ? nLeft++ : nRight++;
+                Vector3 p = at.TransformPoint(new Vector3(0f, 0.06f, 0.02f)) + head.right * (slot * 0.06f);
                 b.SetPositionAndRotation(p, Quaternion.LookRotation(p - head.position));
                 b.localScale = Vector3.one * pulse;
             }

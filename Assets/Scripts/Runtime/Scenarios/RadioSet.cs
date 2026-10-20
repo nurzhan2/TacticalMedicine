@@ -21,7 +21,8 @@ namespace FieldMedic.Scenarios
 
         public Transform head;
         public bool bodyLocked = true;
-        public Vector3 offsetFromHead = new Vector3(-0.17f, -0.32f, 0.14f);
+        [Tooltip("w10: on the left shoulder strap, clear of the kit tray in front of the chest.")]
+        public Vector3 offsetFromHead = new Vector3(-0.2f, -0.27f, 0.03f);
         public bool muted;
         /// <summary>w9b self-aid: the PTT button answers check-ins / opens the report menu instead of the MEDEVAC lines.
         /// Return true when handled.</summary>
@@ -78,6 +79,8 @@ namespace FieldMedic.Scenarios
         void Awake()
         {
             Instance = this;
+            // scenes saved before w10 keep the old chest position — it sat inside the kit tray
+            if (Vector3.Distance(offsetFromHead, new Vector3(-0.17f, -0.32f, 0.14f)) < 0.01f) offsetFromHead = new Vector3(-0.2f, -0.27f, 0.03f);
             _src = gameObject.AddComponent<AudioSource>();
             _src.spatialBlend = 0.85f;
             _src.minDistance = 0.4f;
@@ -100,9 +103,20 @@ namespace FieldMedic.Scenarios
             RefreshScreen();
         }
 
+        Renderer[] _renderers;
+        bool _hidden;
+
         void LateUpdate()
         {
             if (head == null && Camera.main != null) head = Camera.main.transform;
+            // w10: the open kit tray fills the space in front of the chest — the shoulder radio steps out of the view
+            bool hide = FieldMedic.Treatment.KitTray.Player != null && FieldMedic.Treatment.KitTray.Player.IsOpen;
+            if (hide != _hidden)
+            {
+                _hidden = hide;
+                _renderers ??= GetComponentsInChildren<Renderer>(true);
+                foreach (var r in _renderers) if (r != null) r.enabled = !hide;
+            }
             if (bodyLocked && head != null)
             {
                 // follows the torso: yaw lags behind the head like a vest does

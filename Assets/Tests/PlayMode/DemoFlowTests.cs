@@ -197,14 +197,15 @@ namespace FieldMedic.Tests
             yield return WaitStep(t, "tq_lock");
             moment?.Invoke("hint");
 
-            // 2) IFAK closed: touching the CAT in the closed pouch does nothing; pull the red tab → open
+            // 2) w10: the IFAK is stowed on the hip — nothing can be taken until X summons the tray
             var pouch = Pouch;
-            Assert.IsFalse(pouch.IsOpen, "the IFAK starts closed");
+            Assert.IsFalse(pouch.IsOpen, "the IFAK starts stowed");
             var cat = pouch.Find<TourniquetCAT>();
-            Assert.IsTrue(cat.CanBeGrabbedBy(bot.right), "w9: the CAT rides in the always-open quick pouch");
-            Assert.IsFalse(pouch.Find<GauzeItem>().CanBeGrabbedBy(bot.right), "no item can be taken out of the closed main pouch");
+            Assert.IsFalse(cat.CanBeGrabbedBy(bot.right), "the stowed kit gives nothing");
+            Assert.IsFalse(pouch.Find<GauzeItem>().CanBeGrabbedBy(bot.right), "no item can be taken out of the stowed kit");
             yield return bot.OpenPouch(pouch, bot.right);
-            Assert.IsTrue(pouch.IsOpen, "the lid ripped open by pulling the tab");
+            Assert.IsTrue(pouch.IsOpen, "X summoned the kit tray");
+            Assert.IsTrue(cat.CanBeGrabbedBy(bot.right), "the CAT lies in the open tray");
             moment?.Invoke("ifak");
 
             // 3) CAT high and tight on the right thigh: loop, strap, windlass, clip
@@ -470,10 +471,9 @@ namespace FieldMedic.Tests
             _run.MakeBot();
             var bot = _run.bot;
             var pouch = _run.Pouch;
-            // touching the tab is not opening it
-            yield return bot.Grab(bot.right, pouch.Flap.Tab);
-            yield return bot.Release(bot.right);
-            Assert.IsFalse(pouch.IsOpen, "grab+release of the tab without a pull keeps the lid closed");
+            // w10: the kit stays stowed until X (no item can be grabbed out of it by touching)
+            Assert.IsFalse(pouch.IsOpen, "stowed until X");
+            Assert.IsFalse(pouch.Find<TourniquetCAT>().CanBeGrabbedBy(bot.right), "touching the stowed kit takes nothing");
             yield return bot.OpenPouch(pouch, bot.right);
             Assert.IsTrue(pouch.IsOpen);
             // the CAT laid on the thigh and let go is not a tourniquet

@@ -27,11 +27,13 @@ namespace FieldMedic.Treatment
         public IfakPouch pouch;
         public Transform head;
         [Header("Tray (open)")]
-        public float trayDistance = 0.40f;
+        public float trayDistance = 0.42f;
         public float trayBelowEye = 0.34f;
         public float trayTilt = 40f;
         public float followAngle = 50f;
-        public float maxWidth = 0.50f;
+        [Tooltip("Grid: columns, cell size (m), gap, and the largest scale an item is shown at in its cell.")]
+        public int columns = 5;
+        public float cellWidth = 0.092f, cellDepth = 0.078f, cellGap = 0.01f, maxItemScale = 0.7f;
         [Header("Hip (stowed)")]
         public Vector3 hipOffset = new Vector3(-0.21f, -0.70f, -0.04f);
         public float hipMinHeight = 0.18f;
@@ -46,17 +48,18 @@ namespace FieldMedic.Treatment
         public ProxyHandle HipHandle { get; private set; }
         public Vector2 PanelSize { get; private set; }
         public readonly Dictionary<MedItem, Transform> Cells = new Dictionary<MedItem, Transform>();
-        readonly Dictionary<MedItem, TextMesh> _labels = new Dictionary<MedItem, TextMesh>();
+        readonly Dictionary<MedItem, TMPro.TextMeshPro> _labels = new Dictionary<MedItem, TMPro.TextMeshPro>();
+        const int QCard = 2980, QText = 2986;
         /// <summary>Item kind to glow in the tray (training step) — null = none.</summary>
         public MedItemKind? Wanted { get; set; }
         public int ToggleCount { get; private set; }
         public event System.Action<bool> Toggled;
 
-        float _yaw;
+        float _yaw, _dist;
         bool _yawInit, _yawChasing, _lastX, _kz;
         Transform _glow, _hipGlow;
         Material _glowMat, _hipGlowMat;
-        TextMesh _title;
+        TMPro.TextMeshPro _title;
 
         /// <summary>Display order (MARCH-ish): bleeding control first, then chest/airway, then the rest.</summary>
         static readonly MedItemKind[] Order =
@@ -65,6 +68,14 @@ namespace FieldMedic.Treatment
             MedItemKind.ChestSeal, MedItemKind.DecompressionNeedle, MedItemKind.NasalAirway, MedItemKind.Lubricant, MedItemKind.Marker,
             MedItemKind.CasualtyCard, MedItemKind.ThermalBlanket, MedItemKind.AlphaTourniquet, MedItemKind.EsmarchTourniquet, MedItemKind.Splint,
             MedItemKind.TriangularBandage, MedItemKind.EyeShield, MedItemKind.AntisepticWipes, MedItemKind.DuctTape,
+        };
+
+        /// <summary>Extra turn (deg) so the print on the pack faces the reader (measured on docs/screens/w10_tray_close.jpg).</summary>
+        static float PrintYaw(MedItemKind k) => k switch
+        {
+            MedItemKind.ThermalBlanket or MedItemKind.NitrileGloves or MedItemKind.IsraeliBandage => 180f,
+            MedItemKind.HemostaticGauze or MedItemKind.CasualtyCard or MedItemKind.ChestSeal => -90f,
+            _ => 0f,
         };
 
         public static string Label(MedItemKind k, bool kz) => k switch
@@ -170,64 +181,58 @@ namespace FieldMedic.Treatment
                 return ia != ib ? ia.CompareTo(ib) : pouch.Items.IndexOf(a.item).CompareTo(pouch.Items.IndexOf(b.item));
             });
 
-            // shelf packing: rows from the far edge (+z) toward the player, each item standing "long side away"
-            const float gap = 0.018f, label = 0.024f, margin = 0.025f, header = 0.035f;
-            var rows = new List<List<(Entry e, float w, float l)>>();
-            var row = new List<(Entry, float, float)>();
-            float rowW = 0f;
-            foreach (var e in entries)
-            {
-                float w = Mathf.Max(e.turn ? e.size.z : e.size.x, 0.045f);
-                float l = Mathf.Min(e.turn ? e.size.x : e.size.z, 0.24f);
-                if (row.Count > 0 && rowW + gap + w > maxWidth) { rows.Add(row); row = new List<(Entry, float, float)>(); rowW = 0f; }
-                rowW += (row.Count > 0 ? gap : 0f) + w;
-                row.Add((e, w, l));
-            }
-            if (row.Count > 0) rows.Add(row);
-
-            float totalL = header;
-            var rowLen = new List<float>();
-            foreach (var r in rows) { float m = 0f; foreach (var x in r) m = Mathf.Max(m, x.l); rowLen.Add(m); totalL += m + label + gap; }
-            PanelSize = new Vector2(maxWidth + 2f * margin, totalL + margin);
+            // w10: a clear fixed grid (5 × 4). Real-size items would need a 55 × 116 cm board — far too big in front of the
+            // eyes — so every item is shown scaled to fit its cell (≤ 70 %, long side across) and is full size again
+            // as soon as it is taken out (MedItem.LeavePouch).
+            const float margin = 0.022f, header = 0.034f, label = 0.02f;
+            int cols = columns, rowsN = Mathf.CeilToInt(entries.Count / (float)cols);
+            PanelSize = new Vector2(cols * cellWidth + (cols - 1) * cellGap + 2f * margin, header + rowsN * (cellDepth + label) + (rowsN - 1) * cellGap + margin);
 
             // background (rounded dark olive card with a coyote rim), lying in the tray plane (local XZ, facing +Y)
             var bg = new GameObject("Background").transform;
             bg.SetParent(Panel, false);
             bg.localRotation = Quaternion.Euler(90f, 0f, 0f);
             bg.localPosition = new Vector3(0f, -0.003f, 0f);
-            UiMesh.Add(bg, "Card", UiMesh.RoundedRect(PanelSize.x, PanelSize.y, 0.03f, new Color(0.2f, 0.21f, 0.15f), new Color(0.13f, 0.14f, 0.1f)), UiMesh.Mat(Color.white, 3000), Vector3.zero);
-            UiMesh.Add(bg, "Rim", UiMesh.Ring(PanelSize.x, PanelSize.y, 0.03f, 0.008f, new Color(0.45f, 0.36f, 0.22f)), UiMesh.Mat(Color.white, 3001), new Vector3(0f, 0f, -0.001f));
-            _title = WorldUI.Text(Panel, "Title", "", new Vector3(-PanelSize.x / 2f + margin, 0.002f, PanelSize.y / 2f - 0.008f), 0.0115f, new Color(1f, 0.82f, 0.45f));
+            UiMesh.Add(bg, "Card", UiMesh.RoundedRect(PanelSize.x, PanelSize.y, 0.03f, new Color(0.2f, 0.21f, 0.15f), new Color(0.13f, 0.14f, 0.1f)), UiMesh.Mat(Color.white, QCard), Vector3.zero);
+            UiMesh.Add(bg, "Rim", UiMesh.Ring(PanelSize.x, PanelSize.y, 0.03f, 0.008f, new Color(0.45f, 0.36f, 0.22f)), UiMesh.Mat(Color.white, QCard + 1), new Vector3(0f, 0f, -0.001f));
+            _title = UiMesh.Text(Panel, "Title", "", new Vector3(-PanelSize.x / 2f + margin, 0.002f, PanelSize.y / 2f - 0.008f), 0.0095f, new Color(1f, 0.82f, 0.45f), PanelSize.x - 2f * margin, QText);
             _title.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
 
-            float z = PanelSize.y / 2f - header;
-            for (int ri = 0; ri < rows.Count; ri++)
+            var cellMat = UiMesh.Mat(Color.white, QCard + 2);
+            for (int i = 0; i < entries.Count; i++)
             {
-                var r = rows[ri];
-                float width = 0f; foreach (var x in r) width += x.w; width += gap * (r.Count - 1);
-                float x0 = -width / 2f;
-                float zc = z - rowLen[ri] / 2f;
-                foreach (var (e, w, l) in r)
-                {
-                    float xc = x0 + w / 2f;
-                    x0 += w + gap;
-                    var cell = new GameObject("Cell_" + e.item.kind).transform;
-                    cell.SetParent(Panel, false);
-                    var rot = e.turn ? Quaternion.Euler(0f, 90f, 0f) : Quaternion.identity;
-                    cell.localRotation = rot;
-                    // the item's collider centre over the cell centre, its underside on the card
-                    Vector3 c = rot * e.centre;
-                    cell.localPosition = new Vector3(xc - c.x, e.size.y * 0.5f - e.centre.y + 0.002f, zc - c.z);
-                    Cells[e.item] = cell;
-                    var lab = WorldUI.Text(Panel, "Label_" + e.item.kind, "", new Vector3(xc, 0.002f, z - rowLen[ri] - 0.004f), 0.0085f,
-                        new Color(0.93f, 0.91f, 0.84f), TextAnchor.UpperCenter, TextAlignment.Center);
-                    lab.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                    _labels[e.item] = lab;
-                    e.item.PutInPouch(pouch, cell);
-                }
-                z -= rowLen[ri] + label + gap;
+                var e = entries[i];
+                int r = i / cols, c = i % cols;
+                float xc = -PanelSize.x / 2f + margin + cellWidth / 2f + c * (cellWidth + cellGap);
+                float zTop = PanelSize.y / 2f - header - r * (cellDepth + label + cellGap);
+                float zc = zTop - cellDepth / 2f;
+                // a slightly lighter pad under every item (reads as a grid at a glance)
+                var pad = new GameObject("Pad_" + e.item.kind).transform;
+                pad.SetParent(Panel, false);
+                pad.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                pad.localPosition = new Vector3(xc, -0.001f, zc - label * 0.35f);
+                UiMesh.Add(pad, "Pad", UiMesh.RoundedRect(cellWidth, cellDepth + label * 0.8f, 0.012f, new Color(0.27f, 0.28f, 0.2f), new Color(0.24f, 0.25f, 0.18f)), cellMat, Vector3.zero);
+
+                // long side across the cell (+ a per-kind turn so the printed packs read upright); uniform scale to fit
+                bool across = e.size.z > e.size.x;
+                var rot = Quaternion.Euler(0f, (across ? 90f : 0f) + PrintYaw(e.item.kind), 0f);
+                Vector3 rs = rot * e.size;
+                float w = Mathf.Abs(rs.x), d = Mathf.Abs(rs.z);
+                float k = Mathf.Min(maxItemScale, (cellWidth - 0.008f) / Mathf.Max(0.01f, w), (cellDepth - 0.008f) / Mathf.Max(0.01f, d));
+                var cell = new GameObject("Cell_" + e.item.kind).transform;
+                cell.SetParent(Panel, false);
+                cell.localRotation = rot;
+                cell.localScale = Vector3.one * k;
+                Vector3 centre = rot * e.centre * k;
+                cell.localPosition = new Vector3(xc - centre.x, (e.size.y * 0.5f - e.centre.y) * k + 0.002f, zc - centre.z);
+                Cells[e.item] = cell;
+                var lab = UiMesh.Text(Panel, "Label_" + e.item.kind, "", new Vector3(xc, 0.002f, zTop - cellDepth - 0.001f), 0.0068f,
+                    new Color(0.97f, 0.95f, 0.88f), cellWidth, QText, TMPro.TextAlignmentOptions.Top, true);
+                lab.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                _labels[e.item] = lab;
+                e.item.PutInPouch(pouch, cell);
             }
-            _glowMat = UiMesh.Mat(new Color(1f, 0.85f, 0.35f, 0.85f), 3002, UiMesh.Icon("glow"));
+            _glowMat = UiMesh.Mat(new Color(1f, 0.85f, 0.35f, 0.85f), QCard + 3, UiMesh.Icon("glow"));
             _glow = UiMesh.Add(Panel, "WantedGlow", UiMesh.Quad, _glowMat, Vector3.zero).transform;
             _glow.localRotation = Quaternion.Euler(90f, 0f, 0f);
             _glow.gameObject.SetActive(false);
@@ -324,11 +329,19 @@ namespace FieldMedic.Treatment
                 // hip: the torso yaw follows the head loosely (no chase needed: it is out of sight)
                 var bodyRot = Quaternion.Euler(0f, IsOpen ? _yaw : hy, 0f);
                 Vector3 hip = head.position + bodyRot * new Vector3(hipOffset.x, 0f, hipOffset.z);
-                hip.y = Mathf.Max(head.position.y + hipOffset.y, head.parent != null ? head.parent.position.y + hipMinHeight : head.position.y + hipOffset.y);
+                hip.y = head.position.y + hipOffset.y;
+                // kneeling / prone: never below the floor (ray down from the head, solid static ground only)
+                if (Physics.Raycast(head.position, Vector3.down, out var floor, 2.6f, ~0, QueryTriggerInteraction.Ignore) && floor.rigidbody == null)
+                    hip.y = Mathf.Max(hip.y, floor.point.y + hipMinHeight);
                 var hipRot = bodyRot * Quaternion.LookRotation(Vector3.up, Vector3.left);
                 Hip.SetPositionAndRotation(hip, hipRot);
 
-                Vector3 tray = head.position + yawRot * Vector3.forward * trayDistance;
+                // a wall right in front: the tray comes closer instead of sinking into it
+                float dist = trayDistance;
+                if (Physics.Raycast(head.position + Vector3.down * 0.25f, yawRot * Vector3.forward, out var wall, trayDistance + 0.3f, ~0, QueryTriggerInteraction.Ignore) && wall.rigidbody == null)
+                    dist = Mathf.Clamp(wall.distance - 0.3f, 0.26f, trayDistance);
+                _dist = Mathf.MoveTowards(_dist <= 0f ? dist : _dist, dist, dt * 0.8f);
+                Vector3 tray = head.position + yawRot * Vector3.forward * _dist;
                 tray.y = head.position.y - trayBelowEye;
                 var trayRot = yawRot * Quaternion.Euler(-trayTilt, 0f, 0f);
                 // stowed: parked inside the hip kit (items hidden there); opening flies it up in front of the eyes
@@ -357,10 +370,9 @@ namespace FieldMedic.Treatment
             _glow.gameObject.SetActive(cell);
             if (cell)
             {
-                var c = Cells[wanted];
                 var b = wanted.GetComponent<BoxCollider>();
                 Vector3 centre = Panel.InverseTransformPoint(wanted.transform.TransformPoint(b != null ? b.center : Vector3.zero));
-                float s = b != null ? Mathf.Max(b.size.x, b.size.z) * 1.5f : 0.12f;
+                float s = Mathf.Max(cellWidth, cellDepth) * 1.6f;
                 _glow.localPosition = new Vector3(centre.x, 0.0005f, centre.z);
                 _glow.localScale = Vector3.one * s * (0.9f + 0.15f * pulse);
                 _glowMat.SetFloat("_Alpha", pulse);

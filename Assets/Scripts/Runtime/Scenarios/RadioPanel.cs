@@ -195,9 +195,9 @@ namespace FieldMedic.Scenarios
             bool kz = GameSettings.KZ;
             int n = r != null ? r.options.Count : 0;
             float h = 0.1f + Mathf.Max(1, n) * RowH;
-            var bg = UiMesh.Add(_content, "Card", UiMesh.RoundedRect(W, h, 0.025f, new Color(0.11f, 0.13f, 0.1f), new Color(0.07f, 0.08f, 0.07f)), UiMesh.Mat(Color.white, 3000), new Vector3(0f, -h / 2f + 0.045f, 0.004f));
+            var bg = UiMesh.Add(_content, "Card", UiMesh.RoundedRect(W, h, 0.025f, new Color(0.11f, 0.13f, 0.1f), new Color(0.07f, 0.08f, 0.07f)), UiMesh.Mat(Color.white, 2980), new Vector3(0f, -h / 2f + 0.045f, 0.004f));
             bg.name = "Card";
-            UiMesh.Add(_content, "Rim", UiMesh.Ring(W, h, 0.025f, 0.005f, new Color(0.45f, 0.36f, 0.22f)), UiMesh.Mat(Color.white, 3001), new Vector3(0f, -h / 2f + 0.045f, 0.003f));
+            UiMesh.Add(_content, "Rim", UiMesh.Ring(W, h, 0.025f, 0.005f, new Color(0.45f, 0.36f, 0.22f)), UiMesh.Mat(Color.white, 2981), new Vector3(0f, -h / 2f + 0.045f, 0.003f));
             _title = WorldUI.Text(_content, "Title", "", new Vector3(-W / 2 + 0.018f, 0.032f, 0f), 0.0135f, new Color(1f, 0.8f, 0.42f));
             if (r == null)
             {
@@ -207,7 +207,7 @@ namespace FieldMedic.Scenarios
                 return;
             }
             _title.text = WorldUI.Wrap(r.title, 46);
-            _bar = UiMesh.Add(_content, "Cursor", UiMesh.RoundedRect(W - 0.02f, RowH - 0.008f, 0.012f, new Color(0.35f, 0.3f, 0.16f), new Color(0.3f, 0.26f, 0.14f)), UiMesh.Mat(Color.white, 3001), Vector3.zero).transform;
+            _bar = UiMesh.Add(_content, "Cursor", UiMesh.RoundedRect(W - 0.02f, RowH - 0.008f, 0.012f, new Color(0.35f, 0.3f, 0.16f), new Color(0.3f, 0.26f, 0.14f)), UiMesh.Mat(Color.white, 2982), Vector3.zero).transform;
             for (int i = 0; i < n; i++)
             {
                 float y = -0.02f - i * RowH;

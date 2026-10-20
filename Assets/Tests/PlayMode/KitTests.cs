@@ -180,25 +180,30 @@ namespace FieldMedic.Tests
         }
 
         [UnityTest]
-        public IEnumerator QuickPouch_CatAndShears_ReachableWhileMainKitClosed()
+        public IEnumerator Stowed_OnTheHip_ItemsLocked_XOpensTheTray()
         {
+            // w10: the kit hangs closed on the left hip (out of the way); X summons it as a tray in front of the eyes
             yield return MakeKit();
-            Assert.IsFalse(_pouch.IsOpen, "main pouch starts closed");
-            Assert.IsNotNull(_pouch.QuickPouch, "two-echelon kit: quick pouch");
+            Assert.IsNotNull(_pouch.Tray, "the player's kit is a summonable tray");
+            Assert.IsFalse(_pouch.IsOpen, "stowed at start");
             var cat = _pouch.Find<TourniquetCAT>();
-            var shears = _pouch.Find<ShearsItem>();
-            Assert.IsTrue(cat.homeSlot.IsChildOf(_pouch.QuickPouch), "CAT in the quick pouch");
-            Assert.IsTrue(shears.homeSlot.IsChildOf(_pouch.QuickPouch), "shears in the quick pouch");
-            Assert.IsNotNull(_pouch.Find(MedItemKind.AlphaTourniquet), "elastic Alpha tourniquet in the main pouch");
-            Assert.IsNotNull(_pouch.Find(MedItemKind.EsmarchTourniquet), "Esmarch band in the main pouch");
-            Assert.IsFalse(_pouch.Find(MedItemKind.AlphaTourniquet).homeSlot.IsChildOf(_pouch.QuickPouch), "2nd echelon");
-            Assert.IsFalse(_pouch.Find<GauzeItem>().CanBeGrabbedBy(_bot.right), "main pouch items locked while the lid is closed");
+            Assert.IsNotNull(_pouch.Find(MedItemKind.AlphaTourniquet), "elastic Alpha tourniquet in the kit");
+            Assert.IsNotNull(_pouch.Find(MedItemKind.EsmarchTourniquet), "Esmarch band in the kit");
+            Assert.IsFalse(cat.CanBeGrabbedBy(_bot.right), "nothing can be taken out of the stowed kit");
+            Vector3 hip = Quaternion.Inverse(Quaternion.Euler(0f, _head.eulerAngles.y, 0f)) * (_pouch.Tray.Hip.position - _head.position);
+            Assert.Less(hip.x, -0.1f, "hip kit on the LEFT");
+            Assert.Less(hip.y, -0.5f, "hip kit low (hip height)");
+            Assert.Less(hip.z, 0.1f, "hip kit never in front of the hands");
+            yield return _bot.OpenPouch(_pouch, _bot.left);
+            Assert.IsTrue(_pouch.IsOpen, "X opened the tray");
+            Vector3 tray = Quaternion.Inverse(Quaternion.Euler(0f, _head.eulerAngles.y, 0f)) * (_pouch.transform.position - _head.position);
+            Assert.AreEqual(0.4f, tray.z, 0.06f, "tray ~40 cm in front");
+            Assert.Less(tray.y, -0.2f, "tray at chest height");
             yield return _bot.Grab(_bot.right, cat);
-            Assert.AreEqual(cat, _bot.right.Held, "CAT out of the quick pouch without opening the kit");
-            Assert.IsFalse(_pouch.IsOpen, "the main lid is still closed");
-            yield return _bot.Move(_bot.right, cat.homeSlot.position + Vector3.up * 0.12f, false, 2f);
+            Assert.AreEqual(cat, _bot.right.Held, "CAT taken from the open tray");
+            yield return _bot.Move(_bot.right, cat.homeSlot.position + _pouch.transform.up * 0.12f, false, 2f);
             yield return _bot.Release(_bot.right);
-            Assert.IsTrue(cat.InPouch, "CAT back in the quick pouch (always open)");
+            Assert.IsTrue(cat.InPouch, "CAT back in its cell over the tray");
         }
 
         [UnityTest]

@@ -244,6 +244,7 @@ namespace FieldMedic.Treatment
             InPouch = false;
             if (_ownColliders != null && !Attached) SetSolid(true);
             transform.SetParent(null, true);
+            transform.localScale = Vector3.one; // w10 tray shows items scaled down in their cells: full size in the hand
             MakeFree();
             OnPouchState(false);
         }

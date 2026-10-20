@@ -209,6 +209,8 @@ namespace FieldMedic.Scenarios
             int ai = 0;
             for (int i = 0; i < step.actions.Count; i++)
                 if (!(_sticky != null && i < _sticky.Length && _sticky[i])) { ai = i; break; }
+            // "X — kit…" while the tray is already open: show the next action instead
+            if (_pouch != null && _pouch.IsOpen && ai + 1 < step.actions.Count && step.actions[ai].ru.StartsWith("Нажми X")) ai++;
             var a = step.actions.Count > 0 ? step.actions[ai] : null;
             string head = Progress.StepNumber + "/" + Progress.StepCount + "  ";
             StepGuide.Set(head + step.ru + (a != null ? ": " + a.ru : ""), head + step.Text(true) + (a != null ? ": " + a.Text(true) : ""), IconsFor(step));
