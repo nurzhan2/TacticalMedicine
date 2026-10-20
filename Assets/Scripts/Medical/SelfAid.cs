@@ -585,7 +585,7 @@ namespace FieldMedic.Medical
             var r = new DebriefReport
             {
                 scenarioId = def?.id ?? "SA",
-                title = def?.Title(kz),
+                title = kz ? "Өзіне көмек" : "Самопомощь", // short: the board header also carries the flag + patch
                 endReason = run.EndReason,
                 survived = survived,
                 score = Score(run),

@@ -77,7 +77,7 @@ namespace FieldMedic.Tests
         }
 
         /// First person: the eye turns to `look` (the overlays are children of the eye and turn with it).
-        static void Eye(string name, Transform head, Vector3 look, float fov = 90f)
+        static void Eye(string name, Transform head, Vector3 look, float fov = 72f)
         {
             head.rotation = Quaternion.LookRotation(look - head.position, Vector3.up);
             Shot(name, head.position, look, fov);
@@ -106,6 +106,7 @@ namespace FieldMedic.Tests
         [Timeout(400000)]
         public IEnumerator SelfAid_Screens()
         {
+            SelfAidDirector.ForceNext = SelfAidLimb.Arm;
             yield return DemoFlowRunner.Load(() => ScenarioLaunch.Scenario("SA", new ScenarioVariant { seed = 3 }));
             SelfAidDirector d = null;
             for (int i = 0; i < 600 && (d = SelfAidDirector.Instance) == null; i++) yield return null;
@@ -123,7 +124,7 @@ namespace FieldMedic.Tests
             yield return null;
             yield return null;
             float wp = d.Config.WoundPosition;
-            Eye("w9b_01_hit_first_person", head, d.Limb.PointAt(wp) + Vector3.up * 0.05f, 95f);
+            Eye("w9b_01_hit_first_person", head, d.Limb.PointAt(wp) + Vector3.up * 0.05f);
             yield return DemoFlowRunner.Seconds(2.5f);
             Vector3 wound = d.Limb.PointAt(wp);
             Vector3 fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
@@ -143,7 +144,7 @@ namespace FieldMedic.Tests
             side = Vector3.Cross(Vector3.up, fwd) * (d.Config.left ? -1f : 1f);
             var fill = Fill(wound + Vector3.up * 0.5f - fwd * 0.2f);
             Shot("w9b_03_arm_bleeding", wound + side * 0.55f + Vector3.up * 0.25f + fwd * 0.15f, wound, 50f);
-            Eye("w9b_04_arm_first_person", head, wound + Vector3.up * 0.03f, 85f);
+            Eye("w9b_04_arm_first_person", head, wound + Vector3.up * 0.03f);
 
             yield return bot.SelfTourniquet(0.18f);
             Assert.IsTrue(d.Run.tq.Locked, "band locked; bot " + bot.lastStep);
@@ -151,26 +152,27 @@ namespace FieldMedic.Tests
             Vector3 band = d.Limb.PointAt(d.Run.tq.limbPosition);
             fill.transform.position = band + Vector3.up * 0.4f - fwd * 0.2f;
             Shot("w9b_05_tq_high_and_tight", band + side * 0.42f + Vector3.up * 0.22f + fwd * 0.25f, band, 48f);
-            Eye("w9b_06_tq_first_person", head, d.Tq.TimeLabelPoint, 80f);
+            Eye("w9b_06_tq_first_person", head, d.Tq.TimeLabelPoint);
 
             d.Config.rescueAfterReport = 14f;
             d.Config.firstCheckAfterAck = 5f;
             yield return bot.PressRadio();
             yield return null;
             Assert.IsTrue(d.Menu.Open, "report menu");
-            Eye("w9b_07_report_menu", head, d.Menu.transform.position, 80f);
+            Eye("w9b_07_report_menu", head, d.Menu.transform.position);
             yield return bot.Report();
             Assert.IsTrue(d.Run.ReportSent);
             yield return bot.Blanket();
             yield return null;
-            Eye("w9b_08_blanket", head, head.position + fwd * 2f + Vector3.down * 0.9f, 90f);
+            yield return DemoFlowRunner.Seconds(1f);
+            Eye("w9b_08_blanket", head, head.position + fwd * 2f + Vector3.down * 0.7f);
 
             // deep shock for a moment (what the eyes see near the end without the band)
             float lost = d.Run.patient.bloodLostMl;
             d.Run.patient.bloodLostMl = d.Run.LethalMl * 0.82f;
             yield return null;
             yield return null;
-            Eye("w9b_09_shock_vision", head, head.position + fwd * 3f + Vector3.down * 0.5f, 90f);
+            Eye("w9b_09_shock_vision", head, head.position + fwd * 3f + Vector3.down * 0.5f);
             d.Run.patient.bloodLostMl = lost;
             yield return null;
 
@@ -182,8 +184,10 @@ namespace FieldMedic.Tests
                 yield return null;
             }
             Assert.Contains(SelfAidCue.RescueArrive, d.CueLog);
-            yield return DemoFlowRunner.Seconds(3.2f);
-            Shot("w9b_10_comrades_arrive", head.position + fwd * 3.5f + Vector3.up * 0.6f, head.position + Vector3.down * 0.6f, 62f);
+            yield return DemoFlowRunner.Seconds(3.6f);
+            // from inside the ruin, past the medic, toward the doorway they come in through
+            Vector3 inside = new Vector3(-3.6f, 1.7f, 0.6f);
+            Shot("w9b_10_comrades_arrive", inside, BattlefieldLayout.DoorwayCentre + Vector3.up * 0.9f, 70f);
             t0 = Time.time;
             while (d.Report == null && Time.time - t0 < 20f) yield return null;
             Assert.IsNotNull(d.Report, "debrief");
@@ -192,13 +196,56 @@ namespace FieldMedic.Tests
             BoardShot(b, "w9b_11_debrief");
             Debug.Log($"[FMVR] w9b screens debrief: {d.Report.endReason} score {d.Report.score} checks {string.Join("; ", d.Report.checks.Select(c => (c.ok ? "+" : "-") + c.text))}");
             b.ShowScenarios();
+            yield return null;
             BoardShot(b, "w9b_12_menu_scenarios");
             b.ShowTraining();
+            yield return null;
             BoardShot(b, "w9b_13_menu_training");
             GameSettings.Language = GameLanguage.KZ;
             b.ShowDebrief(SelfAidDebrief.Build(d.Def, d.Run, ScenarioClock.Format, true));
+            yield return null;
             BoardShot(b, "w9b_14_debrief_kz");
             GameSettings.Language = GameLanguage.RU;
+        }
+
+        [UnityTest]
+        [Timeout(300000)]
+        public IEnumerator SelfAid_Thigh_Screens()
+        {
+            SelfAidDirector.ForceNext = SelfAidLimb.Thigh;
+            yield return DemoFlowRunner.Load(() => ScenarioLaunch.Scenario("SA", new ScenarioVariant { seed = 11 }));
+            SelfAidDirector d = null;
+            for (int i = 0; i < 600 && (d = SelfAidDirector.Instance) == null; i++) yield return null;
+            Assert.IsNotNull(d);
+            Assert.AreEqual(SelfAidLimb.Thigh, d.Config.limb);
+            d.hitDelay = 1.5f;
+            foreach (var hr in HandRig.All.ToList()) hr.UseScripted(hr.transform.position);
+            var bot = new GameObject("~SelfAidBot").AddComponent<SelfAidBot>();
+            bot.Init(d, d.playerRig);
+            var head = d.head;
+            float t0 = Time.time;
+            while (!d.HitHappened && Time.time - t0 < 15f) yield return null;
+            Assert.IsTrue(d.HitHappened);
+            // down on the ground: the eyes drop to ~0.9 m (sitting), then crawl into the ruin
+            d.playerRig.position += Vector3.down * 0.7f; // (the desktop simulator owns the eye height of the pitch pivot)
+            yield return DemoFlowRunner.Seconds(1.5f);
+            Vector3 fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
+            Eye("w9b_20_thigh_look_down", head, d.Limb.PointAt(0.9f));
+            var door = BattlefieldLayout.DoorwayCentre;
+            yield return bot.WalkTo(door + new Vector3(1.0f, 0f, 0f), 0.9f);
+            yield return bot.WalkTo(door + new Vector3(-1.3f, 0f, 0.1f), 0.9f);
+            Assert.IsTrue(d.Run.InCover, "crawled into cover");
+            yield return bot.SelfTourniquet(0.18f);
+            Assert.IsTrue(d.Run.tq.Locked, "thigh band locked; bot " + bot.lastStep);
+            yield return null;
+            Vector3 band = d.Limb.PointAt(d.Run.tq.limbPosition);
+            fwd = Vector3.ProjectOnPlane(head.forward, Vector3.up).normalized;
+            Vector3 side = Vector3.Cross(Vector3.up, fwd) * (d.Config.left ? -1f : 1f);
+            var fill = Fill(band + Vector3.up * 0.6f);
+            Shot("w9b_21_thigh_tq", band + side * 0.7f + Vector3.up * 0.45f + fwd * 0.45f, d.Limb.PointAt(0.6f), 52f);
+            Eye("w9b_22_thigh_tq_first_person", head, d.Limb.PointAt(0.5f));
+            Object.Destroy(fill.gameObject);
+            d.EndNow("ended");
         }
     }
 }

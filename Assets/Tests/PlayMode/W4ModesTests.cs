@@ -453,7 +453,7 @@ namespace FieldMedic.Tests
             Assert.Contains("Btn_TCCC", labels);
             B("TCCC").Click();
             Assert.AreEqual("lesson:full", launched);
-            foreach (var (label, lesson) in new[] { ("1", "tq"), ("2", "pack"), ("3", "drag"), ("4", "chest") })
+            foreach (var (label, lesson) in new[] { ("1", "tq"), ("2", "pack"), ("3", "drag"), ("4", "chest"), ("6", "selftq") })
             {
                 B(label).Click();
                 Assert.AreEqual("lesson:" + lesson, launched, label);
@@ -463,6 +463,11 @@ namespace FieldMedic.Tests
             B("2").Click();
             yield return null;
             Assert.AreEqual("scenarios", board.Page, "combat → scenario list");
+            B("9").Click(); // w9b: the self-aid drill is the 9th card
+            yield return null;
+            Assert.AreEqual("briefing", board.Page);
+            B("ПУСК").Click();
+            Assert.AreEqual("scenario:SA", launched);
             board.ShowMain();
             yield return null;
             B("3").Click();

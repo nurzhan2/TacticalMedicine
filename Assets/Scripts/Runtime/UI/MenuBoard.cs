@@ -285,8 +285,9 @@ namespace FieldMedic.UI
             // left column: the verdict
             float lx = -W / 2 + 0.06f;
             Txt(r.score.ToString(), lx, H / 2 - 0.13f, 0.11f, r.survived ? (r.score >= 85 ? Good : Amber) : Bad);
-            Txt(r.Grade(kz), lx + 0.22f, H / 2 - 0.15f, 0.028f, r.survived ? Amber : Bad);
-            Txt(GameSettings.T("лучший: ", "үздік: ") + r.bestScore + (r.newBest ? GameSettings.T("  НОВЫЙ РЕКОРД", "  ЖАҢА РЕКОРД") : ""), lx + 0.22f, H / 2 - 0.2f, 0.016f, Dim);
+            float gx = lx + (r.score >= 100 ? 0.29f : 0.22f); // three digits are wider
+            Txt(r.Grade(kz), gx, H / 2 - 0.15f, 0.028f, r.survived ? Amber : Bad);
+            Txt(GameSettings.T("лучший: ", "үздік: ") + r.bestScore + (r.newBest ? GameSettings.T("  НОВЫЙ РЕКОРД", "  ЖАҢА РЕКОРД") : ""), gx, H / 2 - 0.2f, 0.016f, Dim);
             Txt(WorldUI.Wrap(r.outcomeText, 44), lx, H / 2 - 0.3f, 0.018f, r.survived ? Ink : Bad);
             Txt(WorldUI.Wrap(GameSettings.T("Конечности: ", "Аяқ-қол: ") + r.limbOutcome, 44), lx, H / 2 - 0.39f, 0.016f, Ink);
             string ctl = r.bleedControlSeconds >= 0f ? $"{r.bleedControlSeconds:0} с" : "—";
@@ -295,7 +296,7 @@ namespace FieldMedic.UI
 
             // middle column: numbered mistakes (same numbers as on the map and the timeline) with the TCCC step
             float rx = -0.2f;
-            Txt(GameSettings.T("Ошибки", "Қателер") + (r.mistakes.Count == 0 ? GameSettings.T(" — нет. Чисто сработано.", " — жоқ.") : ""), rx, H / 2 - 0.13f, 0.024f, r.mistakes.Count == 0 ? Good : Bad);
+            Txt(GameSettings.T("Ошибки", "Қателер") + (r.mistakes.Count == 0 ? GameSettings.T(" — нет. Чисто сработано.", " — жоқ.") : ""), rx, H / 2 - 0.13f, r.selfAid ? 0.02f : 0.024f, r.mistakes.Count == 0 ? Good : Bad);
             float y = H / 2 - 0.17f;
             foreach (var m in r.mistakes.OrderBy(m => m.number).Take(5))
             {
@@ -315,7 +316,7 @@ namespace FieldMedic.UI
                 }
                 if (y < -0.18f) break;
             }
-            if (r.selfAid && r.checks.Count > 0) Checklist(r, 0.33f, H / 2 - 0.13f);
+            if (r.selfAid && r.checks.Count > 0) Checklist(r, 0.36f, H / 2 - 0.19f);
             else MiniMap(r, new Vector2(0.505f, 0.075f), new Vector2(0.36f, 0.48f));
             TimelineStrip(r, -0.2f, 0.71f, -0.255f);
 

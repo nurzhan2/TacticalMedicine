@@ -36,7 +36,7 @@ namespace FieldMedic.Scenarios.SelfAid
         {
             _grey = Mat("SA_Grey", null, 1);
             _tunnel = Mat("SA_Tunnel", Vignette(new Color32(0, 0, 0, 255), 0.25f, 0.95f), 2);
-            _red = Mat("SA_Red", Vignette(new Color32(150, 6, 4, 255), 0.0f, 0.9f, 0.45f), 3);
+            _red = Mat("SA_Red", Vignette(new Color32(150, 6, 4, 255), 0.15f, 0.85f, 0.22f), 3);
             _foil = Mat("SA_Foil", FoilEdge(), 4);
             _dim = Mat("SA_Dim", null, 5);
             _rGrey = Quad("Grey", 0.074f, 0.5f, _grey);
@@ -101,19 +101,19 @@ namespace FieldMedic.Scenarios.SelfAid
             return t;
         }
 
-        /// Crinkled gold/silver foil around the lower edge of the view (the blanket pulled up to the chin).
+        /// Crinkled gold/silver foil along the lower edge of the view (the blanket pulled up to the chin): opaque below
+        /// v ≈ 0.3 with a ragged, crumpled top edge (the visible view spans v ≈ 0.23..0.77 at this distance).
         static Texture2D FoilEdge()
         {
-            const int n = 96;
+            const int n = 128;
             var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "SA_Foil" };
             var px = new Color32[n * n];
             for (int y = 0; y < n; y++)
             for (int x = 0; x < n; x++)
             {
                 float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
-                float dx = u * 2f - 1f, dy = v * 2f - 1f;
-                float r = Mathf.Sqrt(dx * dx + dy * dy * 1.3f);
-                float edge = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.62f, 1.0f, r)) * Mathf.Lerp(1f, 0.35f, v); // mostly bottom
+                float top = 0.31f + 0.03f * Mathf.Sin(u * 17f) + 0.025f * (Mathf.PerlinNoise(u * 9f, 3.3f) - 0.5f) * 2f + 0.04f * Mathf.Abs(u - 0.5f);
+                float edge = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(top - 0.03f, top + 0.012f, v));
                 float crinkle = Mathf.PerlinNoise(u * 14f, v * 14f) * 0.6f + Mathf.PerlinNoise(u * 41f + 7f, v * 37f) * 0.4f;
                 float gold = Mathf.Clamp01(crinkle * 1.4f - 0.15f);
                 var c = Color.Lerp(new Color(0.55f, 0.42f, 0.12f), new Color(1f, 0.86f, 0.45f), gold);
@@ -129,7 +129,8 @@ namespace FieldMedic.Scenarios.SelfAid
         public void Flash(float strength = 1f) => _flash = Mathf.Max(_flash, Mathf.Clamp01(strength));
 
         /// <summary>The blanket unfolds over you: strong foil edge for a moment, then a thin rim at the bottom.</summary>
-        public void Blanket() { _foilFlash = 1f; _foilBase = 0.55f; }
+        public void Blanket() { _foilFlash = 1f; _foilBase = 0.92f; _rise = 0f; }
+        float _rise = 1f;
 
         void LateUpdate()
         {
@@ -142,6 +143,9 @@ namespace FieldMedic.Scenarios.SelfAid
             Red = _flash;
             _foilFlash = Mathf.MoveTowards(_foilFlash, 0f, dt * 0.6f);
             Foil = Mathf.Max(_foilBase, _foilFlash);
+            // the blanket comes up from below the view (pulled up to the chin)
+            _rise = Mathf.MoveTowards(_rise, 1f, dt * 1.6f);
+            if (_rFoil != null) _rFoil.transform.localPosition = new Vector3(0f, Mathf.Lerp(-0.03f, 0f, Mathf.SmoothStep(0f, 1f, _rise)), 0.068f);
             Apply();
         }
 

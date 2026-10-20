@@ -79,13 +79,13 @@ namespace FieldMedic.Tests
         }
 
         /// <summary>Body (head 1.6 m, facing the cover at −Z), two hands, worn IFAK, radio, director in test mode.</summary>
-        IEnumerator Run(int seed = 3, System.Action<SelfAidConfig> tune = null, bool lesson = false)
+        IEnumerator Run(int seed = 3, System.Action<SelfAidConfig> tune = null, bool lesson = false, SelfAidLimb limb = SelfAidLimb.Arm, float eye = 1.6f)
         {
             _body = new GameObject("Body").transform;
             _spawned.Add(_body.gameObject);
             _head = new GameObject("Head").transform;
             _head.SetParent(_body, false);
-            _head.localPosition = new Vector3(0f, 1.6f, 0f);
+            _head.localPosition = new Vector3(0f, eye, 0f);
             _head.localRotation = Quaternion.Euler(10f, 180f, 0f);
             var l = MakeHand(Handedness.Left, _head.position + new Vector3(0.2f, -0.5f, -0.25f));
             var r = MakeHand(Handedness.Right, _head.position + new Vector3(-0.2f, -0.5f, -0.25f));
@@ -115,6 +115,7 @@ namespace FieldMedic.Tests
             _d.startPosition = Vector3.zero;
             _d.startYaw = 0f;
             _d.Finished += rep => _report = rep;
+            _d.forceLimb = limb;
             yield return null;
             if (lesson) _d.BeginLesson(TrainingCatalog.Get("selftq"), seed);
             else
@@ -185,6 +186,41 @@ namespace FieldMedic.Tests
             Assert.Contains(SelfAidCue.RescueArrive, _d.CueLog);
             Assert.Contains(SelfAidCue.Ack, _d.CueLog);
             Assert.IsTrue(_d.Events.Any(e => e == "radio sa_arrive"), "«Держись, брат, свои!»");
+        }
+
+        [UnityTest, Timeout(240000)]
+        public IEnumerator Thigh_CrawlToCover_TqOverTheFoot_HighAndTight_Rescued()
+        {
+            // variant B: down on the ground (eyes 0.9 m: sitting / on the knees), both legs drawn, crawl into cover
+            yield return Run(4, c => { c.rescueAfterReport = 30f; c.firstCheckAfterAck = 6f; c.checkInterval = 12f; }, limb: SelfAidLimb.Thigh, eye: 0.9f);
+            Assert.AreEqual("legL", _d.Run.cfg.LimbId);
+            Assert.AreEqual(BodyRegion.ThighL, _d.Run.wound.region);
+            Assert.IsInstanceOf<SelfLeg>(_d.Limb);
+            Assert.IsNotNull(_d.OtherLeg, "both legs are drawn when looking down");
+            Assert.IsFalse(_d.Wounded.gripDisabled, "a leg wound leaves both hands working");
+            Assert.That(_d.Limb.Root.y, Is.LessThan(0.3f), "hips on the ground");
+            Assert.Greater(Vector3.Distance(_d.Limb.Tip, _d.Limb.Root), 0.7f, "legs stretched out");
+            yield return _bot.WalkTo(CoverAt, 0.9f); // crawling
+            yield return null;
+            Assert.IsTrue(_d.Run.InCover);
+            Assert.IsFalse(_d.Run.Mistakes.ContainsKey("sa_stayed_open"), "the drone's patience is scaled to the crawl");
+            yield return _bot.SelfTourniquet(0.18f);
+            Assert.IsTrue(_d.Run.tq.Locked, "locked; bot " + _bot.lastStep + " stage " + _d.Run.tq.stage + " pos " + _d.Run.tq.limbPosition);
+            Assert.AreEqual("legL", _d.Run.tq.limbId);
+            Assert.That(_d.Run.tq.HalfTurns, Is.GreaterThanOrEqualTo(4), "a thigh needs more turns");
+            Assert.IsTrue(_d.Run.wound.IsControlled, "bleeding stopped, occlusion " + _d.Run.tq.Occlusion);
+            yield return null;
+            Assert.IsTrue(_d.Run.tq.TimeMarked, "time written; bot " + _bot.lastStep);
+            Assert.That(_d.Run.TqLockedAt, Is.LessThan(60f));
+            yield return _bot.Report();
+            Assert.IsTrue(_d.Run.ReportSent && _d.Run.ReportAllCorrect, "report: " + string.Join(" / ", _d.Run.ReportLog));
+            Assert.That(_d.Run.ReportLog[2], Does.Contain("нога"));
+            yield return _bot.Blanket();
+            yield return _bot.Wait(90f);
+            Assert.IsNotNull(_report, Summary);
+            Assert.AreEqual("rescued", _report.endReason, Summary);
+            Assert.IsEmpty(_report.mistakes, Summary);
+            Assert.IsTrue(_report.checks.All(c => c.ok), Summary);
         }
 
         [UnityTest, Timeout(120000)]

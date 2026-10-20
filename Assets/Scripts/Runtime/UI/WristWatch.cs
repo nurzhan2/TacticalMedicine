@@ -56,6 +56,19 @@ namespace FieldMedic.UI
         void LateUpdate()
         {
             if (hand != null) transform.SetPositionAndRotation(hand.TransformPoint(localOffset), hand.rotation * FaceRotation);
+            var sa = FieldMedic.Scenarios.SelfAid.SelfAidDirector.Instance;
+            if (sa != null && sa.Run != null && !sa.Run.Ended)
+            {
+                // w9b self-aid: your own watch — the time to write on the band and your own racing pulse (no countdown)
+                var own = sa.Run.patient;
+                UpdateDisplay(own, sa.Run.Clock);
+                _golden.text = "";
+                _time.text = ScenarioClock.Format(sa.Run.Clock);
+                _info.text = !sa.Run.InCover && sa.Run.CoverReachedAt < 0f ? GameSettings.T("ПОД ОГНЁМ", "ОҚ АСТЫНДА")
+                    : sa.Run.ArrivedAt >= 0f ? GameSettings.T("СВОИ", "ӨЗІМІЗДІКІ") : GameSettings.T("В УКРЫТИИ", "БАСПАНАДА");
+                if (_skip != null) _skip.gameObject.SetActive(false);
+                return;
+            }
             var d = ScenarioDirector.Instance;
             var c = d != null ? d.casualty : null;
             var p = c != null ? c.Patient : null;

@@ -107,7 +107,7 @@ namespace FieldMedic.Scenarios.SelfAid
             float diff = Mathf.DeltaAngle(_yaw, hy);
             if (Mathf.Abs(diff) > 25f) _yaw += (Mathf.Abs(diff) - 25f) * Mathf.Sign(diff);
             var rot = Quaternion.Euler(0f, _yaw, 0f);
-            Vector3 p = head.position + rot * new Vector3(0.1f * side, -0.28f, 0.36f);
+            Vector3 p = head.position + rot * new Vector3(0.12f * side, -0.19f, 0.42f);
             transform.SetPositionAndRotation(p, Quaternion.LookRotation(p - head.position));
         }
     }

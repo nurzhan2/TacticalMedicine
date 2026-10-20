@@ -27,7 +27,7 @@ namespace FieldMedic.Scenarios.SelfAid
         public Vector3 Tip => D;
         public float Side => left ? -1f : 1f;
 
-        Transform _upper, _lower, _soak, _woundPatch;
+        Transform _upper, _lower, _soak, _woundPatch, _rootCap, _jointCap;
         Mesh _tube;
         Material _cloth, _soakMat;
         ParticleSystem _jet, _drip;
@@ -39,6 +39,10 @@ namespace FieldMedic.Scenarios.SelfAid
         public abstract void Solve();
 
         protected virtual Color ClothColor => new Color(0.25f, 0.26f, 0.17f);
+        /// Where the blood drips off the limb.
+        protected virtual Vector3 DripPoint => D;
+        /// Round cap over the shoulder end of the sleeve (the hips of a leg are under the body: no cap).
+        protected virtual bool ShowRootCap => true;
 
         protected virtual void Start() => Build();
 
@@ -49,10 +53,12 @@ namespace FieldMedic.Scenarios.SelfAid
             Solve();
             _tube = Tube(16);
             _cloth = Kit.Mat("SelfSleeve", ClothColor, 0.12f);
-            _soakMat = Kit.Mat("SelfSleeveSoak", new Color(0.2f, 0.02f, 0.015f), 0.45f);
+            _soakMat = SoakMaterial();
             _upper = Kit.MeshPart(transform, "SleeveUpper", _tube, _cloth, Vector3.zero, Quaternion.identity, Vector3.one).transform;
             _lower = Kit.MeshPart(transform, "SleeveLower", _tube, _cloth, Vector3.zero, Quaternion.identity, Vector3.one).transform;
             _soak = Kit.MeshPart(transform, "BloodSoak", _tube, _soakMat, Vector3.zero, Quaternion.identity, Vector3.one).transform;
+            _rootCap = Kit.Part(transform, PrimitiveType.Sphere, "RootCap", Vector3.zero, Vector3.one * 0.1f, _cloth).transform;
+            _jointCap = Kit.Part(transform, PrimitiveType.Sphere, "JointCap", Vector3.zero, Vector3.one * 0.08f, _cloth).transform;
             var s = BloodSettings.Load();
             var woundMat = s != null && s.woundRagged != null ? s.woundRagged : Kit.Mat("SelfWound", new Color(0.18f, 0.01f, 0.01f), 0.5f);
             var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -69,8 +75,17 @@ namespace FieldMedic.Scenarios.SelfAid
                 s != null && s.pool != null ? s.pool : Kit.Mat("SelfPool", new Color(0.16f, 0.01f, 0.01f), 0.8f));
             _pool = pool.transform;
             _pool.SetParent(null, true); // stays on the ground where he bled
+            BuildExtra();
             Refresh();
         }
+
+        /// <summary>Extra parts of a concrete limb (boots...).</summary>
+        protected virtual void BuildExtra() { }
+        /// <summary>Pose the extra parts after the sleeve/trousers were placed.</summary>
+        protected virtual void AfterRefresh() { }
+        protected Material ClothMaterial => _cloth;
+        protected Mesh TubeMesh => _tube;
+        protected void PlaceTube(Transform t, Vector3 a, Vector3 b, float r0, float r1) => Place(t, a, b, r0, r1);
 
         void OnDestroy() { if (_pool != null) Destroy(_pool.gameObject); }
 
@@ -163,6 +178,12 @@ namespace FieldMedic.Scenarios.SelfAid
         {
             Place(_upper, A, B, rootRadius, jointRadius * 1.02f);
             Place(_lower, B, C, jointRadius, distalRadius);
+            _rootCap.gameObject.SetActive(ShowRootCap);
+            _rootCap.position = A;
+            _rootCap.localScale = Vector3.one * rootRadius * 2.1f;
+            _jointCap.position = B;
+            _jointCap.localScale = Vector3.one * jointRadius * 2.05f;
+            AfterRefresh();
             if (run == null) { _soak.gameObject.SetActive(false); _woundPatch.gameObject.SetActive(false); return; }
             float wp = run.cfg.WoundPosition;
             // soaked cloth: spreads along the sleeve from the wound with the blood lost
@@ -189,7 +210,7 @@ namespace FieldMedic.Scenarios.SelfAid
 
         void Bleed(float dt)
         {
-            if (run == null || _jet == null) return;
+            if (run == null || _jet == null) { if (_pool != null) _pool.gameObject.SetActive(false); return; }
             var p = run.patient;
             float flow = run.FlowMlPerSec;
             // the cap that keeps training safe zeroes the volume: keep the look of an open wound
@@ -207,7 +228,7 @@ namespace FieldMedic.Scenarios.SelfAid
             }
             float dripRate = Mathf.Clamp(flow * 1.2f, 0f, 18f) + (run.wound.bloodLostMl > 150f && !run.wound.IsControlled ? 1.5f : 0f);
             _dripAccum += dripRate * dt;
-            Vector3 low = D; // blood runs down to the fingertips and drips off
+            Vector3 low = DripPoint; // blood runs down to the fingertips (arm) / off the thigh (leg) and drips
             while (_dripAccum >= 1f)
             {
                 _dripAccum -= 1f;
@@ -243,6 +264,38 @@ namespace FieldMedic.Scenarios.SelfAid
                     startLifetime = Random.Range(0.5f, 0.9f),
                     applyShapeToPosition = false,
                 }, 1);
+        }
+
+        /// <summary>Blood soaked into the sleeve: dark wet red with a ragged, alpha-clipped edge (no transparency
+        /// sorting; URP/Lit alpha test). The soak tube's v runs along the limb, the wound sits at v ≈ 0.4.</summary>
+        static Material SoakMaterial()
+        {
+            const int n = 64;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { name = "SA_Soak", wrapMode = TextureWrapMode.Repeat };
+            var px = new Color32[n * n];
+            for (int y = 0; y < n; y++)
+            for (int x = 0; x < n; x++)
+            {
+                float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                // distance from the wound line, wider on the top (u ≈ 0.25) where it runs out, ragged by noise
+                float d = Mathf.Abs(v - 0.4f) / 0.4f;
+                float noise = Mathf.PerlinNoise(u * 7f, v * 5f) * 0.55f + Mathf.PerlinNoise(u * 19f + 3f, v * 13f) * 0.25f;
+                float a = 1f - d + noise * 0.55f - 0.15f;
+                float wet = Mathf.PerlinNoise(u * 11f + 5f, v * 9f);
+                var c = Color.Lerp(new Color(0.16f, 0.015f, 0.012f), new Color(0.3f, 0.02f, 0.015f), wet);
+                px[y * n + x] = new Color32((byte)(c.r * 255f), (byte)(c.g * 255f), (byte)(c.b * 255f), (byte)(Mathf.Clamp01(a) * 255f));
+            }
+            t.SetPixels32(px);
+            t.Apply(true, true);
+            var m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = "SA_SleeveSoak" };
+            m.SetTexture("_BaseMap", t);
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_Smoothness", 0.5f);
+            m.SetFloat("_AlphaClip", 1f);
+            m.SetFloat("_Cutoff", 0.5f);
+            m.EnableKeyword("_ALPHATEST_ON");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            return m;
         }
 
         /// <summary>Unit tube along +Z (radius 1, slight taper to 0.9 at z = 1), open ends.</summary>
@@ -316,6 +369,63 @@ namespace FieldMedic.Scenarios.SelfAid
             float a = (l1 * l1 - l2 * l2 + reach * reach) / (2f * reach);
             float h = Mathf.Sqrt(Mathf.Max(0f, l1 * l1 - a * a));
             return root + dir * a + bend * h;
+        }
+    }
+
+    /// <summary>
+    /// A leg of the player sitting on the ground (thigh variant B, w9b): the hips under the head at ground level, the
+    /// legs stretched forward with slightly raised knees, trousers + boots — what you see when you look down. Untracked:
+    /// it follows the head's position and the lagging torso yaw. The band goes on over the foot.
+    /// </summary>
+    public sealed class SelfLeg : SelfLimb
+    {
+        public float thighLength = 0.44f, shinLength = 0.42f;
+        Transform _boot, _sole;
+        float _yaw, _ground;
+        bool _yawInit, _groundInit;
+
+        protected override Color ClothColor => new Color(0.23f, 0.24f, 0.16f);
+
+        protected override bool ShowRootCap => false;
+        protected override Vector3 DripPoint => run != null ? PointAt(run.cfg.WoundPosition) + Vector3.down * RadiusAt(run.cfg.WoundPosition) : C;
+
+        protected override void BuildExtra()
+        {
+            var leather = Kit.Mat("SelfBoot", new Color(0.09f, 0.08f, 0.06f), 0.35f);
+            var sole = Kit.Mat("SelfBootSole", new Color(0.04f, 0.04f, 0.04f), 0.2f);
+            _boot = Kit.Part(transform, PrimitiveType.Cube, "Boot", Vector3.zero, new Vector3(0.1f, 0.12f, 0.27f), leather).transform;
+            _sole = Kit.Part(transform, PrimitiveType.Cube, "Sole", Vector3.zero, new Vector3(0.105f, 0.025f, 0.29f), sole).transform;
+        }
+
+        public override void Solve()
+        {
+            if (head == null) return;
+            float hy = head.eulerAngles.y;
+            if (!_yawInit) { _yaw = hy; _yawInit = true; }
+            float diff = Mathf.DeltaAngle(_yaw, hy);
+            if (Mathf.Abs(diff) > 40f) _yaw += (Mathf.Abs(diff) - 40f) * Mathf.Sign(diff); // the body turns only when the head looks far aside
+            var yaw = Quaternion.Euler(0f, _yaw, 0f);
+            // ground under the body (ignores triggers and the player's own parts)
+            Vector3 hp = head.position;
+            float g = hp.y - 1.0f;
+            if (Physics.Raycast(new Vector3(hp.x, hp.y + 0.1f, hp.z) + yaw * Vector3.back * 0.1f, Vector3.down, out var hit, 3f, ~0, QueryTriggerInteraction.Ignore)) g = hit.point.y;
+            _ground = _groundInit ? Mathf.MoveTowards(_ground, g, Time.deltaTime * 2f) : g;
+            _groundInit = true;
+            A = new Vector3(hp.x, _ground + 0.13f, hp.z) + yaw * new Vector3(0.1f * Side, 0f, -0.1f);
+            B = A + yaw * new Vector3(0.03f * Side, 0.1f, 0.43f);
+            C = B + yaw * new Vector3(0.015f * Side, -0.06f, shinLength);
+            D = C + yaw * new Vector3(0f, 0.09f, 0.17f);
+        }
+
+        protected override void AfterRefresh()
+        {
+            if (_boot == null) return;
+            Vector3 fwd = D - C; fwd.y = 0f;
+            if (fwd.sqrMagnitude < 1e-6f) fwd = Vector3.forward;
+            var rot = Quaternion.LookRotation(fwd.normalized, Vector3.up);
+            Vector3 mid = Vector3.Lerp(C, D, 0.45f);
+            _boot.SetPositionAndRotation(new Vector3(mid.x, Mathf.Max(_ground + 0.07f, C.y - 0.02f), mid.z), rot);
+            _sole.SetPositionAndRotation(new Vector3(mid.x, _ground + 0.0125f, mid.z), rot);
         }
     }
 }

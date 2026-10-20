@@ -41,7 +41,13 @@ namespace FieldMedic.Scenarios.SelfAid
         public bool testMode;
         public bool tremor = true;
         /// Thigh variant (B) is offered by the random config only when the leg rig exists.
-        public static bool ThighSupported = false;
+        public static bool ThighSupported = true;
+        /// Tests / screenshots: force the variant (null = random per seed).
+        public SelfAidLimb? forceLimb;
+        /// Screenshots / demo: the variant of the next run started through the scenario launch (consumed once).
+        public static SelfAidLimb? ForceNext;
+        [Tooltip("Thigh variant: crawling speed (m/s) - the leg does not carry him.")]
+        public float crawlSpeed = 0.9f;
         /// In the open, ~11.5 m from the doorway of house A (the nearest cover).
         public Vector3 startPosition = new Vector3(7.4f, 0f, 11.4f);
         public float startYaw = 208f;
@@ -105,17 +111,26 @@ namespace FieldMedic.Scenarios.SelfAid
             foreach (var r in _rescuers) if (r != null) Destroy(r.gameObject);
             if (Menu != null) Destroy(Menu.gameObject);
             if (Panel != null) Destroy(Panel.gameObject);
+            Crawl(false);
         }
 
         // ------------------------------------------------------------------ begin
         public void Begin(ScenarioDefinition def, int seed)
         {
             Def = def;
+            if (ForceNext.HasValue) { forceLimb = ForceNext; ForceNext = null; }
             Config = SelfAidConfig.Random(seed, GameSettings.LeftHanded, ThighSupported);
+            if (forceLimb.HasValue) Config.limb = forceLimb.Value;
             Config.clockHour = def != null ? def.clockHour : 14;
             if (def != null && def.tqDeadline > 0f) Config.tqDeadline = def.tqDeadline;
+            if (Config.limb == SelfAidLimb.Thigh)
+            {
+                // crawling 10-15 m takes longer than walking: the drone's patience is scaled to the crawl
+                Config.exposureLimit = 22f;
+                Config.droneWarning = 14f;
+            }
             Setup();
-            Log($"begin SA seed {seed}: {Config.LimbId} {(Config.upperArmWound ? "upper arm" : "forearm")}, wounded hand {(Config.left ? "L" : "R")}");
+            Log($"begin SA seed {seed}: {Config.LimbId} {(Config.limb == SelfAidLimb.Thigh ? "thigh" : Config.upperArmWound ? "upper arm" : "forearm")}, wounded side {(Config.left ? "L" : "R")}");
             PlacePlayer(startPosition, startYaw);
             HoldCrate();
             if (!testMode && def != null) BriefingCard.Show(def, head);
@@ -162,7 +177,7 @@ namespace FieldMedic.Scenarios.SelfAid
             if (pouch != null && !pouch.Built) pouch.Build();
             if (leftHand == null) leftHand = HandGrabber.All.FirstOrDefault(h => h != null && h.Handedness == Handedness.Left);
             if (rightHand == null) rightHand = HandGrabber.All.FirstOrDefault(h => h != null && h.Handedness == Handedness.Right);
-            Wounded = Config.left ? leftHand : rightHand;
+            Wounded = Config.left ? leftHand : rightHand; // hand on the wounded side (only the arm variant disables it)
             Free = Config.left ? rightHand : leftHand;
             if (pouch != null)
             {
@@ -257,7 +272,8 @@ namespace FieldMedic.Scenarios.SelfAid
                 if (h != null && h.Input != null) h.Input.Haptic(blast ? 1f : 0.5f, blast ? 0.6f : 0.2f);
             DropCrate();
             BuildLimb();
-            if (Wounded != null) Wounded.gripDisabled = true;
+            if (Wounded != null && Arm) Wounded.gripDisabled = true;
+            if (!Arm) Crawl(true);
             if (RadioSet.Instance != null) RadioSet.Instance.pttOverride = OnPtt;
             Menu = SelfAidReportMenu.Create(Run, head, Config.left ? 1f : -1f);
             Menu.Chosen += o => { if (RadioSet.Instance != null) RadioSet.Instance.ShowLine(o.Text(GameSettings.KZ)); Log("report: " + o.ru); };
@@ -270,22 +286,76 @@ namespace FieldMedic.Scenarios.SelfAid
             Log("hit " + Config.LimbId + (blast ? " (FPV)" : " (lesson)"));
         }
 
+        public bool Arm => Config != null && Config.limb == SelfAidLimb.Arm;
+
         void BuildLimb()
         {
             var go = new GameObject("SelfLimb_" + Config.LimbId);
-            var arm = go.AddComponent<SelfArm>();
-            arm.run = Run;
-            arm.head = head;
-            arm.left = Config.left;
-            arm.hand = Wounded != null ? Wounded.transform : null;
-            arm.Build();
-            Limb = arm;
+            if (Arm)
+            {
+                var arm = go.AddComponent<SelfArm>();
+                arm.run = Run;
+                arm.head = head;
+                arm.left = Config.left;
+                arm.hand = Wounded != null ? Wounded.transform : null;
+                arm.Build();
+                Limb = arm;
+            }
+            else
+            {
+                // variant B: he is down on the ground - both legs drawn (look down), the wounded one bleeds
+                Limb = Leg(go, Config.left, Run);
+                OtherLeg = Leg(new GameObject("SelfLimb_leg_other"), !Config.left, null);
+            }
             var tq = new GameObject("SelfTourniquet").AddComponent<SelfTourniquet>();
             tq.run = Run;
-            tq.limb = arm;
+            tq.limb = Limb;
             tq.kitCat = KitCat;
-            tq.woundedHand = Wounded;
+            tq.woundedHand = Arm ? Wounded : null;
             Tq = tq;
+        }
+
+        public SelfLimb OtherLeg { get; private set; }
+        float _locoSpeed = -1f, _highHead;
+        bool _teleportWas, _downSaid, _crawling;
+
+        SelfLeg Leg(GameObject go, bool left, SelfAidRun run)
+        {
+            var leg = go.AddComponent<SelfLeg>();
+            leg.rootRadius = 0.085f; leg.jointRadius = 0.06f; leg.distalRadius = 0.045f;
+            leg.run = run;
+            leg.head = head;
+            leg.left = left;
+            leg.Build();
+            return leg;
+        }
+
+        /// <summary>Thigh variant: the leg does not carry him - slow crawl, no teleport (restored at the end).</summary>
+        void Crawl(bool on)
+        {
+            var loco = playerRig != null ? playerRig.GetComponent<Locomotion>() : null;
+            if (on && !_crawling)
+            {
+                _crawling = true;
+                if (loco != null) { _locoSpeed = loco.speed; loco.speed = crawlSpeed; }
+                _teleportWas = Locomotion.TeleportEnabled;
+                Locomotion.TeleportEnabled = false;
+            }
+            else if (!on && _crawling)
+            {
+                _crawling = false;
+                if (loco != null && _locoSpeed >= 0f) loco.speed = _locoSpeed;
+                Locomotion.TeleportEnabled = _teleportWas;
+            }
+        }
+
+        /// <summary>Thigh variant: standing up tall on the bleeding leg - "stay down, crawl".</summary>
+        void HeadLow(float dt)
+        {
+            if (Arm || head == null || Limb == null) return;
+            float above = head.position.y - (Limb.Root.y - 0.13f);
+            _highHead = above > 1.3f ? _highHead + dt : 0f;
+            if (_highHead > 3f && !_downSaid) { _downSaid = true; Say("sa_down"); }
         }
 
         // ------------------------------------------------------------------ per frame
@@ -298,7 +368,8 @@ namespace FieldMedic.Scenarios.SelfAid
             foreach (var c in cues) Cue(c);
             if (Finishing) return;
             if (Vision != null) Vision.bloodLoss = Run.LethalFraction;
-            if (Wounded != null)
+            HeadLow(dt);
+            if (Wounded != null && Arm)
             {
                 Wounded.gripDisabled = !Run.tq.Locked; // no strength, slippery glove — until the band is on
                 var glove = Wounded.GetComponent<BloodOnHands>();
@@ -463,7 +534,7 @@ namespace FieldMedic.Scenarios.SelfAid
             if (_heart != null && _beatClip != null) _heart.PlayOneShot(_beatClip, Mathf.Clamp01(0.3f + 0.6f * f));
             // the wounded hand feels the pulse at the wrist — it fades out under a tight band
             var site = Config.left ? PulseSite.RadialL : PulseSite.RadialR;
-            float wrist = Config.limb == SelfAidLimb.Arm ? p.PulseStrength(site) : 0.6f;
+            float wrist = Arm ? p.PulseStrength(site) : 0.45f;
             if (Wounded != null && wrist > 0.02f) Haptics.Play(Wounded.Input, Haptics.Heartbeat, 0.4f + 0.6f * wrist);
             if (Free != null) Haptics.Play(Free.Input, Haptics.Heartbeat, 0.3f);
         }
@@ -501,6 +572,11 @@ namespace FieldMedic.Scenarios.SelfAid
             Vector3 me = HeadFlat;
             Vector3 from = (BattlefieldLayout.LandingZone - me); from.y = 0f;
             from = from.sqrMagnitude > 1f ? from.normalized : Vector3.back;
+            // in house A they come in through the drag doorway (not through the wall)
+            bool viaDoor = CoverName == "CoverZone_HouseA";
+            Vector3 door = BattlefieldLayout.DoorwayCentre;
+            if (viaDoor) { from = Vector3.right; me = door; }
+            _waypoint = viaDoor ? door + Vector3.left * 0.6f : Vector3.zero;
             for (int i = 0; i < src.Count; i++)
             {
                 var go = Instantiate(src[i].gameObject);
@@ -517,6 +593,9 @@ namespace FieldMedic.Scenarios.SelfAid
             Log("rescuers " + _rescuers.Count);
         }
 
+        Vector3 _waypoint;
+        readonly HashSet<Transform> _passedDoor = new HashSet<Transform>();
+
         void MoveRescuers(float dt)
         {
             if (_rescuers.Count == 0 || head == null) return;
@@ -527,13 +606,19 @@ namespace FieldMedic.Scenarios.SelfAid
                 if (r == null) continue;
                 Vector3 side = Vector3.Cross(Vector3.up, (r.position - me).normalized) * (i == 0 ? 0.7f : -0.7f);
                 Vector3 goal = me + (r.position - me).normalized * 1.1f + side;
+                if (_waypoint != Vector3.zero && !_passedDoor.Contains(r))
+                {
+                    goal = _waypoint + Vector3.forward * (i == 0 ? 0.3f : -0.3f);
+                    Vector3 w = goal - r.position; w.y = 0f;
+                    if (w.magnitude < 0.3f) _passedDoor.Add(r);
+                }
                 Vector3 to = goal - r.position; to.y = 0f;
                 if (to.magnitude < 0.15f) continue;
                 float step = Mathf.Min(to.magnitude, 2.4f * dt);
                 r.position += to.normalized * step;
                 r.position = new Vector3(r.position.x, BattlefieldLayout.GroundHeight(r.position.x, r.position.z), r.position.z);
                 r.rotation = Quaternion.LookRotation(to.normalized);
-                if (to.magnitude - step < 0.2f) { var an = r.GetComponentInChildren<Animator>(); if (an != null) an.CrossFade("Kneel", 0.3f); }
+                if (to.magnitude - step < 0.2f && (_waypoint == Vector3.zero || _passedDoor.Contains(r))) { var an = r.GetComponentInChildren<Animator>(); if (an != null) an.CrossFade("Kneel", 0.3f); }
             }
         }
 
@@ -578,6 +663,7 @@ namespace FieldMedic.Scenarios.SelfAid
         void Cleanup()
         {
             if (Wounded != null) Wounded.gripDisabled = false;
+            Crawl(false);
             if (_tremorL != null) _tremorL.amplitude = 0f;
             if (_tremorR != null) _tremorR.amplitude = 0f;
             if (RadioSet.Instance != null) RadioSet.Instance.pttOverride = null;
