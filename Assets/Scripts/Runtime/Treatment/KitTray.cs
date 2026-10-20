@@ -60,6 +60,8 @@ namespace FieldMedic.Treatment
         /// <summary>Item → its seat (the anchor it sits on in the open kit).</summary>
         public readonly Dictionary<MedItem, Transform> Cells = new Dictionary<MedItem, Transform>();
         readonly Dictionary<MedItem, TMPro.TextMeshPro> _labels = new Dictionary<MedItem, TMPro.TextMeshPro>();
+        // w10b: stacked items with the same label (CAT / Alpha / Esmarch in one pocket): one label until the first is taken
+        readonly Dictionary<MedItem, MedItem> _dupOf = new Dictionary<MedItem, MedItem>();
         readonly Dictionary<MedItem, MeshFilter> _plates = new Dictionary<MedItem, MeshFilter>();
         readonly Dictionary<MedItem, BoxCollider> _zones = new Dictionary<MedItem, BoxCollider>();
         const int QPlate = 2984, QText = 2986, QGlow = 2983;
@@ -244,6 +246,69 @@ namespace FieldMedic.Treatment
             _glow.localRotation = Quaternion.Euler(90f, 0f, 0f);
             _glow.gameObject.SetActive(false);
             RefreshTexts(true);
+            Declutter();
+        }
+
+        /// <summary>w10b: items in the real kit sit close together (CAT + shears in the side pouch) → their labels
+        /// overlapped. Push overlapping label plates apart in the panel plane (sized for the longer of RU/KZ).</summary>
+        void Declutter()
+        {
+            var items = new List<MedItem>();
+            var c = new List<Vector2>();
+            var half = new List<Vector2>();
+            _dupOf.Clear();
+            var firstByText = new List<MedItem>();
+            foreach (var kv in _labels)
+            {
+                if (kv.Key == null || kv.Value == null) continue;
+                string ru = Label(kv.Key.kind, false);
+                Vector3 lp = kv.Value.transform.localPosition;
+                MedItem twin = null;
+                foreach (var f in firstByText)
+                    if (Label(f.kind, false) == ru && Vector3.Distance(_labels[f].transform.localPosition, lp) < 0.12f) { twin = f; break; }
+                if (twin != null) _dupOf[kv.Key] = twin; else firstByText.Add(kv.Key);
+            }
+            foreach (var kv in _labels)
+            {
+                if (kv.Key == null || kv.Value == null || _dupOf.ContainsKey(kv.Key) || !_plates.TryGetValue(kv.Key, out var mf) || mf == null) continue;
+                int len = Mathf.Max(Label(kv.Key.kind, false).Length, Label(kv.Key.kind, true).Length);
+                var pp = mf.transform.parent.localPosition;
+                items.Add(kv.Key);
+                c.Add(new Vector2(pp.x, pp.z));
+                half.Add(new Vector2((len * LabelCap * 0.78f + 0.008f) * 0.5f + 0.002f, LabelCap * 1.05f + 0.002f));
+            }
+            var start = new List<Vector2>(c);
+            for (int iter = 0; iter < 60; iter++)
+            {
+                bool moved = false;
+                for (int i = 0; i < c.Count; i++)
+                    for (int j = i + 1; j < c.Count; j++)
+                    {
+                        Vector2 d = c[j] - c[i];
+                        float ox = half[i].x + half[j].x - Mathf.Abs(d.x), oz = half[i].y + half[j].y - Mathf.Abs(d.y);
+                        if (ox <= 0f || oz <= 0f) continue;
+                        moved = true;
+                        // move along the axis that needs less push (labels are wide: usually up/down)
+                        Vector2 push = oz <= ox ? new Vector2(0f, (d.y >= 0f ? 1f : -1f) * oz * 0.5f + (d.y >= 0f ? 0.0005f : -0.0005f))
+                                                : new Vector2((d.x >= 0f ? 1f : -1f) * ox * 0.5f + (d.x >= 0f ? 0.0005f : -0.0005f), 0f);
+                        c[i] -= push; c[j] += push;
+                    }
+                if (!moved) break;
+            }
+            for (int i = 0; i < items.Count; i++)
+            {
+                Vector2 delta = c[i] - start[i];
+                if (delta.sqrMagnitude < 1e-8f) continue;
+                var off = new Vector3(delta.x, 0f, delta.y);
+                _labels[items[i]].transform.localPosition += off;
+                _plates[items[i]].transform.parent.localPosition += off;
+            }
+            foreach (var kv in _dupOf)
+            {
+                _labels[kv.Key].transform.localPosition = _labels[kv.Value].transform.localPosition;
+                if (_plates.TryGetValue(kv.Key, out var a) && a != null && _plates.TryGetValue(kv.Value, out var b) && b != null)
+                    a.transform.parent.localPosition = b.transform.parent.localPosition;
+            }
         }
 
         void RefreshTexts(bool force)
@@ -421,7 +486,7 @@ namespace FieldMedic.Treatment
                 foreach (var kv in _labels)
                 {
                     if (kv.Key == null || kv.Value == null) continue;
-                    bool on = kv.Key.InPouch;
+                    bool on = kv.Key.InPouch && !(_dupOf.TryGetValue(kv.Key, out var twin) && twin != null && twin.InPouch);
                     if (kv.Value.gameObject.activeSelf != on) kv.Value.gameObject.SetActive(on);
                     if (_plates.TryGetValue(kv.Key, out var pl) && pl != null && pl.transform.parent.gameObject.activeSelf != on) pl.transform.parent.gameObject.SetActive(on);
                     kv.Value.color = kv.Key == wanted ? WantedColor : LabelColor;
