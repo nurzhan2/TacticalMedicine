@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 550eeec81cbda9647a0fac01a0e3afd4, type: 3}
   m_Name: HintTable
   m_EditorClassIdentifier: FieldMedic.Runtime::FieldMedic.Scenarios.HintTable
-  version: 4
+  version: 5
   lessons:
   - id: demo
     titleRu: "\u0414\u0415\u041C\u041E: \u0415\u0440\u043B\u0430\u043D \u0440\u0430\u043D\u0435\u043D
@@ -34,6 +34,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 1
     inTheOpen: 1
+    selfAid: 0
     steps:
     - id: reach
       ru: "\u041A \u0440\u0430\u043D\u0435\u043D\u043E\u043C\u0443"
@@ -285,6 +286,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 1
+    selfAid: 0
     steps:
     - id: reach
       ru: "\u041A \u0440\u0430\u043D\u0435\u043D\u043E\u043C\u0443"
@@ -572,6 +574,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 0
+    selfAid: 0
     steps:
     - id: tq_grab
       ru: "\u0412\u043E\u0437\u044C\u043C\u0438 \u0442\u0443\u0440\u043D\u0438\u043A\u0435\u0442"
@@ -693,6 +696,165 @@ MonoBehaviour:
           \u0436\u04B1\u043C\u044B\u0441 \u0456\u0441\u0442\u0435\u0439\u0434\u0456"
         check: 
       watch: []
+  - id: selftq
+    titleRu: "\u0416\u0433\u0443\u0442 \u043D\u0430 \u0441\u0435\u0431\u044F"
+    titleKz: "\u04E8\u0437\u0456\u043D\u0435 \u0436\u0433\u0443\u0442"
+    woundType: 0
+    region: 12
+    visual: Ragged
+    posterior: 0
+    unconscious: 0
+    secondWound: 0
+    secondType: 3
+    secondRegion: 12
+    secondHidden: 1
+    thirdWound: 0
+    thirdType: 5
+    thirdRegion: 3
+    thirdVisual: ChestEntry
+    debrief: 0
+    inTheOpen: 0
+    selfAid: 1
+    steps:
+    - id: s_grab
+      ru: "\u0416\u0433\u0443\u0442 \u2014 \u0441\u0432\u043E\u0431\u043E\u0434\u043D\u043E\u0439
+        \u0440\u0443\u043A\u043E\u0439"
+      kz: "\u0416\u0433\u0443\u0442 \u2014 \u0431\u043E\u0441 \u049B\u043E\u043B\u043C\u0435\u043D"
+      voice: t_stq_1
+      phase: CUF
+      item: CAT
+      target: 
+      icon: tq
+      actions:
+      - ru: "\u0411\u044B\u0441\u0442\u0440\u044B\u0439 \u043F\u043E\u0434\u0441\u0443\u043C\u043E\u043A
+          \u0441\u043F\u0440\u0430\u0432\u0430 \u043D\u0430 \u043F\u043E\u044F\u0441\u0435"
+        kz: "\u0411\u0435\u043B\u0434\u0435\u0433\u0456 \u043E\u04A3 \u0436\u0430\u049B
+          \u0436\u044B\u043B\u0434\u0430\u043C \u043F\u043E\u0434\u0441\u0443\u043C\u043A\u0430"
+        check: 
+      - ru: "\u0420\u0430\u043D\u0435\u043D\u0430\u044F \u0440\u0443\u043A\u0430
+          \u043D\u0435 \u0434\u0435\u0440\u0436\u0438\u0442 \u2014 \u0442\u043E\u043B\u044C\u043A\u043E
+          \u0441\u0432\u043E\u0431\u043E\u0434\u043D\u0430\u044F"
+        kz: "\u0416\u0430\u0440\u0430\u043B\u044B \u049B\u043E\u043B \u04B1\u0441\u0442\u0430\u043C\u0430\u0439\u0434\u044B
+          \u2014 \u0442\u0435\u043A \u0431\u043E\u0441 \u049B\u043E\u043B"
+        check: 
+      watch: []
+    - id: s_loop
+      ru: "\u041F\u0435\u0442\u043B\u044F \u043D\u0430 \u0440\u0430\u043D\u0435\u043D\u0443\u044E
+        \u0440\u0443\u043A\u0443"
+      kz: "\u0406\u043B\u043C\u0435\u043A \u0436\u0430\u0440\u0430\u043B\u044B \u049B\u043E\u043B\u0493\u0430"
+      voice: t_stq_2
+      phase: CUF
+      item: CAT
+      target: Wound
+      icon: tq
+      actions:
+      - ru: "\u041D\u0430\u0434\u0435\u043D\u044C \u043F\u0435\u0442\u043B\u044E
+          \u0447\u0435\u0440\u0435\u0437 \u043A\u0438\u0441\u0442\u044C"
+        kz: "\u0406\u043B\u043C\u0435\u043A\u0442\u0456 \u0431\u0456\u043B\u0435\u0437\u0456\u043A
+          \u0430\u0440\u049B\u044B\u043B\u044B \u043A\u0438\u0433\u0456\u0437"
+        check: s_on_arm
+      - ru: "\u0420\u0430\u043D\u0435\u043D\u0443\u044E \u0440\u0443\u043A\u0443
+          \u0434\u0435\u0440\u0436\u0438 \u043F\u0440\u044F\u043C\u043E \u043F\u0435\u0440\u0435\u0434
+          \u0441\u043E\u0431\u043E\u0439"
+        kz: "\u0416\u0430\u0440\u0430\u043B\u044B \u049B\u043E\u043B\u0434\u044B
+          \u0430\u043B\u0434\u044B\u04A3\u0434\u0430 \u0442\u04AF\u0437\u0443 \u04B1\u0441\u0442\u0430"
+        check: 
+      watch: []
+    - id: s_high
+      ru: "\u0412\u044B\u0441\u043E\u043A\u043E \u043D\u0430 \u043F\u043B\u0435\u0447\u043E"
+      kz: "\u0418\u044B\u049B\u0442\u044B\u04A3 \u0436\u043E\u0493\u0430\u0440\u044B\u0441\u044B\u043D\u0430"
+      voice: t_stq_3
+      phase: CUF
+      item: CAT
+      target: Wound
+      icon: tq
+      actions:
+      - ru: "\u0421\u0434\u0432\u0438\u043D\u044C \u0436\u0433\u0443\u0442 \u043A
+          \u043F\u043B\u0435\u0447\u0443, \u0432\u044B\u0448\u0435 \u0440\u0430\u043D\u044B"
+        kz: "\u0416\u0433\u0443\u0442\u0442\u044B \u0438\u044B\u049B\u049B\u0430,
+          \u0436\u0430\u0440\u0430\u0434\u0430\u043D \u0436\u043E\u0493\u0430\u0440\u044B
+          \u0436\u044B\u043B\u0436\u044B\u0442"
+        check: s_high_pos
+      - ru: "\u041E\u0442\u043F\u0443\u0441\u0442\u0438 \u2014 \u0436\u0433\u0443\u0442
+          \u043D\u0430 \u043C\u0435\u0441\u0442\u0435"
+        kz: "\u0416\u0456\u0431\u0435\u0440 \u2014 \u0436\u0433\u0443\u0442 \u043E\u0440\u043D\u044B\u043D\u0434\u0430"
+        check: 
+      watch: []
+    - id: s_strap
+      ru: "\u0417\u0430\u0442\u044F\u043D\u0438 \u043B\u0435\u043D\u0442\u0443"
+      kz: "\u0422\u0430\u0441\u043F\u0430\u043D\u044B \u0442\u0430\u0440\u0442"
+      voice: t_stq_4
+      phase: CUF
+      item: CAT
+      target: Wound
+      icon: tq
+      actions:
+      - ru: "\u0412\u043E\u0437\u044C\u043C\u0438 \u043A\u0440\u0430\u0441\u043D\u044B\u0439
+          \u043A\u043E\u043D\u0435\u0446 \u043B\u0435\u043D\u0442\u044B"
+        kz: "\u0422\u0430\u0441\u043F\u0430\u043D\u044B\u04A3 \u049B\u044B\u0437\u044B\u043B
+          \u04B1\u0448\u044B\u043D \u04B1\u0441\u0442\u0430"
+        check: 
+      - ru: "\u041F\u043E\u0442\u044F\u043D\u0438 \u043E\u0442 \u0441\u0435\u0431\u044F
+          \u0434\u043E \u0443\u043F\u043E\u0440\u0430"
+        kz: "\u0421\u043E\u04A3\u044B\u043D\u0430 \u0434\u0435\u0439\u0456\u043D
+          \u0442\u0430\u0440\u0442"
+        check: 
+      watch: []
+    - id: s_twist
+      ru: "\u0412\u043E\u0440\u043E\u0442\u043E\u043A"
+      kz: "\u0411\u04B1\u0440\u0430\u0493\u044B\u0448"
+      voice: t_stq_5
+      phase: CUF
+      item: CAT
+      target: Wound
+      icon: tq
+      actions:
+      - ru: "\u041A\u0440\u0443\u0442\u0438, \u043F\u043E\u043A\u0430 \u043A\u0440\u043E\u0432\u044C
+          \u043D\u0435 \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u0441\u044F"
+        kz: "\u049A\u0430\u043D \u0442\u043E\u049B\u0442\u0430\u0493\u0430\u043D\u0448\u0430
+          \u0431\u04B1\u0440\u0430"
+        check: s_stopped
+      - ru: "\u0417\u0430\u0449\u0451\u043B\u043A\u043D\u0438 \u0432\u043E\u0440\u043E\u0442\u043E\u043A
+          \u0432 \u043A\u043B\u0438\u043F\u0441\u0443"
+        kz: "\u0411\u04B1\u0440\u0430\u0493\u044B\u0448\u0442\u044B \u049B\u044B\u0441\u049B\u044B\u0448\u049B\u0430
+          \u0431\u0435\u043A\u0456\u0442"
+        check: 
+      watch: []
+    - id: s_secure
+      ru: "\u041B\u0435\u043D\u0442\u0430 \u0432\u0440\u0435\u043C\u0435\u043D\u0438"
+      kz: "\u0423\u0430\u049B\u044B\u0442 \u0442\u0430\u0441\u043F\u0430\u0441\u044B"
+      voice: t_tq_5
+      phase: TFC
+      item: CAT
+      target: TqLabel
+      icon: tq
+      actions:
+      - ru: "\u041F\u0435\u0440\u0435\u043A\u0438\u043D\u044C \u0431\u0435\u043B\u0443\u044E
+          \u043B\u0435\u043D\u0442\u0443 \u0447\u0435\u0440\u0435\u0437 \u043A\u043B\u0438\u043F\u0441\u0443"
+        kz: "\u0410\u049B \u0442\u0430\u0441\u043F\u0430\u043D\u044B \u049B\u044B\u0441\u049B\u044B\u0448
+          \u04AF\u0441\u0442\u0456\u043D\u0435\u043D \u04E9\u0442\u043A\u0456\u0437"
+        check: 
+      watch: []
+    - id: s_time
+      ru: "\u0417\u0430\u043F\u0438\u0448\u0438 \u0432\u0440\u0435\u043C\u044F"
+      kz: "\u0423\u0430\u049B\u044B\u0442\u0442\u044B \u0436\u0430\u0437"
+      voice: sa_time
+      phase: TFC
+      item: Marker
+      target: TqLabel
+      icon: marker
+      actions:
+      - ru: "\u041E\u0442\u043A\u0440\u043E\u0439 \u0430\u043F\u0442\u0435\u0447\u043A\u0443,
+          \u0432\u043E\u0437\u044C\u043C\u0438 \u043C\u0430\u0440\u043A\u0435\u0440"
+        kz: "\u0410\u043F\u0442\u0435\u0447\u043A\u0430\u043D\u044B \u0430\u0448\u044B\u043F,
+          \u043C\u0430\u0440\u043A\u0435\u0440\u0434\u0456 \u0430\u043B"
+        check: marker_grab
+      - ru: "\u041A\u0443\u0440\u043E\u043A \u2014 \u0438 \u043F\u0438\u0448\u0438
+          \u043D\u0430 \u043B\u0435\u043D\u0442\u0435"
+        kz: "\u0428\u04AF\u0440\u0456\u043F\u043F\u0435\u043D\u0456 \u0431\u0430\u0441
+          \u0442\u0430, \u0442\u0430\u0441\u043F\u0430\u0493\u0430 \u0436\u0430\u0437"
+        check: 
+      watch: []
   - id: pack
     titleRu: "\u0422\u0430\u043C\u043F\u043E\u043D\u0430\u0434\u0430 \u0438 \u0434\u0430\u0432\u043B\u0435\u043D\u0438\u0435"
     titleKz: "\u0422\u0430\u043C\u043F\u043E\u043D\u0430\u0434\u0430 \u0436\u04D9\u043D\u0435
@@ -712,6 +874,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 0
+    selfAid: 0
     steps:
     - id: gloves
       ru: "\u041F\u0435\u0440\u0447\u0430\u0442\u043A\u0438"
@@ -828,6 +991,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 1
+    selfAid: 0
     steps:
     - id: reach
       ru: "\u041A \u0440\u0430\u043D\u0435\u043D\u043E\u043C\u0443"
@@ -947,6 +1111,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 0
+    selfAid: 0
     steps:
     - id: seal_front
       ru: "\u041E\u043A\u043A\u043B\u044E\u0437\u0438\u043E\u043D\u043D\u0430\u044F
@@ -1073,6 +1238,7 @@ MonoBehaviour:
     thirdVisual: ChestEntry
     debrief: 0
     inTheOpen: 0
+    selfAid: 0
     steps:
     - id: npa_grab
       ru: "\u0412\u043E\u0437\u044C\u043C\u0438 \u0432\u043E\u0437\u0434\u0443\u0445\u043E\u0432\u043E\u0434"

@@ -42,7 +42,7 @@ namespace FieldMedic.Scenarios.SelfAid
         /// Where the blood drips off the limb.
         protected virtual Vector3 DripPoint => D;
         /// Round cap over the shoulder end of the sleeve (the hips of a leg are under the body: no cap).
-        protected virtual bool ShowRootCap => true;
+        protected virtual bool ShowRootCap => false; // a ball next to the eye reads badly in first person (w9b screenshots)
 
         protected virtual void Start() => Build();
 
@@ -176,7 +176,7 @@ namespace FieldMedic.Scenarios.SelfAid
 
         void Refresh()
         {
-            Place(_upper, A, B, rootRadius, jointRadius * 1.02f);
+            Place(_upper, A + (A - B).normalized * 0.04f, B, rootRadius, jointRadius * 1.02f); // the open end tucked into the body
             Place(_lower, B, C, jointRadius, distalRadius);
             _rootCap.gameObject.SetActive(ShowRootCap);
             _rootCap.position = A;
@@ -386,7 +386,6 @@ namespace FieldMedic.Scenarios.SelfAid
 
         protected override Color ClothColor => new Color(0.23f, 0.24f, 0.16f);
 
-        protected override bool ShowRootCap => false;
         protected override Vector3 DripPoint => run != null ? PointAt(run.cfg.WoundPosition) + Vector3.down * RadiusAt(run.cfg.WoundPosition) : C;
 
         protected override void BuildExtra()
