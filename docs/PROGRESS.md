@@ -436,3 +436,18 @@
     падения TreatmentBot/ScenarioBot.
 - **Диск**: C: был заполнен до 0 байт (Library\Bee Android ~10 ГБ) → Unity падал по памяти; Bee Android удалён по
   правилу CLAUDE.md, следующая сборка — полная.
+- **Итог тестов (20.10 ~06:50)**: EditMode **137/137**. Полный PlayMode-прогон: 128/137; после правок изоляции и бота
+  перепрогнаны и зелёные: KitTests 5/5, W9EvacScreens, DemoFlowTests, DemoCapture, W4ModesTests (в т.ч. Combat S1 с
+  волоком к вертолёту и **Training_FullTccc — впервые с w4 проходит целиком**: урок теперь требует разрезать рукав
+  перед повязкой, `exposed2`), ScenarioBotTests S1–S8 (S5 падал и до w9 — теперь проходит), TreatmentBotTests (кроме
+  одного), GrabInteractionTests, SceneStreamingTests, BattlefieldTests (тест укрытий больше не ждёт трубу, заменённую
+  в w4). Остались, как и до w9: `TreatmentBotTests.GroinBleed_CutPackHoldBandage` (точность бота при тампонаде паха —
+  падает и на `xr-hotfix`), `TreatmentScreenshots.Scenario1` (порядок прогона), `BattleSoakTest` (один кадр > 64 КБ).
+- **APK**: `BuildTools.BuildAndroid` → Builds/FieldMedicVR.apk ≈195 МБ (+ копия на рабочий стол), QuestSceneAudit OK,
+  manifest audit OK, в логе `[FMVR] XR settings registered: android loaders=1 initOnStart=True`,
+  `lib/arm64-v8a/libUnityOpenXR.so` в APK. Релизные сборки теперь без symbols (диск).
+- **Известно / дальше**: Unity иногда зависает на выходе после тестов (OVRManager.OnApplicationQuit) — unity.ps1 убивает
+  по таймауту, результаты сохраняются. На шлеме проверить: волок 45–65 м до вертолёта (стик назад = «ползти»),
+  посадку (вход в зону двери или курок у двери), надпись в небе из проёма дома A. Модель вертолёта — BlenderKit
+  utility (не Ми-8; дверь/пол/скамья кабины измеряются по её мешу в W9Patch). Ключ ElevenLabs владелец ставит сам
+  (`tools/eleven_tts.md`).
