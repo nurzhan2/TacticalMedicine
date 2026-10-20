@@ -501,3 +501,23 @@
   вариант alpha-clip URP/Lit для пропитки может быть вырезан на устройстве — тогда пропитка будет сплошной (не критично).
 - **APK**: `BuildTools.BuildAndroid` → Builds/FieldMedicVR.apk 195,4 МБ (+ копия на рабочий стол), QuestSceneAudit OK,
   manifest audit OK, в логе `[FMVR] XR settings registered: android loaders=1 initOnStart=True`. Push не делался (remote 404).
+
+## 20.10 — w9c-device (сборка W9 для шлема)
+- **Шлем не подключён**: `adb devices` (adb из Unity Android SDK) пуст в 07:05 и 08:17 → установка/logcat/скриншот на
+  устройстве пропущены. Проверить утром: `tools/quest_run.ps1 -Apk C:\Users\user\Desktop\FMVR_DEMO\FieldMedicVR_W9.apk -Tag w9`.
+- **XR-самопроверка** (`FmvrDiagnostics`): шлем снят с головы → Quest ставит приложение на паузу, дисплей OpenXR
+  останавливается; раньше через 5 с это давало ложное «XR FAILED». Теперь `XrVerdict`: пока пауза/нет фокуса или < 4 с
+  после возврата — «XR check deferred», проверка ждёт и повторяется; FAILED только после 4 с работы с фокусом без дисплея.
+  Ложный «STALL» из-за паузы (первый кадр после возврата) больше не пишется. EditMode-тест `XrSelfCheck_Ignores_Paused_App`.
+- `tools/quest_run.ps1`, `quest_diag.ps1`: скриншот через `adb shell screencap` + `adb pull` (редирект PowerShell портил PNG).
+- **Тесты**: EditMode **152/152**. PlayMode полный прогон 138/144 (56 мин, logs: Logs/w9c_playmode_full.xml). Падения:
+  `BattleSoakTest` (кадр > 64 КБ, известно), `GroinBleed_CutPackHoldBandage` и `SceneStreamingTests`, `DemoCapture`,
+  `TreatmentScreenshots.Scenario1` — **по отдельности проходят** (зависят от порядка прогона);
+  `TreatmentScreenshots.Chest_Seal_Needle_And_Groin_Packing` падает и отдельно, так же с w8 (16.10): бот держит гемостатик
+  в 13,8 см над раной паха слева (новый диагностический лог `bot pack not started` в MedicBot) — точность бота, не игры.
+- **APK**: QuestSceneAudit OK, `BuildTools.BuildAndroid` OK за 4,9 мин (инкрементально), 195,4 МБ,
+  `[FMVR] XR settings registered: android loaders=1 initOnStart=True`, manifest audit OK (minSdk 32, target 34,
+  quest2|questpro|quest3|quest3s), `lib/arm64-v8a/libUnityOpenXR.so` в APK. Копия:
+  `C:\Users\user\Desktop\FMVR_DEMO\FieldMedicVR_W9.apk`.
+- **docs/W9_WHATS_NEW.md** — заметка для владельца (что нового, как попробовать, что ждёт от него).
+- Дальше: прогнать на шлеме; починить точность бота в тампонаде паха (тело/коллайдер ноги не пускает гемостатик).
