@@ -53,6 +53,18 @@ namespace FieldMedic.Tests
         }
 
         // ------------------------------------------------------------------ SAFE mode
+        [Test] public void XrSelfCheck_Ignores_Paused_App()
+        {
+            Assert.AreEqual(FmvrDiagnostics.XrCheck.Ok, FmvrDiagnostics.XrVerdict(true, true, 0f));
+            Assert.AreEqual(FmvrDiagnostics.XrCheck.Ok, FmvrDiagnostics.XrVerdict(true, false, 10f));
+            // headset off the head: paused / unfocused, display stopped -> not a failure
+            Assert.AreEqual(FmvrDiagnostics.XrCheck.Defer, FmvrDiagnostics.XrVerdict(false, true, 100f));
+            // just resumed, OpenXR session restarting
+            Assert.AreEqual(FmvrDiagnostics.XrCheck.Defer, FmvrDiagnostics.XrVerdict(false, false, 1f));
+            // focused for a while and still no display -> real failure
+            Assert.AreEqual(FmvrDiagnostics.XrCheck.Failed, FmvrDiagnostics.XrVerdict(false, false, FmvrDiagnostics.ResumeGrace + 1f));
+        }
+
         [Test] public void SafeMode_Decision()
         {
             Assert.IsFalse(LaunchGuard.Decide(LaunchGuard.Stage.None, 0, false, false, out _), "first launch is full");
