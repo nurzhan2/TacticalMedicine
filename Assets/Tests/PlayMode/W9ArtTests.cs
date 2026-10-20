@@ -146,6 +146,7 @@ namespace FieldMedic.Tests
             Assert.AreEqual("Slot_AlphaTQ", _pouch.Find(MedItemKind.AlphaTourniquet).homeSlot.parent.name);
             Assert.AreEqual("Slot_Esmarch", _pouch.Find(MedItemKind.EsmarchTourniquet).homeSlot.parent.name);
             Assert.AreEqual(0f, _pouch.Art.Open01, "starts folded on its back panel");
+            Assert.LessOrEqual(_pouch.Art.DrawCalls, 3, "closed kit drawn as one combined mesh per material");
             Assert.IsFalse(_pouch.Find<GauzeItem>().CanBeGrabbedBy(_bot.right), "main pouch locked while closed");
             Assert.IsTrue(_pouch.Find<TourniquetCAT>().CanBeGrabbedBy(_bot.right), "quick pouch always open");
             var back = _pouch.Art.BackPanel.position;
@@ -153,6 +154,7 @@ namespace FieldMedic.Tests
             Assert.IsTrue(_pouch.IsOpen, "ripped open by the pull tab");
             yield return new WaitForSeconds(0.8f);
             Assert.AreEqual(1f, _pouch.Art.Open01, 1e-3f, "panels unfolded");
+            Assert.LessOrEqual(_pouch.Art.DrawCalls, 3, "open kit settled: combined again");
             Assert.Less(Vector3.Distance(back, _pouch.Art.BackPanel.position), 1e-3f, "back panel stays on the vest");
             foreach (var it in _pouch.Items)
                 Assert.Less(Vector3.Distance(it.transform.position, it.homeSlot.position), 0.002f, it.name + " moved with its panel");

@@ -127,7 +127,7 @@ namespace FieldMedic.EditorTools
             PrepareTextures(dir, folder, texAbs);
             AssetDatabase.Refresh();
             ApplyTextureSettings(dirAsset, IsCharacter(folder) ? 2048 : 1024);
-            ApplyModelSettings(fbxAsset);
+            ApplyModelSettings(fbxAsset, folder == ArtModels.Pouch.Source); // the kit combines its parts at runtime (draw calls)
             var model = AssetDatabase.LoadAssetAtPath<GameObject>(fbxAsset);
             if (model == null) { foreach (var r in results) r.notes.Add("model did not import"); return; }
             var mats = BuildMaterials(fbxAsset, dirAsset, folder);
@@ -205,7 +205,7 @@ namespace FieldMedic.EditorTools
         }
 
         /// <summary>Scale 1, no cameras/lights/animation, compressed mesh, no read/write, no colliders from the file.</summary>
-        public static void ApplyModelSettings(string fbxAsset)
+        public static void ApplyModelSettings(string fbxAsset, bool readable = false)
         {
             if (!(AssetImporter.GetAtPath(fbxAsset) is ModelImporter mi)) return;
             mi.globalScale = 1f;
@@ -215,7 +215,7 @@ namespace FieldMedic.EditorTools
             mi.importLights = false;
             mi.importAnimation = false;
             mi.animationType = ModelImporterAnimationType.None;
-            mi.isReadable = false;
+            mi.isReadable = readable;
             mi.meshCompression = ModelImporterMeshCompression.Medium;
             mi.addCollider = false;
             mi.importBlendShapes = false;

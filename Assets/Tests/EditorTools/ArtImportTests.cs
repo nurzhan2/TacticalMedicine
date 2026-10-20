@@ -214,45 +214,14 @@ namespace FieldMedic.Tests
             finally { Object.DestroyImmediate(m); }
         }
 
-        /// <summary>Quest budget for the imported kit + items (task 5): tris, materials, ASTC ≤ 1024, no mesh colliders.</summary>
+        /// <summary>Quest budget for the imported kit + items (QuestSceneAudit.ArtRules, run by every build).</summary>
         [Test]
         public void ImportedArt_WithinQuestBudget()
         {
-            var prefabs = Resources.LoadAll<GameObject>(ArtModels.ResourceFolder);
-            if (prefabs.Length == 0) Assert.Ignore("no imported art (SourceAssets/Incoming not imported on this machine)");
-            int total = 0;
-            var mats = new System.Collections.Generic.HashSet<Material>();
-            foreach (var p in prefabs)
-            {
-                Assert.IsNull(p.GetComponentInChildren<MeshCollider>(true), p.name + ": no mesh colliders");
-                int tris = 0;
-                foreach (var mf in p.GetComponentsInChildren<MeshFilter>(true))
-                    for (int s = 0; s < mf.sharedMesh.subMeshCount; s++) tris += (int)mf.sharedMesh.GetIndexCount(s) / 3;
-                Assert.LessOrEqual(tris, p.name == ArtModels.Pouch.id ? 8000 : 4000, p.name + " triangles (all states)");
-                total += tris;
-                foreach (var r in p.GetComponentsInChildren<Renderer>(true))
-                {
-                    Assert.LessOrEqual(r.sharedMaterials.Length, 2, p.name + " materials per renderer");
-                    foreach (var m in r.sharedMaterials)
-                    {
-                        Assert.IsNotNull(m, p.name + " missing material");
-                        mats.Add(m);
-                        foreach (var prop in new[] { "_BaseMap", "_BumpMap", "_MetallicGlossMap" })
-                        {
-                            var tex = m.HasProperty(prop) ? m.GetTexture(prop) : null;
-                            if (tex == null) continue;
-                            var ti = (TextureImporter)AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex));
-                            if (ti == null) continue;
-                            var a = ti.GetPlatformTextureSettings("Android");
-                            Assert.IsTrue(a.overridden && a.maxTextureSize <= 1024, tex.name + " Android ≤ 1024");
-                            StringAssert.StartsWith("ASTC", a.format.ToString(), tex.name + " ASTC on Quest");
-                        }
-                    }
-                }
-            }
-            Debug.Log($"[FMVR] imported art: {prefabs.Length} prefabs, {total} tris (all states), {mats.Count} materials");
-            Assert.LessOrEqual(total, 60000, "kit + items, every state counted");
-            Assert.LessOrEqual(mats.Count, 24, "materials (≈ one per delivery)");
+            if (Resources.LoadAll<GameObject>(ArtModels.ResourceFolder).Length == 0) Assert.Ignore("no imported art on this machine");
+            var problems = QuestSceneAudit.ArtRules(out var summary);
+            Debug.Log("[FMVR] " + summary);
+            CollectionAssert.IsEmpty(problems, string.Join(" | ", problems));
         }
 
         // ------------------------------------------------------------------ sky text rule

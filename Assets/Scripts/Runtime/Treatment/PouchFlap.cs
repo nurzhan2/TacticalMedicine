@@ -37,6 +37,7 @@ namespace FieldMedic.Treatment
 
         IfakArt _art;
         float _open01;
+        bool _moving;
 
         void Build()
         {
@@ -72,6 +73,7 @@ namespace FieldMedic.Treatment
         {
             Lid = _art.Flap;
             _art.SetOpen(0f);
+            _art.Settle(true);
             var tab = _art.PullTab != null ? _art.PullTab : _art.Body;
             var r = tab.GetComponentInChildren<Renderer>();
             Vector3 at = r != null ? r.bounds.center : tab.position;
@@ -92,7 +94,13 @@ namespace FieldMedic.Treatment
             if (_art != null)
             {
                 float goal = IsOpen ? 1f : 0f;
-                if (!Mathf.Approximately(_open01, goal)) { _open01 = Mathf.MoveTowards(_open01, goal, Time.deltaTime / 0.55f); _art.SetOpen(_open01); }
+                if (!Mathf.Approximately(_open01, goal))
+                {
+                    if (!_moving) { _art.Settle(false); _moving = true; }
+                    _open01 = Mathf.MoveTowards(_open01, goal, Time.deltaTime / 0.55f);
+                    _art.SetOpen(_open01);
+                }
+                else if (_moving) { _moving = false; _art.Settle(true); }
                 return;
             }
             float target = IsOpen ? openAngle : 0f;

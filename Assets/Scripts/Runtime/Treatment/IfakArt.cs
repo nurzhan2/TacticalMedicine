@@ -106,6 +106,89 @@ namespace FieldMedic.Treatment
             }
         }
 
+        // ------------------------------------------------------------------ draw calls (Quest)
+        readonly Dictionary<int, GameObject> _snapshots = new Dictionary<int, GameObject>();
+        readonly List<Renderer> _parts = new List<Renderer>();
+        /// <summary>Kit draw calls right now (merged snapshot = one per material).</summary>
+        public int DrawCalls
+        {
+            get
+            {
+                int n = 0;
+                foreach (var r in GetComponentsInChildren<Renderer>(false))
+                    if (r.enabled && r.transform.IsChildOf(Root) && IsKitPart(r)) n += r.sharedMaterials.Length;
+                return n;
+            }
+        }
+
+        /// <summary>
+        /// While the kit is folded or fully open nothing in it moves: its ~18 part draws are replaced by one combined
+        /// mesh per material (built once per state, the model is imported readable for this). Moving again (opening)
+        /// shows the parts.
+        /// </summary>
+        public void Settle(bool settled)
+        {
+            if (Root == null) return;
+            if (_parts.Count == 0)
+                foreach (var r in Model.GetComponentsInChildren<MeshRenderer>(true))
+                    if (IsKitPart(r)) _parts.Add(r);
+            int key = Open01 > 0.5f ? 1 : 0;
+            foreach (var kv in _snapshots) kv.Value.SetActive(settled && kv.Key == key);
+            if (!settled) { foreach (var r in _parts) if (r != null) r.enabled = true; return; }
+            if (!_snapshots.TryGetValue(key, out var snap) || snap == null)
+            {
+                snap = Combine(key == 1 ? "Merged_Open" : "Merged_Closed");
+                if (snap == null) return; // meshes not readable: keep the parts
+                _snapshots[key] = snap;
+            }
+            snap.SetActive(true);
+            foreach (var r in _parts) if (r != null) r.enabled = false;
+        }
+
+        /// <summary>The kit's own meshes — not the items riding on its slots, not grab handles.</summary>
+        static bool IsKitPart(Renderer r) =>
+            r.GetComponentInParent<MedItem>(true) == null && r.GetComponentInParent<FieldMedic.Interaction.Grabbable>(true) == null;
+
+        GameObject Combine(string name)
+        {
+            var groups = new Dictionary<Material, List<CombineInstance>>();
+            var toRoot = Root.worldToLocalMatrix;
+            foreach (var r in _parts)
+            {
+                if (r == null || !r.gameObject.activeInHierarchy) continue;
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                if (!mf.sharedMesh.isReadable) { Debug.LogWarning("[FMVR] IFAK combine: mesh not readable " + mf.sharedMesh.name); return null; }
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length && i < mf.sharedMesh.subMeshCount; i++)
+                {
+                    if (mats[i] == null) continue;
+                    if (!groups.TryGetValue(mats[i], out var list)) groups[mats[i]] = list = new List<CombineInstance>();
+                    list.Add(new CombineInstance { mesh = mf.sharedMesh, subMeshIndex = i, transform = toRoot * r.transform.localToWorldMatrix });
+                }
+            }
+            var go = new GameObject(name);
+            go.transform.SetParent(Root, false);
+            var subs = new List<CombineInstance>();
+            var order = new List<Material>();
+            foreach (var kv in groups)
+            {
+                var part = new Mesh { name = name + "_" + kv.Key.name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                part.CombineMeshes(kv.Value.ToArray(), true, true);
+                subs.Add(new CombineInstance { mesh = part, transform = Matrix4x4.identity });
+                order.Add(kv.Key);
+            }
+            var mesh = new Mesh { name = name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+            mesh.CombineMeshes(subs.ToArray(), false, false);
+            mesh.RecalculateBounds();
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterials = order.ToArray();
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Debug.Log($"[FMVR] IFAK {name}: {_parts.Count} parts → {order.Count} draw(s), {mesh.triangles.Length / 3} tris");
+            return go;
+        }
+
         public Transform Slot(string name) => _slots.TryGetValue(name, out var t) ? t : null;
 
         /// <summary>A seat on a delivered slot: item Z along the slot's long axis (+Y of the empty), item Y out of the

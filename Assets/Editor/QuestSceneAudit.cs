@@ -207,6 +207,51 @@ namespace FieldMedic.EditorTools
             return p;
         }
 
+        // ------------------------------------------------------------------ imported item art (w9d)
+        public const int ArtItemTris = 4000, ArtKitTris = 8000, ArtTotalTris = 60000, ArtMaxTexture = 1024, ArtMaxMaterials = 24;
+
+        /// <summary>Quest budget of Resources/Art (the IFAK + item models): triangles per prefab (all states counted),
+        /// total, ≤ 2 materials per renderer, textures ASTC ≤ 1024 on Android, no mesh colliders.</summary>
+        public static List<string> ArtRules(out string summary)
+        {
+            var p = new List<string>();
+            var prefabs = Resources.LoadAll<GameObject>(FieldMedic.Treatment.ArtModels.ResourceFolder);
+            int total = 0;
+            var mats = new HashSet<Material>();
+            foreach (var pf in prefabs)
+            {
+                if (pf.GetComponentInChildren<MeshCollider>(true) != null) p.Add($"art {pf.name}: mesh collider");
+                int tris = 0;
+                foreach (var mf in pf.GetComponentsInChildren<MeshFilter>(true))
+                    if (mf.sharedMesh != null)
+                        for (int s = 0; s < mf.sharedMesh.subMeshCount; s++) tris += (int)mf.sharedMesh.GetIndexCount(s) / 3;
+                int cap = pf.name == FieldMedic.Treatment.ArtModels.Pouch.id ? ArtKitTris : ArtItemTris;
+                if (tris > cap) p.Add($"art {pf.name}: {tris} tris > {cap}");
+                total += tris;
+                foreach (var r in pf.GetComponentsInChildren<Renderer>(true))
+                {
+                    if (r.sharedMaterials.Length > 2) p.Add($"art {pf.name}/{r.name}: {r.sharedMaterials.Length} materials");
+                    foreach (var m in r.sharedMaterials)
+                    {
+                        if (m == null) { p.Add($"art {pf.name}/{r.name}: missing material"); continue; }
+                        mats.Add(m);
+                        foreach (var prop in new[] { "_BaseMap", "_BumpMap", "_MetallicGlossMap", "_OcclusionMap" })
+                        {
+                            var tex = m.HasProperty(prop) ? m.GetTexture(prop) : null;
+                            if (tex == null || !(AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(tex)) is TextureImporter ti)) continue;
+                            var a = ti.GetPlatformTextureSettings("Android");
+                            if (!a.overridden || a.maxTextureSize > ArtMaxTexture) p.Add($"art texture {tex.name}: Android max {a.maxTextureSize} (≤ {ArtMaxTexture})");
+                            if (!a.format.ToString().StartsWith("ASTC")) p.Add($"art texture {tex.name}: {a.format} (ASTC expected)");
+                        }
+                    }
+                }
+            }
+            if (total > ArtTotalTris) p.Add($"art total {total} tris > {ArtTotalTris}");
+            if (mats.Count > ArtMaxMaterials) p.Add($"art materials {mats.Count} > {ArtMaxMaterials}");
+            summary = $"imported art: {prefabs.Length} prefabs, {total} tris (all states), {mats.Count} materials";
+            return p.Distinct().ToList();
+        }
+
         // ------------------------------------------------------------------ run
         public static void RunBatch()
         {
@@ -253,6 +298,8 @@ namespace FieldMedic.EditorTools
 
             problems.AddRange(ShaderRules());
             problems.AddRange(UrpRules());
+            problems.AddRange(ArtRules(out var artSummary));
+            notes.Add(artSummary);
 
             var sb = new StringBuilder();
             sb.AppendLine("QuestSceneAudit " + System.DateTime.Now.ToString("dd.MM HH:mm"));
