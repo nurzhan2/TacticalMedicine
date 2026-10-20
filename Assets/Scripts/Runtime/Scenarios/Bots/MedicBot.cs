@@ -344,6 +344,12 @@ namespace FieldMedic.Scenarios.Bots
             yield return MoveHeld(h, band.transform, band.transform.position, above);
             yield return MoveHeld(h, band.transform, band.transform.position, axisPt + up * (r + 0.01f), 0.6f);
             for (float t = 0f; t < ElasticTourniquetItem.PinSeconds + 0.3f && !band.State.OnLimb; t += Time.deltaTime) yield return null;
+            // w10: the roll can rest on the trouser a few mm outside the pin distance — press it onto the limb, like a hand would
+            for (int k = 1; k <= 3 && !band.State.OnLimb; k++)
+            {
+                yield return MoveHeld(h, band.transform, band.transform.position, axisPt + up * (r - 0.012f * k), 0.4f);
+                for (float t = 0f; t < ElasticTourniquetItem.PinSeconds + 0.2f && !band.State.OnLimb; t += Time.deltaTime) yield return null;
+            }
             if (!band.State.OnLimb) { lastStep = "elastic: pin failed"; yield break; }
             lastStep = "elastic: wind";
             float total = turns * 360f + 40f, step = 12f;
@@ -383,12 +389,14 @@ namespace FieldMedic.Scenarios.Bots
             yield return MoveHeld(h, marker.transform, marker.TipPosition, point + Vector3.up * 0.02f);
             yield return MoveHeld(h, marker.transform, marker.TipPosition, point);
             yield return SetTrigger(h, 1f);
-            Vector3 p0 = h.PalmPosition;
-            for (int k = 0; k < 4; k++)
+            // w10: strokes closed-loop on the tip (palm-relative strokes let the held marker swing ~9 cm off the label)
+            int w0 = marker.Writes;
+            for (int k = 0; k < 8 && marker.Writes == w0; k++)
             {
-                yield return Move(h, p0 + Vector3.right * 0.025f, false, 0.25f);
-                yield return Move(h, p0 - Vector3.right * 0.005f, false, 0.25f);
+                yield return MoveHeld(h, marker.transform, marker.TipPosition, point + Vector3.right * 0.012f, 0.25f);
+                yield return MoveHeld(h, marker.transform, marker.TipPosition, point - Vector3.right * 0.012f, 0.25f);
             }
+            if (marker.Writes == w0) Debug.Log($"[FMVR] bot marker: no write, tip→target {Vector3.Distance(marker.TipPosition, point) * 100f:0.0} cm");
             yield return SetTrigger(h, 0f);
             yield return Release(h);
         }

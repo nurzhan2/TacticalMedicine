@@ -144,7 +144,8 @@ namespace FieldMedic.Treatment
         {
             var c = NearestCasualty(transform.position, 2.2f);
             if (c == null || c.rig == null || !c.IsDown) { _pinTimer = 0f; return; }
-            if (!LimbMath.Nearest(c.rig, transform.position, out var limb, out float pos, out float skin) || skin > 0.05f || pos > 2.3f)
+            bool near = LimbMath.Nearest(c.rig, transform.position, out var limb, out float pos, out float skin);
+            if (!near || skin > 0.05f || pos > 2.3f)
             { _pinTimer = 0f; return; }
             if (limb != _pinLimb) { _pinLimb = limb; _pinTimer = 0f; }
             _pinTimer += Time.deltaTime;

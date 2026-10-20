@@ -122,8 +122,12 @@ namespace FieldMedic.Treatment
             return nostril + up * 0.075f + post * 0.01f;
         }
 
+        /// <summary>Completed strokes (any target) — bots stop writing once it moves.</summary>
+        public int Writes { get; private set; }
+
         void Write(object target)
         {
+            Writes++;
             Haptics.Play(HolderInput, Haptics.PressClick);
             switch (target)
             {

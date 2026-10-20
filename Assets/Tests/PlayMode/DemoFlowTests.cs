@@ -232,7 +232,8 @@ namespace FieldMedic.Tests
             yield return WaitStep(t, "tq_time");
             var c1 = C.Interaction.Tourniquets.Count > 0 ? C.Interaction.Tourniquets.First() : cat;
             yield return bot.Write(Pouch.Find<MarkerItem>(), c1.TimeLabelPoint);
-            Assert.IsTrue(c1.State.TimeMarked, "time written on the CAT");
+            var mk = Pouch.Find<MarkerItem>();
+            Assert.IsTrue(c1.State.TimeMarked, $"time written on the CAT (secured {c1.State.Secured}, locked {c1.State.Locked}, tip→label {(mk != null ? Vector3.Distance(mk.TipPosition, c1.TimeLabelPoint) * 100f : -1f):0.0} cm, held {(mk != null && mk.IsHeld)}, last bot step {bot.lastStep})");
             moment?.Invoke("time");
 
             // 6) pack the left thigh wound: touching once does not pack it, strokes do
