@@ -90,7 +90,7 @@ namespace FieldMedic.Casualty
             s.loop = loop;
             s.spatialBlend = 1f;
             s.rolloffMode = AudioRolloffMode.Linear;
-            s.minDistance = 0.6f;
+            s.minDistance = 1.5f; // owner 21.10: voices louder than the battle
             s.maxDistance = 18f;
             s.dopplerLevel = 0f;
             return s;

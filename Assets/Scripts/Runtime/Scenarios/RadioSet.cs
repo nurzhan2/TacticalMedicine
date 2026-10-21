@@ -82,7 +82,7 @@ namespace FieldMedic.Scenarios
             // scenes saved before w10 keep the old chest position — it sat inside the kit tray
             if (Vector3.Distance(offsetFromHead, new Vector3(-0.17f, -0.32f, 0.14f)) < 0.01f) offsetFromHead = new Vector3(-0.2f, -0.27f, 0.03f);
             _src = gameObject.AddComponent<AudioSource>();
-            _src.spatialBlend = 0.85f;
+            _src.spatialBlend = 0.4f; // owner 21.10: radio clearly audible over the battle
             _src.minDistance = 0.4f;
             _src.maxDistance = 8f;
             _src.playOnAwake = false;
@@ -146,7 +146,7 @@ namespace FieldMedic.Scenarios
             _src.Stop();
             _src.clip = clip;
             _src.volume = Mathf.Clamp01(volume);
-            _src.spatialBlend = volume > 1f ? 0.3f : 0.85f;
+            _src.spatialBlend = volume > 1f ? 0.2f : 0.4f;
             _src.Play();
         }
 
