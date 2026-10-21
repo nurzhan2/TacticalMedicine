@@ -14,9 +14,9 @@ namespace FieldMedic.Environment
     public sealed class SkyText : MonoBehaviour
     {
         public const string ObjectName = "SkyText_Satpaev";
-        public const string Phrase = "САТПАЕВ ЛУЧШЕ ВСЕХ";
+        public const string Phrase = "ПОЛИТЕХ ЛУЧШЕ ВСЕХ"; // owner 21.10 (was «САТПАЕВ ЛУЧШЕ ВСЕХ»)
         /// <summary>Two lines: bigger letters for the same angular width.</summary>
-        public const string DisplayText = "САТПАЕВ\nЛУЧШЕ ВСЕХ";
+        public const string DisplayText = "ПОЛИТЕХ\nЛУЧШЕ ВСЕХ";
         public static string Normalise(string s) => s == null ? null : s.Replace('\n', ' ').Trim();
 
         public TextMeshPro text;
@@ -34,6 +34,7 @@ namespace FieldMedic.Environment
         void Start()
         {
             if (text == null) text = GetComponentInChildren<TextMeshPro>();
+            if (text != null && text.text != DisplayText) text.text = DisplayText; // scenes baked with the old phrase
             if (text != null) text.ForceMeshUpdate();
         }
 

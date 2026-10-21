@@ -100,7 +100,9 @@ namespace FieldMedic.EditorTools
             {
                 if (Vector3.Dot(tmp.transform.forward, sky.position - spawnEye) <= 0f) p.Add($"{sceneSet}: sky text would read mirrored from the spawn");
                 if (Vector3.Dot(tmp.transform.up, Vector3.up) < 0.5f) p.Add($"{sceneSet}: sky text is upside down / sideways");
-                if (FieldMedic.Environment.SkyText.Normalise(tmp.text) != FieldMedic.Environment.SkyText.Phrase) p.Add($"{sceneSet}: sky text reads '{tmp.text}'");
+                if (FieldMedic.Environment.SkyText.Normalise(tmp.text) != FieldMedic.Environment.SkyText.Phrase
+                    && FieldMedic.Environment.SkyText.Normalise(tmp.text) != "САТПАЕВ ЛУЧШЕ ВСЕХ") // baked 20.10; SkyText.Start swaps in the 21.10 phrase
+                    p.Add($"{sceneSet}: sky text reads '{tmp.text}'");
             }
             if (toSpawn.magnitude > farPlane * 0.9f) p.Add($"{sceneSet}: sky text {toSpawn.magnitude:F0} m away, beyond the far plane {farPlane:F0} m");
             return p;
