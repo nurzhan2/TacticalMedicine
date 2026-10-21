@@ -137,6 +137,11 @@ namespace FieldMedic.Casualty
             string id = BodyRegions.LimbId(region);
             if (id == null) return LimbGeometry.DefaultWoundPosition(region);
             Project(rig, FromId(id), worldPos, out float pos, out _);
+            // w10e: the soldier mesh has no rigid skin on the thigh, so the site falls back to an outer vertex that can
+            // project almost onto the hip (0.05) — a pre-applied / "high and tight" band at 0.12–0.2 was then distal to
+            // the wound and never stopped it (S1, S7, S8). Keep the wound inside its own segment.
+            int seg = BodyRegions.LimbSegment(region);
+            if (seg >= 0) pos = Mathf.Clamp(pos, seg + 0.3f, seg + 0.9f);
             return pos;
         }
     }
