@@ -195,6 +195,11 @@ namespace FieldMedic.UI
             Btn(GameSettings.T("ПУСК", "БАСТА"), W / 2 - 0.2f, -0.2f, 0.2f, new Color(0.62f, 0.16f, 0.1f),
                 () => Go("scenario:" + def.id, () => ScenarioLaunch.Scenario(def.id, ScenarioRandom())),
                 0.03f, GameSettings.T("вариант случайный", "кездейсоқ нұсқа"), 0.014f);
+            // w10g: watch the game play it (one coached step every ~3 s, the panel says what is being done)
+            if (!def.selfAid)
+                Btn(GameSettings.T("БОТ", "БОТ"), W / 2 - 0.2f, 0.08f, 0.15f, Steel,
+                    () => Go("autoplay:" + def.id, () => ScenarioLaunch.Scenario(def.id, ScenarioVariant.Default, autoplay: true)),
+                    0.028f, GameSettings.T("Смотреть, как\nпроходит бот", "Боттың өтуін\nкөру"), 0.014f);
             Back(ShowScenarios);
         }
 

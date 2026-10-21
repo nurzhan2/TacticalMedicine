@@ -113,6 +113,7 @@ namespace FieldMedic.Scenarios
             bool dragging = _drag != null && _drag.AnyHeld;
             Coach();
             if (State == ScenarioState.Debrief) return;
+            if (Autoplay) { _autoplay.Tick(); return; }
             if (dragging && (_coach == null || _coach.id is "drag_cover" or "loaded" or "board" or "wait"))
             {
                 FieldMedic.UI.StepGuide.Set("Тащи: держи хват, стик назад — ползти с раненым", "Сүйре: ұстап тұр, стикті артқа — жаралымен жорғалау",
@@ -242,7 +243,7 @@ namespace FieldMedic.Scenarios
             while (!testMode && FieldMedic.Startup.GameplayScenes.Loading && Time.realtimeSinceStartup < waitUntil) yield return null;
             if (req.mode == LaunchMode.Menu) EnterMenu(req.lastReport);
             else if (req.mode == LaunchMode.Training) TrainingDirector.Ensure(this).Begin(req.lessonId);
-            else Begin(ScenarioCatalog.Get(req.scenarioId) ?? ScenarioCatalog.All[0], req.variant, req.mode == LaunchMode.Exam);
+            else Begin(ScenarioCatalog.Get(req.scenarioId) ?? ScenarioCatalog.All[0], req.variant, req.mode == LaunchMode.Exam, req.autoplay);
         }
 
         // ------------------------------------------------------------------ menu
@@ -269,7 +270,11 @@ namespace FieldMedic.Scenarios
         }
 
         // ------------------------------------------------------------------ run
-        public void Begin(ScenarioDefinition def, ScenarioVariant variant, bool exam = false)
+        /// <summary>w10g: the game plays this run itself (<see cref="AutoplayDriver"/>).</summary>
+        public bool Autoplay => _autoplay != null && _autoplay.enabled;
+        AutoplayDriver _autoplay;
+
+        public void Begin(ScenarioDefinition def, ScenarioVariant variant, bool exam = false, bool autoplay = false)
         {
             if (def != null && def.selfAid)
             {
@@ -285,7 +290,7 @@ namespace FieldMedic.Scenarios
             InMenu = false;
             Exam = exam;
             FieldMedic.Battle.BattleDirector.Mode = exam ? FieldMedic.Battle.BattleMode.Exam : FieldMedic.Battle.BattleMode.Combat;
-            FieldMedic.Battle.BattleDirector.PlayerArmed = !testMode;
+            FieldMedic.Battle.BattleDirector.PlayerArmed = !testMode && !autoplay;
             Run = ScenarioCatalog.Resolve(def, variant);
             Timeline = new ScenarioTimeline(Run);
             Timeline.StateChanged += OnState;
@@ -308,6 +313,7 @@ namespace FieldMedic.Scenarios
             if (!exam && !testMode) Timeline.evacTimeScale = Mathf.Max(Timeline.evacTimeScale, def.evacMinutes * 60f / NonExamEvacWaitSeconds);
             if (Exam) GameSettings.OverrideHintsForRun(false);
             _coach = null;
+            if (autoplay && !exam) _autoplay = AutoplayDriver.Ensure(this);
             if (!exam) { StepSkip.Ensure(gameObject); StepSkip.Register(SkipStep, CanSkipStep); }
             else StepSkip.Unregister(StepSkip.Handler);
 
@@ -749,7 +755,13 @@ namespace FieldMedic.Scenarios
                 if (MistakePlaces.TryGetValue(m.code, out var at)) { m.hasPos = true; m.x = at.x; m.z = at.z; }
             if (_fallKnown) { Report.hasCasualtyPos = true; Report.casualtyX = _fallPoint.x; Report.casualtyZ = _fallPoint.z; }
             int best = GameSettings.BestScore(Run.def.id);
-            if ((DebriefBuilder.UpdateBest(Report, Mathf.Max(0, best)) || best < 0) && !testMode) GameSettings.SetBestScore(Run.def.id, Report.bestScore);
+            if (Autoplay)
+            {
+                // w10g: the bot's run is shown as such and never becomes the player's record
+                Report.title = (Report.title ?? Run.def.id) + GameSettings.T("  ·  автопрохождение", "  ·  автоөту");
+                Report.bestScore = Mathf.Max(0, best);
+            }
+            else if ((DebriefBuilder.UpdateBest(Report, Mathf.Max(0, best)) || best < 0) && !testMode) GameSettings.SetBestScore(Run.def.id, Report.bestScore);
             if (ThreatSystem.Instance != null) { ThreatSystem.Instance.underFire = false; ThreatSystem.Instance.forceDroneOverhead = false; }
             if (CombatAmbience.Instance != null) CombatAmbience.Instance.intensity = 0.3f;
             Log($"debrief {Run.def.id}: {Timeline.EndReason}, score {Report.score}, survived {Report.survived}, mistakes {string.Join(",", Report.mistakes.Select(m => m.code))}");

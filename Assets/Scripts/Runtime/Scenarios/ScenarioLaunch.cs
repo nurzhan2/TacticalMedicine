@@ -17,6 +17,8 @@ namespace FieldMedic.Scenarios
             public string scenarioId;
             public ScenarioVariant variant;
             public string lessonId;
+            /// w10g: the game plays the run itself ("Смотреть, как проходит бот").
+            public bool autoplay;
             /// Debrief of the previous run to show on the board when returning to the menu.
             public DebriefReport lastReport;
         }
@@ -30,7 +32,7 @@ namespace FieldMedic.Scenarios
             return r;
         }
 
-        public static void Scenario(string id, ScenarioVariant v) => Pending = new Request { mode = LaunchMode.Scenario, scenarioId = id, variant = v };
+        public static void Scenario(string id, ScenarioVariant v, bool autoplay = false) => Pending = new Request { mode = LaunchMode.Scenario, scenarioId = id, variant = v, autoplay = autoplay };
 
         public static void Exam(int seed)
         {

@@ -75,7 +75,7 @@ namespace FieldMedic.Tests
         }
 
         /// <summary>Erlan + director (test mode) + cover zone 3.6 m away + bot + the player's IFAK. Runs the incident.</summary>
-        IEnumerator Run(string id, ScenarioVariant v = default)
+        IEnumerator Run(string id, ScenarioVariant v = default, bool autoplay = false)
         {
 #if UNITY_EDITOR
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Erlan.prefab");
@@ -106,7 +106,8 @@ namespace FieldMedic.Tests
             yield return null;
 
             var def = ScenarioCatalog.Get(id);
-            _d.Begin(def, v);
+            _d.Begin(def, v, false, autoplay);
+            if (autoplay) _d.GetComponent<AutoplayDriver>().stepSeconds = 0.3f;
             _d.Timeline.evacTimeScale = 150f;
             for (int k = 0; k < 10 && _c.Patient.wounds.Count == 0; k++) yield return null;
             Assert.That(_c.Patient.wounds.Count, Is.GreaterThan(0), "incident applied the wounds");
@@ -376,6 +377,26 @@ namespace FieldMedic.Tests
             yield return _bot.ApplyTourniquet(cat, _c, Limb.RightLeg, 0.12f, 4);
             yield return FinishWrong();
             AssertMistake("tq_junctional");
+        }
+
+        // ================================================================== w10g autoplay
+        [UnityTest]
+        public IEnumerator Autoplay_PlaysScenarioToTheEnd([Values("S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8")] string id)
+        {
+            yield return Run(id, ScenarioVariant.Default, autoplay: true);
+            Assert.That(_d.Autoplay, Is.True);
+            float t0 = Time.realtimeSinceStartup;
+            while (_report == null && Time.realtimeSinceStartup - t0 < 120f)
+            {
+                if (_c.Protocol.medevacRequested) _c.simulationSpeed = 20f;
+                yield return null;
+            }
+            var ap = _d.GetComponent<AutoplayDriver>();
+            Debug.Log($"[FMVR] autoplay {id}: steps {ap.StepsDone} last {ap.LastStepId} → " + (_report == null ? "no report, step " + _d.CurrentStep : Summary));
+            Assert.That(_report, Is.Not.Null, "autoplay reached the debrief; step " + _d.CurrentStep);
+            Assert.That(_report.title, Does.Contain("автопрохождение"));
+            Assert.That(_report.survived, Is.True, Summary);
+            Assert.That(ap.StepsDone, Is.GreaterThan(2));
         }
 
         // ================================================================== S5 «FPV»
