@@ -225,6 +225,7 @@ namespace FieldMedic.Scenarios
 
                 case "recovery":
                     c.rolledOnSide = true;
+                    c.recoveryPosition = true; // w10g: LogRoll resets rolledOnSide from its own angle every frame
                     proto.Perform(MedAction.RecoveryPosition);
                     return true;
 
